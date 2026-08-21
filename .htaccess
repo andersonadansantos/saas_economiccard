@@ -1,0 +1,8 @@
+RewriteEngine On
+RewriteRule ^admin/?$ admin_login.php [L]
+
+# /usuario sempre abre a versão web (painel)
+RewriteRule ^usuario/?$ web/login.php [L]
+
+# /web abre o login da versão web
+RewriteRule ^web/?$ web/login.php [L]
