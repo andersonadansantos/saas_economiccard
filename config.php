@@ -12,9 +12,11 @@ $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
 $db   = getenv('DB_NAME') ?: 'economicacard';
 
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die('Falha na conexão: ' . $conn->connect_error);
+try {
+    $conn = new mysqli($host, $user, $pass, $db);
+} catch (mysqli_sql_exception $e) {
+    http_response_code(503);
+    die('Falha na conexao com o banco de dados. Verifique se o MySQL esta em execucao no XAMPP.');
 }
 $conn->set_charset('utf8mb4');
 

@@ -5,9 +5,11 @@ $user = 'root';
 $pass = '';
 $db   = 'economicacard';
 
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die('Falha na conexão: ' . $conn->connect_error);
+try {
+    $conn = new mysqli($host, $user, $pass, $db);
+} catch (mysqli_sql_exception $e) {
+    http_response_code(503);
+    die('Falha na conexao: o MySQL nao esta acessivel. Inicie o MySQL no painel do XAMPP e tente novamente.');
 }
 $conn->set_charset('utf8mb4');
 
