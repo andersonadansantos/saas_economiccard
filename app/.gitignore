@@ -1,0 +1,20 @@
+# Segredos (nunca subir)
+secrets_local.php
+
+# Sistema / lixo
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dumps e backups
+*.sql
+*.sql.gz
+mysqld.dmp
+
+# Dependências
+vendor/
+node_modules/
+
+# Docker runtime
+.docker/

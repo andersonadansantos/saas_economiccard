@@ -18,14 +18,12 @@ $cartaoImg = $u['cartao_ativo'] ? $cartaoAtivado : $cartaoDesativado;
 $planos = [];
 $pr = $conn->query("SELECT * FROM planos WHERE ativo = 1 ORDER BY ordem, id");
 while ($p = $pr->fetch_assoc()) { $planos[] = $p; }
-$publicKey = '';
-$tr = $conn->query("SELECT public_key, parceiro_public_key, parceiro_access_token FROM api_pagamento WHERE id = 1");
-if ($tr && ($row = $tr->fetch_assoc())) {
-    $publicKey = $row['public_key'] ?? '';
-    // Com split ativo, o token do cartão precisa ser gerado com a Public Key do parceiro (coletor)
-    if (!empty($row['parceiro_access_token']) && !empty($row['parceiro_public_key'])) {
-        $publicKey = $row['parceiro_public_key'];
-    }
+require_once __DIR__ . '/../asaas_pix.php';
+$asaasOk = asaas_config($conn) !== null;
+$cepUsuario = preg_replace('/\D/', '', (string)($u['cep'] ?? ''));
+$numEndereco = '';
+if (!empty($u['endereco']) && preg_match('/(\d+)/', (string)$u['endereco'], $mNum)) {
+    $numEndereco = $mNum[1];
 }
 $pix = null;
 if (!$u['cartao_ativo']) {
@@ -164,7 +162,7 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 <!-- Card Panel -->
 <div id="painelCard" class="hidden">
 <p class="text-sm text-on-surface-variant text-center mb-6">Pague com <b>cartão de crédito</b> para ativar seu cartão por <b id="cardDiasText"><?php echo isset($planos[0]) ? (int)$planos[0]['dias'] : '60'; ?></b> dias. Valor: <b id="cardValorText"><?php echo isset($planos[0]) ? 'R$ ' . number_format((float)$planos[0]['valor'], 2, ',', '.') : ''; ?></b>.</p>
-<?php if ($publicKey): ?>
+<?php if ($asaasOk): ?>
 <form id="cardForm" class="space-y-4">
 <div>
 <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardholderName">Nome no cartão</label>
@@ -181,27 +179,18 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 </div>
 <div>
 <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardSecurityCode">Código de segurança</label>
-<input id="cardSecurityCode" name="cardSecurityCode" type="text" autocomplete="off" inputmode="numeric" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="123" required/>
+<input id="cardSecurityCode" name="cardSecurityCode" type="text" autocomplete="off" inputmode="numeric" maxlength="4" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="123" required/>
 </div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardPostalCode">CEP (endereço do titular)</label>
+<input id="cardPostalCode" name="cardPostalCode" type="text" autocomplete="off" inputmode="numeric" value="<?php echo htmlspecialchars($cepUsuario); ?>" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="00000-000" required/>
 </div>
 <div>
-<label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardInstallments">Parcelas</label>
-<select id="cardInstallments" name="cardInstallments" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40">
-<?php if (isset($planos[0])): ?>
-<option value="1">1x de R$ <?php echo number_format((float)$planos[0]['valor'], 2, ',', '.'); ?></option>
-<?php else: ?>
-<option value="1">1x de R$ <?php echo isset($planos[0]) ? number_format((float)$planos[0]['valor'], 2, ',', '.') : '5,00'; ?></option>
-<?php endif; ?>
-</select>
+<label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardAddressNumber">Número</label>
+<input id="cardAddressNumber" name="cardAddressNumber" type="text" autocomplete="off" value="<?php echo htmlspecialchars($numEndereco); ?>" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="Nº" required/>
 </div>
-<div id="cardBinBox" class="hidden">
-<label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="cardIdentificationType">Tipo de documento</label>
-<select id="cardIdentificationType" name="cardIdentificationType" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40">
-<option value="CPF">CPF</option>
-<option value="CNPJ">CNPJ</option>
-</select>
-<label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block mt-3" for="cardIdentificationNumber">Número do documento</label>
-<input id="cardIdentificationNumber" name="cardIdentificationNumber" type="text" autocomplete="off" inputmode="numeric" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="Documento do titular" required/>
 </div>
 <div id="cardErrorBox" class="hidden">
 <div class="bg-error-container/60 border border-error/30 text-[#93000a] rounded-lg px-3.5 py-2.5 text-[13px]" id="cardErrorText"></div>
@@ -225,8 +214,8 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 
 <script>
 let planoAtual = <?php echo isset($planos[0]) ? json_encode(['id' => (int)$planos[0]['id'], 'valor' => number_format((float)$planos[0]['valor'], 2, ',', '.'), 'dias' => (int)$planos[0]['dias'], 'nome' => $planos[0]['nome']]) : 'null'; ?>;
-let pixAtivo = <?php echo $pix ? json_encode(['mp_payment_id' => (int)$pix['mp_payment_id'], 'copia_cola' => $pix['qr_code_copia_cola'], 'plano_id' => (int)($pix['plano_id'] ?? 0)]) : 'null'; ?>;
-let mpPaymentId = pixAtivo ? pixAtivo.mp_payment_id : 0;
+let pixAtivo = <?php echo $pix ? json_encode(['id' => (int)$pix['id'], 'gateway_payment_id' => ($pix['provedor'] ?? 'mp') === 'asaas' ? (string)$pix['asaas_payment_id'] : (string)$pix['mp_payment_id'], 'copia_cola' => $pix['qr_code_copia_cola'], 'plano_id' => (int)($pix['plano_id'] ?? 0)]) : 'null'; ?>;
+let pagamentoLocalId = pixAtivo ? (pixAtivo.id || 0) : 0;
 const pixCodeText = pixAtivo ? pixAtivo.copia_cola : '';
 function selecionarPlano(el) {
     document.querySelectorAll('.plan-card').forEach(c => {
@@ -243,10 +232,6 @@ function selecionarPlano(el) {
     if (document.getElementById('cardValorText')) document.getElementById('cardValorText').textContent = brl;
     if (document.getElementById('cardDiasText')) document.getElementById('cardDiasText').textContent = planoAtual.dias;
     if (document.getElementById('cardPayBtn')) document.getElementById('cardPayBtn').innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR ' + brl;
-    if (document.getElementById('cardInstallments')) {
-        document.getElementById('cardInstallments').innerHTML = '<option value="1">1x de ' + brl + '</option>';
-    }
-    if (typeof montarCardForm === 'function') { montarCardForm(); }
 }
 function gerarPix() {
     if (!planoAtual) return;
@@ -257,7 +242,7 @@ function gerarPix() {
         .then(r => r.json())
         .then(d => {
             if (d.status === 'pending' && d.pix) {
-                pixAtivo = { mp_payment_id: d.pix.mp_payment_id, copia_cola: d.pix.qr_code_copia_cola, plano_id: planoAtual.id };
+                pixAtivo = { id: d.pix.id, gateway_payment_id: d.pix.gateway_payment_id || '', copia_cola: d.pix.qr_code_copia_cola, plano_id: planoAtual.id };
                 const qrBox = document.getElementById('qrBox');
                 if (qrBox) {
                     qrBox.innerHTML = '<img id="qrImg" class="w-full h-full object-contain" src="data:image/png;base64,' + d.pix.qr_code_base64 + '" alt="QR Code PIX"/>';
@@ -278,7 +263,7 @@ function gerarPix() {
                 if (codeText) codeText.textContent = d.pix.qr_code_copia_cola;
                 if (waitBox) waitBox.classList.remove('hidden');
                 if (btn) { btn.remove(); }
-                mpPaymentId = d.pix.mp_payment_id;
+                pagamentoLocalId = d.pix.id;
                 if (polling) clearInterval(polling);
                 polling = setInterval(verificarPagamento, 5000);
                 verificarPagamento();
@@ -335,8 +320,8 @@ function mostrarModalAtivado() {
     setTimeout(() => location.reload(), 2500);
 }
 function verificarPagamento() {
-    if (!mpPaymentId) return;
-    fetch('../verifica_pagamento.php?id=' + mpPaymentId)
+    if (!pagamentoLocalId) return;
+    fetch('../verifica_pagamento.php?id=' + pagamentoLocalId)
         .then(r => r.json())
         .then(d => {
             if (d.status === 'approved') {
@@ -350,8 +335,8 @@ function verificarPagamento() {
         })
         .catch(() => {});
 }
-let polling = mpPaymentId ? setInterval(verificarPagamento, 5000) : null;
-if (mpPaymentId) verificarPagamento();
+let polling = pagamentoLocalId ? setInterval(verificarPagamento, 5000) : null;
+if (pagamentoLocalId) verificarPagamento();
 
 function mostrarAba(aba) {
     const pixBtn = document.getElementById('tabPixBtn');
@@ -372,92 +357,57 @@ function mostrarAba(aba) {
 }
 </script>
 <script>
-const mpPublicKey = <?php echo json_encode($publicKey); ?>;
-const mpSdk = window.MercadoPago ? new MercadoPago(mpPublicKey, { locale: 'pt-BR' }) : null;
 const cardForm = document.getElementById('cardForm');
 const payBtn = document.getElementById('cardPayBtn');
 const errorBox = document.getElementById('cardErrorBox');
 const errorText = document.getElementById('cardErrorText');
-let cardFormInstance = null;
 function cardErro(msg) {
     if (!errorBox) return;
     errorText.textContent = msg;
     errorBox.classList.remove('hidden');
 }
-function amountMP() {
-    return planoAtual ? String(planoAtual.valor).replace('.', '').replace(',', '.') : '5.00';
+function pagarBtnReset() {
+    payBtn.disabled = false;
+    payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ ' + (planoAtual ? planoAtual.valor : '5,00');
 }
-function montarCardForm() {
-    if (!cardForm || !mpSdk) return;
-    if (cardFormInstance && typeof cardFormInstance.destroy === 'function') {
-        try { cardFormInstance.destroy(); } catch (e) {}
-    }
-    cardFormInstance = mpSdk.cardForm({
-        amount: amountMP(),
-        autoMount: true,
-        form: {
-            id: 'cardForm',
-            cardholderName: { id: 'cardholderName', placeholder: 'Nome impresso no cartão' },
-            cardNumber: { id: 'cardNumber', placeholder: '0000 0000 0000 0000' },
-            expirationDate: { id: 'cardExpirationDate', placeholder: 'MM/AA' },
-            securityCode: { id: 'cardSecurityCode', placeholder: '123' },
-            installments: { id: 'cardInstallments' },
-            identificationType: { id: 'cardIdentificationType' },
-            identificationNumber: { id: 'cardIdentificationNumber' }
-        },
-        callbacks: {
-            onFormMounted: (error) => {
-                if (error) { cardErro('Não foi possível carregar o formulário de cartão: ' + error.message); }
-            },
-            onSubmit: (event) => {
-                event.preventDefault();
-                const formData = cardFormInstance ? cardFormInstance.getCardFormData() : null;
-                if (!formData || !formData.token) { cardErro('Não foi possível processar o cartão. Verifique os dados.'); return; }
-                const token = formData.token;
-                const paymentMethodId = formData.paymentMethodId;
-                const installments = formData.installments || 1;
-                errorBox.classList.add('hidden');
-                payBtn.disabled = true;
-                payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_top</span> PROCESSANDO...';
-                const body = new URLSearchParams({
-                    token: token,
-                    payment_method_id: paymentMethodId,
-                    installments: installments,
-                    plano_id: planoAtual ? planoAtual.id : 0,
-                    payer_identification_type: document.getElementById('cardIdentificationType').value,
-                    payer_identification_number: document.getElementById('cardIdentificationNumber').value,
-                    payer_email: 'usuario' + <?php echo (int)$uid; ?> + '@economiccard.com.br'
-                });
-                fetch('../processa_pagamento_cartao.php', { method: 'POST', body: body })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d.status === 'approved') {
-                            mostrarModalAtivado();
-                        } else if (d.status === 'pending') {
-                            setTimeout(() => location.reload(), 3000);
-                        } else {
-                            payBtn.disabled = false;
-                            payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ ' + (planoAtual ? planoAtual.valor : '5,00');
-                            cardErro(d.message || 'Pagamento recusado. Tente novamente.');
-                        }
-                    })
-                    .catch(() => {
-                        payBtn.disabled = false;
-                        payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ ' + (planoAtual ? planoAtual.valor : '5,00');
-                        cardErro('Erro ao processar o pagamento. Tente novamente.');
-                    });
-            },
-            onFetching: () => {
-                if (payBtn) { payBtn.disabled = true; payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_top</span> PROCESSANDO...'; }
-            },
-            onError: (error) => {
-                if (payBtn) { payBtn.disabled = false; payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ ' + (planoAtual ? planoAtual.valor : '5,00'); }
-                cardErro(error && error.message ? error.message : 'Verifique os dados do cartão.');
-            }
-        }
+if (cardForm) {
+    cardForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const venc = document.getElementById('cardExpirationDate').value.trim();
+        const partes = venc.match(/^(\d{1,2})\s*\/?\s*(\d{2}|\d{4})$/);
+        if (!partes) { cardErro('Validade inválida. Use o formato MM/AA.'); return; }
+        let ano = partes[2];
+        if (ano.length === 2) ano = '20' + ano;
+        errorBox.classList.add('hidden');
+        payBtn.disabled = true;
+        payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_top</span> PROCESSANDO...';
+        const body = new URLSearchParams({
+            plano_id: planoAtual ? planoAtual.id : 0,
+            holder_name: document.getElementById('cardholderName').value.trim(),
+            number: document.getElementById('cardNumber').value.replace(/\D/g, ''),
+            expiry: partes[1].padStart(2, '0') + '/' + ano,
+            ccc: document.getElementById('cardSecurityCode').value.replace(/\D/g, ''),
+            postal_code: document.getElementById('cardPostalCode').value.replace(/\D/g, ''),
+            address_number: document.getElementById('cardAddressNumber').value.trim()
+        });
+        fetch('../processa_pagamento_cartao.php', { method: 'POST', body: body })
+            .then(r => r.json())
+            .then(d => {
+                if (d.status === 'approved') {
+                    mostrarModalAtivado();
+                } else if (d.status === 'pending') {
+                    setTimeout(() => location.reload(), 3000);
+                } else {
+                    pagarBtnReset();
+                    cardErro(d.message || 'Pagamento recusado. Tente novamente.');
+                }
+            })
+            .catch(() => {
+                pagarBtnReset();
+                cardErro('Erro ao processar o pagamento. Tente novamente.');
+            });
     });
 }
-montarCardForm();
 </script>
 <!-- Modal CARTÃO ATIVADO -->
 <div class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" id="modalAtivado">

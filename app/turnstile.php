@@ -10,6 +10,13 @@ if (!defined('TURNSTILE_SECRET')) {
     define('TURNSTILE_SECRET', getenv('TURNSTILE_SECRET') ?: '');
 }
 
+// Turnstile só fica ativo quando site key E secret estão configurados.
+// Sem chaves, os widgets não são renderizados e a validação é ignorada
+// (evita bloquear todos os logins em ambientes sem configuração).
+function turnstile_ativo() {
+    return trim((string)TURNSTILE_SITE_KEY) !== '' && trim((string)TURNSTILE_SECRET) !== '';
+}
+
 // Script do widget (colocar no <head>)
 function turnstile_script() {
     echo '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
@@ -17,12 +24,14 @@ function turnstile_script() {
 
 // Widget (colocar dentro do <form>)
 function turnstile_widget($theme = 'light') {
+    if (!turnstile_ativo()) return;
     $theme = in_array($theme, ['light', 'dark', 'auto'], true) ? $theme : 'light';
     echo '<div class="cf-turnstile" data-sitekey="' . TURNSTILE_SITE_KEY . '" data-theme="' . $theme . '"></div>';
 }
 
 // Valida o token enviado no POST; retorna true se passou.
 function verificar_turnstile($token = null) {
+    if (!turnstile_ativo()) return true;
     if ($token === null) {
         $token = $_POST['cf-turnstile-response'] ?? '';
     }

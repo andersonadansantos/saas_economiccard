@@ -64,7 +64,6 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="https://sdk.mercadopago.com/js/v2"></script>
 <script>
     tailwind.config = {
         darkMode: "class",
@@ -172,12 +171,6 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <p class="text-sm text-on-surface-variant mt-0.5">Bem-vindo de volta, <?php echo htmlspecialchars($primeiroNome); ?>!</p>
 </div>
 <div class="flex items-center gap-3">
-<?php if ($u['cartao_ativo'] && $diasRestantes !== null): ?>
-<div class="bg-white border border-outline-variant rounded-full px-4 py-2 flex items-center gap-2 card-shadow">
-<span class="material-symbols-outlined text-secondary text-[18px]">schedule</span>
-<span class="text-xs font-bold text-secondary whitespace-nowrap">Seu cartão expira em: <?php echo max($diasRestantes, 0); ?> dias.</span>
-</div>
-<?php endif; ?>
 <div class="relative">
 <button class="bg-white card-shadow p-3 rounded-full hover:shadow-lg transition relative" onclick="toggleNotif()">
 <span class="material-symbols-outlined text-primary">notifications</span>

@@ -1,8 +1,19 @@
-RewriteEngine On
-RewriteRule ^admin/?$ admin_login.php [L]
+Options -Indexes
 
-# /usuario sempre abre a versão web (painel)
-RewriteRule ^usuario/?$ web/login.php [L]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-# /web abre o login da versão web
-RewriteRule ^web/?$ web/login.php [L]
+    # Compatibilidade com URLs antigas da raiz: /login.php -> /app/login.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([A-Za-z0-9_\-]+\.php)$ app/$1 [L]
+
+    # Atalhos sem extensao: /usuario, /admin etc -> /app/...
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([A-Za-z0-9_\-]+)/?$ app/$1 [L]
+</IfModule>
+
+<FilesMatch "asaas.log">
+Require all denied
+</FilesMatch>

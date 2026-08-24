@@ -1,0 +1,99 @@
+/* ==========================================================================
+   Economic Card - Landing Page Styles
+   ========================================================================== */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Manrope', sans-serif;
+}
+
+/* Animação de flutuação */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
+/* Classes customizadas para efeito 3D */
+.perspective-1000 {
+    perspective: 1000px;
+}
+.rotate-y-\[-5deg\] {
+    transform: rotateY(-5deg);
+}
+.rotate-x-\[5deg\] {
+    transform: rotateX(5deg);
+}
+.hover\:rotate-y-0:hover {
+    transform: rotateY(0deg) !important;
+}
+.hover\:rotate-x-0:hover {
+    transform: rotateX(0deg) !important;
+}
+
+/* Ocultar barra de rolagem mantendo funcionalidade */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Animação do Carrossel Infinito */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 35s linear infinite;
+}
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
+
+/* Efeitos 3D para Mockup e Cartão */
+.card-3d-perspective {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+}
+.card-3d {
+    transform: rotateY(-12deg) rotateX(8deg) translateZ(0);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-style: preserve-3d;
+}
+.card-3d-container:hover .card-3d {
+    transform: rotateY(-3deg) rotateX(4deg) translateZ(10px);
+}
+.floating-card-3d {
+    transform: rotateY(-10deg) rotateX(8deg) translateZ(50px) translateY(0);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
+    filter: drop-shadow(-10px 15px 12px rgba(0, 0, 0, 0.25));
+}
+.card-3d-container:hover .floating-card-3d {
+    transform: rotateY(8deg) rotateX(6deg) translateZ(90px) translateY(-15px) translateX(10px);
+    filter: drop-shadow(-20px 30px 25px rgba(0, 0, 0, 0.35));
+}
+
+/* Cursor da animação de escrita */
+.typewriter-cursor {
+    display: inline-block;
+    width: 0.06em;
+    height: 0.82em;
+    background: currentColor;
+    margin-left: 0.06em;
+    vertical-align: baseline;
+    animation: typewriter-blink 1s step-end infinite;
+}
+@keyframes typewriter-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}

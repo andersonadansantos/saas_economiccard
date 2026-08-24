@@ -261,12 +261,6 @@ foreach ($idsBroadcast as $mid) {
 <?php endif; ?>
 </div>
 <div class="flex items-center gap-2">
-<?php if ($u['cartao_ativo'] && $diasRestantes !== null): ?>
-<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-sm">
-<span class="material-symbols-outlined text-secondary text-[16px]">schedule</span>
-<span class="font-label-bold text-label-bold text-secondary whitespace-nowrap">Seu cartão expira em: <?php echo max($diasRestantes, 0); ?> dias.</span>
-</div>
-<?php endif; ?>
 <div class="relative" id="notifWrap">
 <button class="material-symbols-outlined text-primary hover:bg-surface-container-high/50 transition-colors p-2 rounded-full active:scale-95 duration-200" id="notifBtn">
             notifications

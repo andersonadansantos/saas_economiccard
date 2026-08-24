@@ -1,12 +1,6 @@
-.git
+.agents/
+*.zip
+.git/
 .gitignore
 .dockerignore
 Dockerfile
-docker-compose.yml
-README.md
-secrets_local.php
-*.log
-*.sql
-*.md
-Thumbs.db
-.DS_Store

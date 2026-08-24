@@ -38,21 +38,11 @@ if (!empty($_SESSION['afiliado_id'])) {
 
 $usuarios = null;
 $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/card/';
-$oauthUrl = '';
 if ($af) {
     $stmt = $conn->prepare("SELECT * FROM usuarios WHERE afiliado_token = ? ORDER BY id DESC");
     $stmt->bind_param('s', $af['token']);
     $stmt->execute();
     $usuarios = $stmt->get_result();
-
-    $mpCfg = $conn->query("SELECT client_id, redirect_uri FROM api_pagamento WHERE id = 1")->fetch_assoc();
-    if (!empty($mpCfg['client_id'])) {
-        $oauthUrl = 'https://auth.mercadopago.com.br/authorization?client_id=' . urlencode($mpCfg['client_id']) . '&response_type=code&platform_id=mp';
-        if (!empty($mpCfg['redirect_uri'])) {
-            $oauthUrl .= '&redirect_uri=' . urlencode($mpCfg['redirect_uri']);
-        }
-        $oauthUrl .= '&state=' . (int)$af['id'];
-    }
 }
 ?>
 <!DOCTYPE html>
@@ -131,29 +121,8 @@ if ($af) {
 </div>
 </div>
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-extrabold text-gray-800 uppercase mb-3">Mercado Pago (recebimento de comissão)</h2>
-<?php if (empty($oauthUrl)): ?>
-<p class="text-xs text-gray-500">A conexão com o Mercado Pago ainda não foi configurada pelo administrador. Volte em breve.</p>
-<?php else: ?>
-<?php if (!empty($af['mp_user_id'])): ?>
-<div class="flex items-center gap-2 mb-3">
-<span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-[#3e6a00] text-white">Conectado</span>
-<?php if (!empty($af['mp_token_em'])): ?>
-<span class="text-xs text-gray-500">Desde <?php echo date('d/m/Y H:i', strtotime($af['mp_token_em'])); ?></span>
-<?php endif; ?>
-</div>
-<div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-<p class="text-xs font-bold text-gray-500 uppercase">User ID do vendedor</p>
-<p class="font-semibold text-gray-800 mt-1"><?php echo htmlspecialchars($af['mp_user_id']); ?></p>
-</div>
-<a href="<?php echo htmlspecialchars($oauthUrl); ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-[#51036d] hover:bg-[#3a024d] text-white text-sm font-bold px-4 py-2.5 rounded-lg transition">Reconectar conta</a>
-<?php else: ?>
-<p class="text-xs text-gray-500 mb-3">Conecte sua conta do Mercado Pago para receber sua comissão pelo Split de pagamentos. Após autorizar, você será redirecionado de volta.</p>
-<a href="<?php echo htmlspecialchars($oauthUrl); ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-[#3e6a00] hover:bg-[#2e5000] text-white text-sm font-bold px-4 py-2.5 rounded-lg transition">
-<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span> Conectar Mercado Pago
-</a>
-<?php endif; ?>
-<?php endif; ?>
+<h2 class="text-sm font-extrabold text-gray-800 uppercase mb-3">Recebimento de comissões</h2>
+<p class="text-xs text-gray-500">As comissões são pagas automaticamente via <b>Split de Pagamentos do Asaas</b>: uma parte de cada pagamento cai direto na sua conta Asaas. Fale com o suporte para cadastrar o <b>Wallet ID</b> da sua carteira e começar a receber.</p>
 </div>
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
