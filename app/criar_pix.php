@@ -79,8 +79,17 @@ if (!$qr['ok']) {
 }
 asaas_fluxo_log('qrcode_ok', "uid=$uid payment=$payId");
 $stmt = $conn->prepare("INSERT INTO pagamentos_pix (usuario_id, plano_id, mp_payment_id, valor, descricao, qr_code_base64, qr_code_copia_cola, status, pix_validade, criado_em, provedor, asaas_payment_id) VALUES (?, ?, 0, ?, ?, ?, ?, 'pending', DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW(), 'asaas', ?)");
-$stmt->bind_param('iidsssss', $uid, $planoId, $valor, $descricao, $qr['encoded_image'], $qr['payload'], $payId);
-$stmt->execute();
+if (!$stmt) {
+    asaas_fluxo_log('erro', "prepare insert falhou uid=$uid payment=$payId: " . $conn->error);
+    echo json_encode(['status' => 'error', 'message' => 'Erro ao registrar o pagamento']);
+    exit;
+}
+$stmt->bind_param('iidssss', $uid, $planoId, $valor, $descricao, $qr['encoded_image'], $qr['payload'], $payId);
+if (!$stmt->execute()) {
+    asaas_fluxo_log('erro', "insert pix falhou uid=$uid payment=$payId: " . $stmt->error);
+    echo json_encode(['status' => 'error', 'message' => 'Erro ao registrar o pagamento']);
+    exit;
+}
 $pix = $conn->query("SELECT * FROM pagamentos_pix WHERE id = " . $conn->insert_id)->fetch_assoc();
 asaas_fluxo_log('pix_criado', "uid=$uid pix_id={$pix['id']} payment=$payId");
 echo json_encode([
