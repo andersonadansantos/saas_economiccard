@@ -63,7 +63,19 @@ function asaas_log_erro(array $cfg, $caminho, $body, array $resp) {
         . "\nRESPOSTA: HTTP " . $resp['http'] . ' ' . json_encode($resp['dados'])
         . (!empty($resp['erro_curl']) ? ' CURL: ' . $resp['erro_curl'] : '')
         . "\n------\n";
-    @file_put_contents($dir . '/asaas.log', $linha, FILE_APPEND);
+    if (@file_put_contents($dir . '/asaas.log', $linha, FILE_APPEND) === false) {
+        error_log('asaas-erro ' . str_replace("\n", ' | ', $linha));
+    }
+}
+
+// Log enxuto do fluxo de geracao de PIX (app/logs/pix_flow.log).
+function asaas_fluxo_log($etapa, $detalhe = '') {
+    $dir = __DIR__ . '/logs';
+    if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
+    $linha = date('c') . " [$etapa] $detalhe\n";
+    if (@file_put_contents($dir . '/pix_flow.log', $linha, FILE_APPEND) === false) {
+        error_log("asaas-fluxo [$etapa] $detalhe");
+    }
 }
 
 // Busca o customer pelo CPF/CNPJ e cria se ainda não existir.
@@ -161,13 +173,19 @@ function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao
 }
 
 // Retorna o QR Code PIX (copia e cola + imagem base64) de uma cobrança.
+// O Asaas pode levar alguns instantes para gerar o QR; tenta até 3 vezes.
 function asaas_qrcode_pix(array $cfg, $paymentId) {
-    $resp = asaas_request($cfg, 'GET', '/payments/' . rawurlencode((string)$paymentId) . '/pixQrCode');
-    $payload = (string)($resp['dados']['payload'] ?? '');
-    $imagem = (string)($resp['dados']['encodedImage'] ?? '');
-    if ($payload !== '' && $imagem !== '') {
-        return ['ok' => true, 'payload' => $payload, 'encoded_image' => $imagem];
+    $resp = [];
+    for ($i = 0; $i < 3; $i++) {
+        $resp = asaas_request($cfg, 'GET', '/payments/' . rawurlencode((string)$paymentId) . '/pixQrCode');
+        $payload = (string)($resp['dados']['payload'] ?? '');
+        $imagem = (string)($resp['dados']['encodedImage'] ?? '');
+        if ($payload !== '' && $imagem !== '') {
+            return ['ok' => true, 'payload' => $payload, 'encoded_image' => $imagem];
+        }
+        if ($i < 2) { sleep(1); }
     }
+    asaas_log_erro($cfg, '/payments/{id}/pixQrCode', ['paymentId' => $paymentId], $resp);
     return ['ok' => false, 'message' => asaas_primeiro_erro($resp, 'Asaas (QR Code)')];
 }
 
