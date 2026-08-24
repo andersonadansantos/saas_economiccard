@@ -20,6 +20,25 @@ function validarCep($cep) {
     return is_array($dados) && empty($dados['erro']);
 }
 
+function normalizarNascimento($v) {
+    $v = trim((string)$v);
+    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $v, $m)) {
+        list(, $d, $mes, $ano) = $m;
+    } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m)) {
+        list(, $ano, $mes, $d) = $m;
+    } else {
+        return '';
+    }
+    if (!checkdate((int)$mes, (int)$d, (int)$ano)) {
+        return '';
+    }
+    $ts = strtotime("$ano-$mes-$d");
+    if ($ts === false || $ts > time() || $ts < strtotime('-120 years')) {
+        return '';
+    }
+    return "$ano-$mes-$d";
+}
+
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoApp = $pers['logo_app'] ?? '';
 
@@ -43,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cpf        = preg_replace('/\D/', '', trim($_POST['cpf'] ?? ''));
     $whatsapp   = trim($_POST['whatsapp'] ?? '');
     $rg         = trim($_POST['rg'] ?? '');
-    $nascimento = trim($_POST['nascimento'] ?? '');
+    $nascimento = normalizarNascimento($_POST['nascimento'] ?? '');
     $cep        = trim($_POST['cep'] ?? '');
     $cidade     = trim($_POST['cidade'] ?? '');
     $endereco   = trim($_POST['endereco'] ?? '');
@@ -66,8 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cpfMascarado = $cpf;
     }
 
-    if ($nome === '' || strlen($cpf) !== 11 || $nascimento === '') {
+    if ($nome === '' || strlen($cpf) !== 11 || trim($_POST['nascimento'] ?? '') === '') {
         $erro = 'Preencha o nome completo, o CPF e a data de nascimento.';
+    } elseif ($nascimento === '') {
+        $erro = 'Data de nascimento inválida. Digite no formato DD/MM/AAAA.';
     } elseif ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $erro = 'Informe um e-mail válido.';
     } elseif (!validarCpf($cpf)) {
@@ -292,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <label class="block font-label-caps text-label-caps text-outline mb-1 ml-1 uppercase">Nascimento</label>
 <div class="relative flex items-center bg-surface-container-low rounded-xl border border-outline-variant focus-within:border-primary focus-within:bg-white transition-all input-focus-ring overflow-hidden">
 <span class="material-symbols-outlined text-on-surface-variant ml-4">calendar_today</span>
-<input class="w-full bg-transparent border-none focus:ring-0 py-4 px-3 font-body-md text-on-surface placeholder:text-outline/60" name="nascimento" type="date" required/>
+<input class="w-full bg-transparent border-none focus:ring-0 py-4 px-3 font-body-md text-on-surface placeholder:text-outline/60" id="nascimento" name="nascimento" placeholder="DD/MM/AAAA" type="text" inputmode="numeric" maxlength="10" autocomplete="bday" required/>
 </div>
 </div>
 </div>
@@ -434,6 +455,18 @@ Li e aceito o
         rgInput.addEventListener('input', (e) => {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 9) value = value.slice(0, 9);
+            e.target.value = value;
+        });
+
+        const nascimentoInput = document.getElementById('nascimento');
+        nascimentoInput.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.slice(0, 8);
+            if (value.length > 4) {
+                value = value.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d{1,2})/, '$1/$2');
+            }
             e.target.value = value;
         });
 
