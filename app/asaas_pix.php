@@ -88,13 +88,14 @@ function asaas_obter_customer(array $cfg, array $u) {
 }
 
 // Monta o array de split (valor fixo em R$ para a carteira do PARCEIRO) ou null se não configurado.
+// Campo obrigatório do Asaas é fixedValue (docs: docs.asaas.com/docs/split-de-pagamentos).
 function asaas_split_payload(array $cfg, $valor) {
     $wallet = trim((string)($cfg['asaas_wallet_parceiro'] ?? ''));
     $valorFixo = round((float)($cfg['valor_fixo_parceiro'] ?? 0), 2);
     if ($wallet === '' || $valorFixo <= 0 || $valorFixo >= (float)$valor) {
         return null;
     }
-    return [['walletId' => $wallet, 'value' => $valorFixo]];
+    return [['walletId' => $wallet, 'fixedValue' => $valorFixo]];
 }
 
 // Cria a cobrança PIX (billingType=PIX) já com o split para o parceiro, quando configurado.
@@ -109,7 +110,7 @@ function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $
     $split = asaas_split_payload($cfg, $valor);
     $splitAplicado = false;
     if ($split) {
-        $payload['split'] = $split;
+        $payload['splits'] = $split;
         $splitAplicado = true;
     }
     // Parâmetro uid garante idempotência (evita cobrança duplicada em retry).
@@ -148,7 +149,7 @@ function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao
     $split = asaas_split_payload($cfg, $valor);
     $splitAplicado = false;
     if ($split) {
-        $payload['split'] = $split;
+        $payload['splits'] = $split;
         $splitAplicado = true;
     }
     $resp = asaas_request($cfg, 'POST', '/payments?uid=' . rawurlencode('ec-' . (int)$uid . '-' . uniqid()), $payload);

@@ -244,15 +244,15 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <div class="w-8 h-8 rounded-full bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0 font-extrabold">5</div>
 <div>
 <p class="font-bold text-gray-800 text-sm">Como o split funciona (já implementado neste sistema)</p>
-<p class="text-sm text-gray-600">A cobrança PIX é criada via <code>POST /v3/payments</code> com <code>billingType: "PIX"</code> e o array <b><code>split</code></b> apontando a carteira do parceiro:</p>
+<p class="text-sm text-gray-600">A cobrança PIX é criada via <code>POST /v3/payments</code> com <code>billingType: "PIX"</code> e o array <b><code>splits</code></b> apontando a carteira do parceiro:</p>
 <pre class="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 overflow-x-auto">{
   "customer": "cus_000005162240",
   "billingType": "PIX",
   "value": 25.00,
   "dueDate": "2026-08-23",
-  "split": [ { "walletId": "WALLET_ID_DO_PARCEIRO", "value": 5.00 } ]
+  "splits": [ { "walletId": "WALLET_ID_DO_PARCEIRO", "fixedValue": 5.00 } ]
 }</pre>
-<p class="text-sm text-gray-600 mt-2">Exemplo: cliente paga R$ 25 com valor fixo de R$ 5 para o parceiro → <b>R$ 5 caem na conta do parceiro</b> e <b>R$ 20 ficam na conta da empresa</b>. Em caso de estorno, o valor é devolvido proporcionalmente das duas contas. A confirmação chega pelo webhook (PAYMENT_RECEIVED/CONFIRMED) e o app também consulta o status diretamente.</p>
+<p class="text-sm text-gray-600 mt-2">Exemplo: cliente paga R$ 25 com valor fixo de R$ 5 para o parceiro → <b>R$ 5 caem na conta do parceiro</b> e <b>R$ 20 ficam na conta da empresa</b>. Atenção ao nome do campo: é <b>fixedValue</b> (o campo <i>value</i> é rejeitado pelo Asaas). Em caso de estorno, o valor é devolvido proporcionalmente das duas contas. A confirmação chega pelo webhook (PAYMENT_RECEIVED/CONFIRMED) e o app também consulta o status diretamente.</p>
 </div>
 </div>
 <div class="border border-gray-200 rounded-xl p-4 flex gap-3">
