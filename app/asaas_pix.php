@@ -5,6 +5,9 @@
 // O split é definido na própria cobrança: não há fluxo OAuth nem transferência manual.
 // Docs: https://docs.asaas.com/docs/split-de-pagamentos
 
+// Valor mínimo por cobrança aceito pelo Asaas.
+define('ASAAS_VALOR_MINIMO', 5.00);
+
 // Retorna a configuração Asaas ou null se a chave não estiver preenchida.
 function asaas_config($conn) {
     $r = @$conn->query("SELECT asaas_api_key, asaas_ambiente, asaas_wallet_parceiro, valor_fixo_parceiro FROM api_pagamento WHERE id = 1");

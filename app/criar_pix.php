@@ -50,6 +50,12 @@ $dias = (int)$plano['dias'];
 $nomePlano = $plano['nome'];
 $descricao = "Ativação Economic Card - $nomePlano - $dias dias";
 
+if ($valor < ASAAS_VALOR_MINIMO) {
+    asaas_fluxo_log('erro', "valor abaixo do minimo uid=$uid plano=$nomePlano valor=$valor");
+    echo json_encode(['status' => 'error', 'message' => 'O valor deste plano (R$ ' . number_format($valor, 2, ',', '.') . ') está abaixo do mínimo aceito pelo gateway (R$ 5,00). Ajuste o preço do plano no painel administrativo.']);
+    exit;
+}
+
 $cust = asaas_obter_customer($cfgAsaas, $u);
 if (!$cust['ok']) {
         asaas_fluxo_log('erro', "customer falhou uid=$uid: " . $cust['message']);

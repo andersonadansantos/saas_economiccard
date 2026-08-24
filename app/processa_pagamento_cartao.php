@@ -39,6 +39,11 @@ $dias = (int)$plano['dias'];
 $nomePlano = $plano['nome'];
 $descricao = "Ativação Economic Card - $nomePlano - $dias dias";
 
+if ($valor < ASAAS_VALOR_MINIMO) {
+    echo json_encode(['status' => 'error', 'message' => 'O valor deste plano (R$ ' . number_format($valor, 2, ',', '.') . ') está abaixo do mínimo aceito pelo gateway (R$ 5,00). Ajuste o preço do plano no painel administrativo.']);
+    exit;
+}
+
 $holderName = trim($_POST['holder_name'] ?? '');
 $numero = preg_replace('/\D/', '', $_POST['number'] ?? '');
 $ccc = preg_replace('/\D/', '', $_POST['ccc'] ?? '');
