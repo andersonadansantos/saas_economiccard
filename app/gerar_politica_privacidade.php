@@ -135,8 +135,8 @@ texto($pdf, 'Ao se cadastrar, acessar ou utilizar a Plataforma, o usuario concor
 texto($pdf, 'Esta Politica esta em conformidade com a Lei Geral de Protecao de Dados (LGPD - Lei 13.709/2018), o Codigo de Defesa do Consumidor (CDC) e demais normas aplicaveis da Republica Federativa do Brasil.');
 
 titulo($pdf, '2. Controlador dos Dados');
-texto($pdf, 'O controlador dos dados pessoais tratados pela Plataforma e o Economic Card, pessoa juridica de direito privado, inscrita no CNPJ sob o numero [INSERIR CNPJ], com endereco em [INSERIR ENDERECO COMPLETO].');
-texto($pdf, 'Qualquer duvida ou solicitacao relativa aos dados pessoais pode ser encaminhada ao Encarregado de Protecao de Dados (DPO) pelo e-mail: [INSERIR E-MAIL DE CONTATO].');
+texto($pdf, 'O controlador dos dados pessoais tratados pela Plataforma e o Economic Card, pessoa juridica de direito privado, com endereco em Rua Moura Carvaho 136 - Agulha - Belem/PA.');
+texto($pdf, 'Qualquer duvida ou solicitacao relativa aos dados pessoais pode ser encaminhada ao Encarregado de Protecao de Dados (DPO) pelo e-mail: negocio@economiccard.com.br.');
 
 titulo($pdf, '3. Dados Pessoais Coletados');
 subtitulo($pdf, '3.1 Cadastro de Usuarios (Titulares do Cartao)');
@@ -259,7 +259,7 @@ bullet($pdf, 'Eliminacao dos dados pessoais tratados com consentimento (Art. 18,
 bullet($pdf, 'Informacao sobre entidades publicas e privadas com as quais houve uso compartilhado (Art. 18, VII)');
 bullet($pdf, 'Informacao sobre a possibilidade de nao fornecer consentimento e sobre as consequencias (Art. 18, VIII)');
 bullet($pdf, 'Revogacao do consentimento (Art. 18, IX)');
-texto($pdf, 'Para exercer qualquer um desses direitos, o usuario deve entrar em contato pelo e-mail: [INSERIR E-MAIL DE CONTATO]. A solicitacao sera atendida em ate 15 (quinze) dias uteis, conforme LGPD.');
+texto($pdf, 'Para exercer qualquer um desses direitos, o usuario deve entrar em contato pelo e-mail: negocio@economiccard.com.br. A solicitacao sera atendida em ate 15 (quinze) dias uteis, conforme LGPD.');
 texto($pdf, 'O usuario tambem pode solicitar a exclusao de sua conta diretamente pela tela de Perfil na Plataforma, ou mediante solicitacao por e-mail. Apos a exclusao, os dados serao eliminados conforme os prazos de retencao descritos na Secao 6.');
 
 titulo($pdf, '8. Seguranca dos Dados');
@@ -292,11 +292,11 @@ texto($pdf, 'Recomendamos que os usuarios consultem esta Politica regularmente. 
 titulo($pdf, '12. Contato e Encarregado');
 texto($pdf, 'Para exercer seus direitos como titular de dados, esclarecer duvidas ou apresentar reclamacoes relativas a esta Politica de Privacidade ou ao tratamento de seus dados pessoais:');
 texto($pdf, "Economic Card\n"
-    . "E-mail: [INSERIR E-MAIL]\n"
-    . "WhatsApp: [INSERIR TELEFONE]\n"
-    . "Endereco: [INSERIR ENDERECO COMPLETO]\n"
-    . "Encarregado de Protecao de Dados (DPO): [INSERIR NOME]\n"
-    . "E-mail do DPO: [INSERIR E-MAIL DO DPO]");
+    . "E-mail: negocio@economiccard.com.br\n"
+    . "WhatsApp: 5591980881718\n"
+    . "Endereco: Rua Moura Carvaho 136 - Agulha - Belem/PA\n"
+    . "Encarregado de Protecao de Dados (DPO): EMERSON RONALDO DA SILVA OLIVEIRA\n"
+    . "E-mail do DPO: negocio@economiccard.com.br");
 texto($pdf, 'Caso nao receba resposta satisfatoria, o usuario pode encaminhar reclamacao a Autoridade Nacional de Protecao de Dados (ANPD): https://www.gov.br/anpd/');
 
 $pdf->Output('F', __DIR__ . '/Politica_de_Privacidade.pdf');
