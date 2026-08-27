@@ -5,6 +5,16 @@ require_once __DIR__ . '/_head.php';
 
 $salvo = false;
 $avErro = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'encerrar_conta') {
+    $uid = (int)$_SESSION['usuario_id'];
+    $stmt = $conn->prepare("UPDATE usuarios SET status = 'desativado', cartao_ativo = 0 WHERE id = ?");
+    $stmt->bind_param('i', $uid);
+    $stmt->execute();
+    session_unset();
+    session_destroy();
+    header('Location: login.php?conta_encerrada=1');
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome = trim($_POST['nome'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -160,6 +170,19 @@ SALVAR <span class="material-symbols-outlined" style="font-variation-settings: '
 </button>
 </div>
 </form>
+
+<section class="bg-white rounded-2xl card-shadow p-6 mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-error/20">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-error/10 text-error flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[20px]">delete_forever</span></div>
+<div>
+<h3 class="font-bold text-error text-sm">Encerrar minha conta</h3>
+<p class="text-sm text-on-surface-variant mt-1">Desativa seu acesso ao cartão e ao Economic Card. Você pode ser reativado pela administração caso necessário.</p>
+</div>
+</div>
+<button type="button" onclick="abrirEncerrarConta()" class="shrink-0 inline-flex items-center justify-center gap-2 font-bold text-error py-3 px-5 rounded-xl border border-error/40 hover:bg-error/5 transition text-sm">
+<span class="material-symbols-outlined text-[18px]">logout</span> Encerrar conta
+</button>
+</section>
 </div>
 <script>
 const cpfInput = document.getElementById('cpf');
@@ -180,8 +203,45 @@ if (avatarInput) avatarInput.addEventListener('change', (e) => {
     const img = new Image();
     img.onload = function() { img.classList.add('w-full', 'h-full', 'object-cover'); };
     img.src = URL.createObjectURL(file);
-    const wrapper = document.querySelector('.w-28.h-28');
-    if (wrapper) { wrapper.innerHTML = ''; wrapper.appendChild(img); }
+const wrapper = document.querySelector('.w-28.h-28');
+if (wrapper) { wrapper.innerHTML = ''; wrapper.appendChild(img); }
+});
+function abrirEncerrarConta() {
+    const el = document.getElementById('encerrarContaModal');
+    el.classList.remove('hidden'); el.classList.add('flex');
+}
+function fecharEncerrarConta() {
+    const el = document.getElementById('encerrarContaModal');
+    el.classList.add('hidden'); el.classList.remove('flex');
+}
+document.addEventListener('click', (e) => {
+    const el = document.getElementById('encerrarContaModal');
+    if (el && e.target === el) fecharEncerrarConta();
 });
 </script>
+<!-- Encerrar conta modal -->
+<div class="hidden fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm items-center justify-center p-6" id="encerrarContaModal">
+<div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-outline-variant overflow-hidden">
+<div class="px-5 py-4 border-b border-outline-variant flex items-center justify-between gap-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-error text-[20px] shrink-0" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
+<span class="font-bold text-sm text-on-surface uppercase truncate">Encerrar conta</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant/50 p-1.5 rounded-full shrink-0" onclick="fecharEncerrarConta()">close</button>
+</div>
+<div class="px-5 py-5">
+<p class="text-sm text-on-surface-variant">Tem certeza que deseja <b class="text-error">encerrar sua conta</b> no Economic Card?</p>
+<p class="text-sm text-on-surface-variant mt-2">Seu acesso ao cartão e aos benefícios será <b>desativado</b>. Esta ação pode ser revertida pela administração.</p>
+</div>
+<div class="px-5 py-4 border-t border-outline-variant flex items-center justify-end gap-3">
+<button class="text-sm font-bold text-on-surface-variant hover:opacity-70 transition px-4 py-2" onclick="fecharEncerrarConta()">Cancelar</button>
+<form method="POST" action="perfil.php">
+<input type="hidden" name="acao" value="encerrar_conta"/>
+<button class="inline-flex items-center gap-2 text-sm font-bold text-white bg-error hover:bg-red-700 px-5 py-2.5 rounded-xl transition" type="submit">
+<span class="material-symbols-outlined text-[18px]">logout</span> Sim, encerrar
+</button>
+</form>
+</div>
+</div>
+</div>
 <?php require_once __DIR__ . '/_foot.php'; ?>

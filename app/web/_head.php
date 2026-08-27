@@ -12,6 +12,12 @@ $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
 
 $paginaAtiva = $paginaAtiva ?? 'dashboard';
+if (($u['status'] ?? 'ativo') === 'desativado') {
+    session_unset();
+    session_destroy();
+    header('Location: login.php?conta_encerrada=1');
+    exit;
+}
 if ($paginaAtiva !== 'ativar' && !$u['cartao_ativo']) {
     header('Location: ativar.php?bloqueado=1');
     exit;

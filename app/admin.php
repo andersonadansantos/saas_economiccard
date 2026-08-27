@@ -30,6 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         header('Location: admin.php?excluido=1');
         exit;
+    } elseif ($acao === 'reativar') {
+        $id = (int)($_POST['id'] ?? 0);
+        $stmt = $conn->prepare("UPDATE usuarios SET status = 'ativo' WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        header('Location: admin.php?reativado=1');
+        exit;
     } elseif ($acao === 'alternar_cartao') {
         $id = (int)($_POST['id'] ?? 0);
         $novo = (int)($_POST['novo'] ?? 0);
@@ -56,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $editado = isset($_GET['editado']);
 $excluido = isset($_GET['excluido']);
+$reativado = isset($_GET['reativado']);
 $cartaoMsg = '';
 if (isset($_GET['cartao'])) {
     $cartaoMsg = $_GET['cartao'] === '1' ? 'Cartão ativado com sucesso!' : 'Cartão expirado/desativado com sucesso!';
@@ -147,6 +155,9 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <?php if ($excluido): ?>
 <div class="mb-6 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">Cadastro excluído com sucesso!</div>
 <?php endif; ?>
+<?php if ($reativado): ?>
+<div class="mb-6 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">Conta reativada com sucesso!</div>
+<?php endif; ?>
 <?php if ($cartaoMsg): ?>
 <div class="mb-6 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm"><?php echo htmlspecialchars($cartaoMsg); ?></div>
 <?php endif; ?>
@@ -227,7 +238,7 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <tr><td colspan="8" class="px-4 py-10 text-center text-gray-500">Nenhum cadastro encontrado.</td></tr>
 <?php endif; ?>
 <?php while ($u = $usuarios->fetch_assoc()): ?>
-<tr class="border-t border-gray-100 hover:bg-gray-50">
+<tr class="border-t border-gray-100 hover:bg-gray-50 <?php echo (($u['status'] ?? 'ativo') === 'desativado') ? 'opacity-70' : ''; ?>">
 <td class="px-4 py-3 text-gray-500"><?php echo $u['id']; ?></td>
 <td class="px-4 py-3">
 <div class="flex items-center gap-3">
@@ -242,6 +253,11 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <button type="button" class="text-[#51036d] font-bold hover:underline text-left" onclick="abrirModal(<?php echo $u['id']; ?>)">
 <?php echo htmlspecialchars($u['nome']); ?>
 </button>
+<?php if (($u['status'] ?? 'ativo') === 'desativado'): ?>
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-200 rounded-lg px-2 py-1" title="Usuário encerrou a conta">
+<span class="material-symbols-outlined text-[12px]">person_off</span> Desativada
+</span>
+<?php endif; ?>
 <?php if (!empty($u['google_id'])): ?>
 <span class="inline-flex items-center gap-1 text-[10px] font-bold text-[#4285F4] bg-[#4285F4]/10 rounded-lg px-2 py-1" title="Cadastro feito pelo Google">
 <svg class="w-3 h-3" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -264,6 +280,15 @@ Facebook
 <span class="material-symbols-outlined text-[14px]">delete</span> Excluir
 </button>
 </form>
+<?php if (($u['status'] ?? 'ativo') === 'desativado'): ?>
+<form method="POST" action="admin.php" class="inline">
+<input type="hidden" name="acao" value="reativar"/>
+<input type="hidden" name="id" value="<?php echo $u['id']; ?>"/>
+<button type="submit" class="inline-flex items-center gap-1 text-xs font-semibold text-[#3e6a00] hover:text-[#2e5000] bg-[#b6f570]/20 hover:bg-[#b6f570]/40 rounded-lg px-2 py-1 transition" title="Reativar conta do usuário">
+<span class="material-symbols-outlined text-[14px]">undo</span> Reativar
+</button>
+</form>
+<?php endif; ?>
 </div>
 </div>
 </td>

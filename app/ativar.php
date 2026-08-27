@@ -11,6 +11,12 @@ $stmt->bind_param('i', $uid);
 $stmt->execute();
 $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
+if (($u['status'] ?? 'ativo') === 'desativado') {
+    session_unset();
+    session_destroy();
+    header('Location: login.php?conta_encerrada=1');
+    exit;
+}
 
 $final = $u['final_cartao'] ?: '8829';
 $codigo = str_pad($u['id'], 6, '0', STR_PAD_LEFT);

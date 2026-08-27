@@ -428,6 +428,14 @@ foreach ($idsBroadcast as $mid) {
 </div>
 <span class="font-label-bold text-on-surface">CARTÃO FÍSICO</span>
 </a>
+<!-- Telemedicina -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed">
+<div class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">EM BREVE</div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]">stethoscope</span>
+</div>
+<span class="font-label-bold text-on-surface">TELEMEDICINA</span>
+</div>
 </div>
 </section>
 <!-- Promotional Banner -->

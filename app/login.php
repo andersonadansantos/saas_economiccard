@@ -6,6 +6,9 @@ if (isset($_SESSION['google_login_erro'])) {
     $erro = $_SESSION['google_login_erro'];
     unset($_SESSION['google_login_erro']);
 }
+if (isset($_GET['conta_encerrada'])) {
+    $erro = 'Sua conta foi encerrada. Entre em contato com o suporte para mais informações.';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bloqueado = turnstile_bloqueado($erro);
     if (!$bloqueado) {
@@ -17,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $res = $stmt->get_result();
     if ($res->num_rows > 0) {
         $userLogin = $res->fetch_assoc();
+        if (($userLogin['status'] ?? 'ativo') === 'desativado') {
+            $erro = 'Esta conta foi encerrada. Entre em contato com o suporte para mais informações.';
+        } else {
         $_SESSION['usuario_id'] = $userLogin['id'];
         if (!$userLogin['cartao_ativo']) {
             header('Location: ativar.php');
@@ -24,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: dashboard.php');
         exit;
+        }
     } else {
         $erro = 'CPF não encontrado. Verifique ou faça o cadastro.';
     }

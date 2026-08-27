@@ -36,10 +36,16 @@ function exigirCartaoAtivo() {
     if (!isset($_SESSION['usuario_id'])) return;
     global $conn;
     $uid = (int)$_SESSION['usuario_id'];
-    $stmt = $conn->prepare("SELECT cartao_ativo FROM usuarios WHERE id = ?");
+    $stmt = $conn->prepare("SELECT cartao_ativo, status FROM usuarios WHERE id = ?");
     $stmt->bind_param('i', $uid);
     $stmt->execute();
     $r = $stmt->get_result()->fetch_assoc();
+    if ($r && ($r['status'] ?? 'ativo') === 'desativado') {
+        session_unset();
+        session_destroy();
+        header('Location: login.php?conta_encerrada=1');
+        exit;
+    }
     if ($r && !$r['cartao_ativo']) {
         header('Location: ativar.php?bloqueado=1');
         exit;

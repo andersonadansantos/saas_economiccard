@@ -102,6 +102,11 @@ $totalParceiros = (int)$conn->query("SELECT COUNT(*) AS t FROM parceiros WHERE a
 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">contactless</span></div>
 <span class="text-xs font-bold text-on-surface uppercase">Cartão Físico</span>
 </a>
+<div class="flex flex-col items-center justify-center gap-3 border border-outline-variant rounded-xl p-5 relative opacity-70 cursor-not-allowed select-none" title="Em breve">
+<span class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-[#2e5000] text-[8px] font-bold rounded">EM BREVE</span>
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">stethoscope</span></div>
+<span class="text-xs font-bold text-on-surface uppercase">Telemedicina</span>
+</div>
 </div>
 </div>
 </div>
