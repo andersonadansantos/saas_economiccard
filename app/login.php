@@ -10,7 +10,7 @@ if (isset($_GET['conta_encerrada'])) {
     $erro = 'Sua conta foi encerrada. Entre em contato com o suporte para mais informações.';
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $bloqueado = turnstile_bloqueado($erro);
+    $bloqueado = (($_POST['origem'] ?? '') === 'app') ? false : turnstile_bloqueado($erro);
     if (!$bloqueado) {
     $cpf = preg_replace('/\D/', '', trim($_POST['cpf'] ?? ''));
     $stmt = $conn->prepare("SELECT * FROM usuarios WHERE REPLACE(REPLACE(cpf,'.',''),'-','') = ?");
@@ -46,8 +46,7 @@ $logoLoginUser = $pers['logo_login_user'] ?? '';
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 <title>Economic Card - Login</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<?php turnstile_script(); ?>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
@@ -120,22 +119,22 @@ $logoLoginUser = $pers['logo_login_user'] ?? '';
                         "card-gutter": "16px"
                     },
                     "fontFamily": {
-                        "body-md": ["Manrope"],
-                        "body-lg": ["Manrope"],
-                        "label-bold": ["Hanken Grotesk"],
-                        "display-lg": ["Manrope"],
-                        "label-caps": ["Hanken Grotesk"],
-                        "headline-sm": ["Manrope"],
-                        "headline-md": ["Manrope"]
+                        "body-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "body-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "label-bold": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "display-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "label-caps": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-sm": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
                     },
                     "fontSize": {
-                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
-                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
-                        "label-bold": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
-                        "display-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "800"}],
-                        "label-caps": ["10px", {"lineHeight": "1", "fontWeight": "600"}],
-                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
-                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}]
+                        "body-md": ["15px", {"lineHeight": "1.45", "fontWeight": "400"}],
+                        "body-lg": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-bold": ["13px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "700"}],
+                        "display-lg": ["30px", {"lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["22px", {"lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "700"}]
                     }
                 },
             },
@@ -220,9 +219,7 @@ $logoLoginUser = $pers['logo_login_user'] ?? '';
 <input class="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 rounded-xl font-body-lg text-body-lg text-on-primary placeholder:text-on-primary/20 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-300" id="cpf" name="cpf" placeholder="000.000.000-00" type="tel" inputmode="numeric" autocomplete="off" required/>
 </div>
 </div>
-<div class="my-md flex justify-center rounded-xl overflow-hidden">
-<?php turnstile_widget('light'); ?>
-</div>
+
 <div class="space-y-base pt-base">
 <button class="w-full h-14 bg-secondary text-on-secondary font-headline-sm text-headline-sm rounded-xl shadow-[0_8px_30px_rgba(62,106,0,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-base" id="loginBtn" type="submit">
                         ACESSAR

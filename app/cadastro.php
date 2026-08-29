@@ -128,9 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Economic Card - Criar Conta</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Hanken+Grotesk:wght@600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&family=Manrope:wght@100..900&display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -202,24 +201,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         "md": "24px"
                     },
                     "fontFamily": {
-                        "headline-sm": ["Manrope"],
-                        "body-lg": ["Manrope"],
-                        "display-lg": ["Manrope"],
-                        "body-md": ["Manrope"],
-                        "headline-md": ["Manrope"],
-                        "label-caps": ["Hanken Grotesk"],
-                        "label-bold": ["Hanken Grotesk"]
+                        "headline-sm": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "body-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "display-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "body-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "label-caps": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "label-bold": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
                     },
                     "fontSize": {
-                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
-                        "headline-sm-mobile": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
-                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
-                        "display-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "800"}],
-                        "display-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "800"}],
-                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
-                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
-                        "label-caps": ["10px", {"lineHeight": "1", "fontWeight": "600"}],
-                        "label-bold": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                        "headline-sm": ["18px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-sm-mobile": ["17px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display-lg": ["30px", {"lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                        "display-lg-mobile": ["26px", {"lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                        "body-md": ["15px", {"lineHeight": "1.45", "fontWeight": "400"}],
+                        "headline-md": ["22px", {"lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+                        "label-bold": ["13px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "700"}]
                     }
                 },
             },

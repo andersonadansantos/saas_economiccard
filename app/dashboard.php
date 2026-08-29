@@ -28,7 +28,7 @@ if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
     $diasRestantes = (int)floor($diasRestantes);
 }
 
-$banner = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 1")->fetch_assoc();
+$banners = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
 $msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
 $msg->bind_param('is', $uid, $u['criado_em']);
@@ -66,7 +66,7 @@ foreach ($idsBroadcast as $mid) {
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>Economic Card Dashboard</title>
 <!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <!-- Icons -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -140,23 +140,23 @@ foreach ($idsBroadcast as $mid) {
                         "xs": "4px",
                         "container-padding": "20px"
                     },
-                    "fontFamily": {
-                        "label-caps": ["Hanken Grotesk"],
-                        "headline-sm": ["Manrope"],
-                        "body-md": ["Manrope"],
-                        "headline-md": ["Manrope"],
-                        "display-lg": ["Manrope"],
-                        "body-lg": ["Manrope"],
-                        "label-bold": ["Hanken Grotesk"]
+"fontFamily": {
+                        "label-caps": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-sm": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "body-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "headline-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "display-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "body-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "label-bold": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
                     },
                     "fontSize": {
-                        "label-caps": ["10px", {"lineHeight": "1", "fontWeight": "600"}],
-                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
-                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
-                        "display-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "800"}],
-                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
-                        "label-bold": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}]
+                        "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["15px", {"lineHeight": "1.45", "fontWeight": "400"}],
+                        "headline-md": ["22px", {"lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-lg": ["30px", {"lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                        "body-lg": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-bold": ["13px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "700"}]
                     }
                 },
             },
@@ -166,6 +166,8 @@ foreach ($idsBroadcast as $mid) {
         body {
             background-color: theme('colors.background');
             -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -441,16 +443,115 @@ foreach ($idsBroadcast as $mid) {
 <!-- Promotional Banner -->
 <section class="space-y-sm">
 <h3 class="font-label-bold text-on-surface-variant uppercase tracking-wider">OFERTA ESPECIAL</h3>
-<div class="relative rounded-xl overflow-hidden shadow-lg h-44 group">
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($banner['imagem'] ?? ''); ?>" alt="Oferta especial"/>
+<?php if (!empty($banners)): ?>
+<div class="relative overflow-hidden rounded-xl shadow-lg">
+<div style="position:absolute; top:0; left:0; right:0; z-index:10; height:3px; background:rgba(0,0,0,.15); pointer-events:none;"><div id="bannerProgressApp" style="height:100%; width:0%;"></div></div>
+<div id="bannerTrackApp" style="display:flex; flex-wrap:nowrap; will-change:transform; gap:16px;">
+<?php foreach ($banners as $b): ?>
+<div class="relative group rounded-xl overflow-hidden shadow-sm" style="flex:0 0 85%; min-width:85%; position:relative;">
+<?php if (!empty($b['imagem'])): ?>
+<img class="w-full h-auto block object-contain" src="<?php echo htmlspecialchars(asset_url($b['imagem'] ?? '')); ?>" alt="Oferta especial"/>
+<?php endif; ?>
+<?php if (!empty($b['titulo']) || !empty($b['desconto']) || !empty($b['botao_texto'])): ?>
 <div class="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/40 to-transparent p-6 flex flex-col justify-center">
-<h4 class="text-white font-headline-sm max-w-[160px]"><?php echo htmlspecialchars($banner['titulo'] ?? ''); ?></h4>
-<p class="text-secondary-container font-label-bold text-[16px] mt-1"><?php echo htmlspecialchars($banner['desconto'] ?? ''); ?></p>
-<button class="mt-4 bg-secondary-container text-on-secondary-container px-6 py-2 rounded-full font-label-bold w-fit active:scale-95 duration-200 transition-all hover:brightness-110">
-                        <?php echo htmlspecialchars($banner['botao_texto'] ?? 'EU QUERO!'); ?>
-                    </button>
+<h4 class="text-white font-headline-sm max-w-[160px]"><?php echo htmlspecialchars($b['titulo'] ?? ''); ?></h4>
+<p class="text-secondary-container font-label-bold text-[16px] mt-1"><?php echo htmlspecialchars($b['desconto'] ?? ''); ?></p>
+<a class="mt-4 bg-secondary-container text-on-secondary-container px-6 py-2 rounded-full font-label-bold w-fit active:scale-95 duration-200 transition-all hover:brightness-110" href="<?php echo htmlspecialchars(!empty($b['link_externo']) ? $b['link_externo'] : asset_url($b['imagem'] ?? '')); ?>" target="_blank" rel="noopener">
+<?php echo htmlspecialchars($b['botao_texto'] ?? 'EU QUERO!'); ?>
+</a>
 </div>
+<?php endif; ?>
 </div>
+<?php endforeach; ?>
+</div>
+<?php if (count($banners) > 1): ?>
+<div class="absolute bottom-3 left-0 right-0 z-10 flex items-center justify-center gap-1.5" style="pointer-events:none;">
+<?php foreach ($banners as $i => $b): ?><button type="button" class="ec-dot<?php echo $i === 0 ? ' ec-dot-ativo' : ''; ?>" data-dot="<?php echo $i; ?>" style="pointer-events:auto;" aria-label="Slide <?php echo $i + 1; ?>"></button><?php endforeach; ?>
+</div>
+<style>
+    .ec-dot { width:6px; height:6px; border-radius:9999px; background:rgba(255,255,255,.45); transition:all .35s cubic-bezier(.22,1,.36,1); cursor:pointer; padding:0; border:none; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+    .ec-dot-ativo { width:22px; background:#b6f570; }
+    #bannerProgressApp { background:#b6f570; }
+    @keyframes ec-progress { from { width:0%; } to { width:100%; } }
+</style>
+<script>
+(function(){
+    var track = document.getElementById('bannerTrackApp');
+    if (!track) return;
+    var feeds = Array.prototype.slice.call(track.children);
+    if (feeds.length < 2) return;
+    var realCount = feeds.length;
+    track.appendChild(feeds[0].cloneNode(true));
+    track.insertBefore(feeds[realCount - 1].cloneNode(true), track.firstChild);
+    var idx = 1;
+    var gap = 0;
+    var bar = document.getElementById('bannerProgressApp');
+    var dots = document.querySelectorAll('.ec-dot');
+    var container = track.parentElement;
+    var INTERVALO = 5000;
+    var hover = false;
+    function passo() { return track.children[1].offsetWidth + gap; }
+    function moverComTransicao() {
+        track.style.transition = 'transform 650ms cubic-bezier(0.22,1,0.36,1)';
+        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
+    }
+    function moverImediato() {
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
+        void track.offsetWidth;
+    }
+    function realAtual() { return (idx - 1 + realCount) % realCount; }
+    function atualizarDots() {
+        var r = realAtual();
+        dots.forEach(function(d, i) { d.classList.toggle('ec-dot-ativo', i === r); });
+    }
+    function reiniciarBarra() {
+        if (!bar) return;
+        bar.style.animation = 'none';
+        void bar.offsetWidth;
+        bar.style.animation = 'ec-progress ' + (INTERVALO / 1000) + 's linear forwards';
+        if (hover) bar.style.animationPlayState = 'paused';
+    }
+    function estabilizar() {
+        var mudou = false;
+        if (idx <= 0) { idx = realCount; mudou = true; }
+        else if (idx >= realCount + 1) { idx = 1; mudou = true; }
+        if (mudou) moverImediato();
+        atualizarDots();
+        reiniciarBarra();
+    }
+    function proximo() { idx++; moverComTransicao(); }
+    function anterior() { idx--; moverComTransicao(); }
+    function goPara(n) { idx = n + 1; moverComTransicao(); }
+    track.addEventListener('transitionend', estabilizar);
+    if (bar) bar.addEventListener('animationend', proximo);
+    container.addEventListener('mouseenter', function(){ hover = true; if (bar) bar.style.animationPlayState = 'paused'; });
+    container.addEventListener('mouseleave', function(){ hover = false; if (bar) bar.style.animationPlayState = 'running'; });
+    var x0 = null;
+    container.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; if (bar) bar.style.animationPlayState = 'paused'; }, {passive:true});
+    container.addEventListener('touchend', function(e){
+        if (x0 === null) { if (bar) bar.style.animationPlayState = 'running'; return; }
+        var dx = e.changedTouches[0].clientX - x0;
+        if (dx <= -40) proximo();
+        else if (dx >= 40) anterior();
+        else if (bar && !hover) bar.style.animationPlayState = 'running';
+        x0 = null;
+    });
+    dots.forEach(function(d, i) { d.addEventListener('click', function(){ goPara(i); }); });
+    function medir() {
+        gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        moverImediato();
+    }
+    window.addEventListener('resize', medir);
+    medir();
+    atualizarDots();
+    reiniciarBarra();
+})();
+</script>
+<?php endif; ?>
+<?php else: ?>
+<p class="text-sm text-on-surface-variant">Nenhuma oferta no momento.</p>
+<?php endif; ?>
 </section>
 </main>
 <!-- BottomNavBar -->

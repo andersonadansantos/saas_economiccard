@@ -49,7 +49,7 @@ if (!$u['cartao_ativo']) {
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title><?php echo $u['cartao_ativo'] ? 'Cartão Ativado' : 'Ativar Cartão'; ?> - Economic Card</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
@@ -61,16 +61,16 @@ if (!$u['cartao_ativo']) {
                     },
                     "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
                     "spacing": { "xs": "4px", "card-gutter": "16px", "container-padding": "20px", "xl": "48px", "md": "24px", "sm": "12px", "lg": "32px", "base": "8px" },
-                    "fontFamily": { "label-caps": ["Hanken Grotesk"], "label-bold": ["Hanken Grotesk"], "body-md": ["Manrope"], "body-lg": ["Manrope"], "headline-sm": ["Manrope"], "headline-md": ["Manrope"], "display-lg": ["Manrope"] },
+                    "fontFamily": { "label-caps": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "label-bold": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "body-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "body-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "headline-sm": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "headline-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "display-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] },
                     "fontSize": {
-                        "label-caps": ["10px", { "lineHeight": "1", "fontWeight": "600" }], "label-bold": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }], "display-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }]
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600" }], "label-bold": ["13px", { "lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "700" }], "body-md": ["15px", { "lineHeight": "1.45", "fontWeight": "400" }], "body-lg": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-md": ["22px", { "lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "700" }], "display-lg": ["30px", { "lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700" }]
                     }
                 },
             },
         }
     </script>
 <style>
-        body { background-color: #f8f9fa; font-family: 'Manrope', sans-serif; color: #191c1d; }
+        body { background-color: #f8f9fa; font-family: 'Inter', 'Manrope', sans-serif; color: #191c1d; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .glass-effect { backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.7); }
         .digital-card-inactive { background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%); filter: grayscale(0.4); }

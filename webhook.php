@@ -4,6 +4,7 @@ http_response_code(200);
 
 require_once __DIR__ . '/app/config.php';
 require_once __DIR__ . '/app/asaas_pix.php';
+require_once __DIR__ . '/app/cartao_fisico_pix.php';
 
 function responder($dados) {
     echo json_encode($dados);
@@ -61,7 +62,7 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
     }
     $status = asaas_status_local($statusAsaas);
 
-    $stmt = $conn->prepare("SELECT id, usuario_id, plano_id, status FROM pagamentos_pix WHERE asaas_payment_id = ? ORDER BY id DESC LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, usuario_id, plano_id, status, tipo FROM pagamentos_pix WHERE asaas_payment_id = ? ORDER BY id DESC LIMIT 1");
     $stmt->bind_param('s', $payId);
     $stmt->execute();
     $pix = $stmt->get_result()->fetch_assoc();
@@ -72,7 +73,18 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
     }
 
     if ($status === 'approved' && $pix['status'] !== 'approved') {
-        aprovar_pagamento_local($conn, $pix);
+        if (($pix['tipo'] ?? 'plano') === 'cartao_fisico') {
+            // Taxa do cartão físico: registra o pedido + notifica o admin (na hora).
+            $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'approved' WHERE id = ? AND status <> 'approved'");
+            $stmt->bind_param('i', $pix['id']);
+            $stmt->execute();
+            if ($conn->affected_rows > 0) {
+                registrar_pedido_cartao($conn, (int)$pix['usuario_id']);
+                notificar_admin_pedido_cartao($conn, (int)$pix['usuario_id']);
+            }
+        } else {
+            aprovar_pagamento_local($conn, $pix);
+        }
     } elseif ($status !== 'approved' && $pix['status'] === 'pending' && in_array($status, ['cancelled', 'refunded'], true)) {
         $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = ? WHERE id = ?");
         $stmt->bind_param('si', $status, $pix['id']);

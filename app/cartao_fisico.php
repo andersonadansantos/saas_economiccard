@@ -12,27 +12,19 @@ $stmt->execute();
 $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
 
-$pedido = false;
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $cartaoImg = $pers['cartao_fisico'] ?? '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'pedir') {
-    $check = $conn->prepare("SELECT id FROM pedidos_cartao WHERE usuario_id = ?");
-    $check->bind_param('i', $uid);
-    $check->execute();
-    if ($check->get_result()->num_rows === 0) {
-        $stmt = $conn->prepare("INSERT INTO pedidos_cartao (usuario_id) VALUES (?)");
-        $stmt->bind_param('i', $uid);
-        $stmt->execute();
-    }
-    $pedido = true;
-}
+$check = $conn->prepare("SELECT id FROM pedidos_cartao WHERE usuario_id = ?");
+$check->bind_param('i', $uid);
+$check->execute();
+$jaPedido = $check->get_result()->num_rows > 0;
 ?>
 <!DOCTYPE html><html class="light" lang="pt-BR"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Cartão Físico - Economic Card</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
@@ -44,9 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'pedir')
                     },
                     "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
                     "spacing": { "xs": "4px", "lg": "32px", "base": "8px", "sm": "12px", "container-padding": "20px", "xl": "48px", "card-gutter": "16px", "md": "24px" },
-                    "fontFamily": { "headline-sm": ["Manrope"], "body-lg": ["Manrope"], "display-lg": ["Manrope"], "body-md": ["Manrope"], "headline-md": ["Manrope"], "label-caps": ["Hanken Grotesk"], "label-bold": ["Hanken Grotesk"] },
+                    "fontFamily": { "headline-sm": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "body-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "display-lg": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "body-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "headline-md": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "label-caps": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], "label-bold": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] },
                     "fontSize": {
-                        "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }], "headline-sm-mobile": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }], "display-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }], "display-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }], "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }], "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }], "label-caps": ["10px", { "lineHeight": "1", "fontWeight": "600" }], "label-bold": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }]
+                        "headline-sm": ["18px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-sm-mobile": ["17px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }], "display-lg": ["30px", { "lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700" }], "display-lg-mobile": ["26px", { "lineHeight": "1.15", "letterSpacing": "-0.03em", "fontWeight": "700" }], "body-md": ["15px", { "lineHeight": "1.45", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600" }], "label-bold": ["13px", { "lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "700" }]
                     }
                 },
             },
@@ -84,13 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'pedir')
 <p class="font-display-lg text-white text-[16px]"><?php echo htmlspecialchars(strtoupper($u['nome'])); ?></p>
 </div>
 </div>
-<?php if ($pedido): ?>
+<?php if ($jaPedido): ?>
 <div class="mb-md p-md rounded-xl bg-secondary-container/30 border border-secondary/30 text-center">
 <p class="font-headline-sm text-on-secondary-container">Pedido do cartão físico realizado com sucesso!</p>
 <p class="font-body-md text-on-secondary-container mt-1">Você receberá seu cartão em breve.</p>
 </div>
 <?php endif; ?>
-<form method="POST" action="cartao_fisico.php" class="space-y-card-gutter">
+<div class="space-y-card-gutter">
 <div class="relative group">
 <label class="block font-label-caps text-label-caps text-outline mb-1 ml-1 uppercase">Nome Completo</label>
 <div class="relative flex items-center bg-surface-container-low rounded-xl border border-outline-variant focus-within:border-primary focus-within:bg-white transition-all overflow-hidden">
@@ -138,13 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'pedir')
 </div>
 </div>
 <div class="pt-base">
-<input type="hidden" name="acao" value="pedir"/>
-<button class="w-full bg-secondary text-white font-headline-sm py-4 rounded-full shadow-[0_8px_30px_rgba(62,106,0,0.15)] active:scale-95 transition-all duration-200 uppercase flex items-center justify-center gap-2" type="submit">
+<p class="text-center font-body-md text-on-surface-variant mb-sm">A emissão e o envio do Cartão Físico possuem uma taxa de R$ 35,00.</p>
+<button type="button" onclick="abrirModalPix()" <?php echo $jaPedido ? 'disabled' : ''; ?> class="w-full <?php echo $jaPedido ? 'bg-on-surface-variant/40 cursor-not-allowed opacity-60' : 'bg-secondary'; ?> text-white font-headline-sm py-4 rounded-full shadow-[0_8px_30px_rgba(62,106,0,0.15)] active:scale-95 transition-all duration-200 uppercase flex items-center justify-center gap-2">
                     Pedir Cartão Físico
                     <span class="material-symbols-outlined">contactless</span>
 </button>
 </div>
-</form>
+</div>
 <div class="text-center mt-md">
 <p class="font-body-md text-on-surface-variant">O Cartão físico é opcional.</p>
 </div>
@@ -154,4 +146,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'pedir')
             © 2024 ECONOMIC CARD. TODOS OS DIREITOS RESERVADOS.
         </p>
 </footer>
+
+<!-- Modal PIX Cartão Físico -->
+<div id="pixModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-md">
+<div class="absolute inset-0 bg-black/60" onclick="fecharModalPix()"></div>
+<div class="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+<div class="bg-secondary px-md py-lg flex items-center justify-between">
+<h3 class="text-white font-headline-sm text-[16px]">Pagamento — Cartão Físico</h3>
+<button type="button" onclick="fecharModalPix()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="p-md text-center">
+<div id="pixLoading" class="py-10 flex flex-col items-center gap-3">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant/40">qr_code_2</span>
+<p class="font-body-md text-on-surface-variant">Gerando QR Code PIX...</p>
+</div>
+<div id="pixOk" class="hidden">
+<p class="font-body-md text-on-surface-variant">Escaneie o QR Code ou copie o código PIX abaixo</p>
+<p class="font-headline-sm font-bold mt-1 text-on-surface">Valor: R$ 35,00</p>
+<div class="w-48 h-48 mx-auto mt-md bg-surface-variant/50 rounded-xl p-2"><img id="pixQr" class="w-full h-full object-contain" alt="QR Code PIX"/></div>
+<div class="mt-md flex items-center gap-2 bg-surface-container-low rounded-xl border border-outline-variant p-3">
+<p id="pixCode" class="text-[11px] break-all text-on-surface-variant text-left flex-1"></p>
+<button type="button" onclick="copiarPix()" class="text-secondary font-label-bold text-[12px] whitespace-nowrap">COPIAR</button>
+</div>
+<div id="pixWait" class="mt-md">
+<p class="font-body-md text-on-surface-variant flex items-center justify-center gap-2"><span class="material-symbols-outlined text-lg">hourglass_empty</span> Aguardando confirmação do pagamento...</p>
+</div>
+<div id="pixSucesso" class="hidden mt-md p-md rounded-xl bg-secondary-container/30 border border-secondary/30 text-left">
+<p class="font-headline-sm text-on-secondary-container">Pagamento confirmado!</p>
+<p class="font-body-md text-on-secondary-container mt-1">Seu pedido de cartão físico foi enviado ao admin. Você receberá seu cartão em breve.</p>
+</div>
+</div>
+<div id="pixFalha" class="hidden py-6 font-body-md text-on-surface-variant"></div>
+</div>
+</div>
+</div>
+
+<script>
+var pixEstado = 'fechado';
+var pixTimer = null;
+var pixId = 0;
+
+function abrirModalPix() {
+    var modal = document.getElementById('pixModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('pixLoading').classList.remove('hidden');
+    document.getElementById('pixOk').classList.add('hidden');
+    document.getElementById('pixFalha').classList.add('hidden');
+    pixEstado = 'criando';
+    fetch('criar_pix_cartao.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'acao=pedir' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status !== 'pending' || !d.pix) {
+                document.getElementById('pixLoading').classList.add('hidden');
+                var f = document.getElementById('pixFalha');
+                f.classList.remove('hidden');
+                f.textContent = d.message || 'Não foi possível gerar o PIX. Tente novamente.';
+                return;
+            }
+            pixId = d.pix.id;
+            document.getElementById('pixQr').src = 'data:image/png;base64,' + d.pix.qr_code_base64;
+            document.getElementById('pixCode').textContent = d.pix.qr_code_copia_cola;
+            document.getElementById('pixLoading').classList.add('hidden');
+            document.getElementById('pixOk').classList.remove('hidden');
+            pixEstado = 'esperando';
+            iniciarPolling();
+        })
+        .catch(function() {
+            document.getElementById('pixLoading').classList.add('hidden');
+            var f = document.getElementById('pixFalha');
+            f.classList.remove('hidden');
+            f.textContent = 'Erro ao gerar o PIX. Tente novamente.';
+        });
+}
+
+function iniciarPolling() {
+    if (pixTimer) { clearInterval(pixTimer); pixTimer = null; }
+    pixTimer = setInterval(function() {
+        if (pixEstado !== 'esperando') { return; }
+        fetch('verifica_pagamento_cartao.php?id=' + pixId)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.status === 'approved') {
+                    pixEstado = 'aprovado';
+                    clearInterval(pixTimer);
+                    pixTimer = null;
+                    document.getElementById('pixWait').classList.add('hidden');
+                    document.getElementById('pixSucesso').classList.remove('hidden');
+                    setTimeout(function() { fecharModalPix(); location.reload(); }, 2500);
+                } else if (d.status === 'cancelled' || d.status === 'refunded') {
+                    pixEstado = 'falhou';
+                    clearInterval(pixTimer);
+                    pixTimer = null;
+                    var f = document.getElementById('pixFalha');
+                    f.classList.remove('hidden');
+                    document.getElementById('pixWait').classList.add('hidden');
+                    f.textContent = 'O pagamento foi cancelado ou expirou. Feche e gere um novo PIX.';
+                }
+            });
+    }, 3000);
+}
+
+function copiarPix() {
+    var texto = document.getElementById('pixCode').textContent;
+    var btn = document.getElementById('pixOk').querySelector('button');
+    function ok() { if (btn) { btn.textContent = 'COPIADO!'; setTimeout(function(){ btn.textContent = 'COPIAR'; }, 1500); } }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(ok)['catch'](function() { ok(); });
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = texto;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+        ok();
+    }
+}
+
+function fecharModalPix() {
+    if (pixTimer) { clearInterval(pixTimer); pixTimer = null; }
+    pixEstado = 'fechado';
+    var modal = document.getElementById('pixModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
 </body></html>

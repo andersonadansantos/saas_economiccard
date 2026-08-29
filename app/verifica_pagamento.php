@@ -33,6 +33,12 @@ if (!$cfg) {
 $statusAsaas = asaas_status_pagamento($cfg, $pixRow['asaas_payment_id']);
 $status = $statusAsaas !== '' ? asaas_status_local($statusAsaas) : 'pending';
 
+// Pagamento da taxa do cartão físico tem fluxo próprio (verifica_pagamento_cartao.php).
+if (($pixRow['tipo'] ?? 'plano') === 'cartao_fisico') {
+    echo json_encode(['status' => $status]);
+    exit;
+}
+
 if ($status === 'approved') {
     require_once 'email_sender.php';
     $dias = 60;

@@ -21,6 +21,25 @@ try {
 }
 $conn->set_charset('utf8mb4');
 
+// URL absoluta para assets em app/uploads (funciona mesmo quando a página é
+// acessada via URL reescrita, ex.: /card/admin_banners.php em vez de /card/app/...)
+function asset_url($src) {
+    if (!$src) return '';
+    if (preg_match('#^https?://#i', $src) || strpos($src, 'data:') === 0 || strpos($src, '//') === 0) {
+        return $src;
+    }
+    if (strpos($src, '/') === 0) return $src;
+    static $appBase = null;
+    if ($appBase === null) {
+        $docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+        $appAbs = str_replace('\\', '/', __DIR__);
+        $appBase = $docRoot && strpos($appAbs, $docRoot) === 0
+            ? '/' . ltrim(substr($appAbs, strlen($docRoot)), '/')
+            : dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    }
+    return $appBase . '/' . ltrim($src, '/');
+}
+
 // Cloudflare Turnstile (proteção das páginas de login) — helpers centralizados em turnstile.php
 require_once __DIR__ . '/turnstile.php';
 

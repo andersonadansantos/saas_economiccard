@@ -18,7 +18,7 @@ $avatar = $u['avatar'] ?: '';
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoApp = $pers['logo_app'] ?? '';
 
-$banner = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 1")->fetch_assoc();
+$banners = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
 $msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
 $msg->bind_param('is', $uid, $u['criado_em']);
@@ -58,11 +58,11 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Economic Card - Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 <style>
-    body { font-family: 'Manrope', sans-serif; background-color: #f4f5f7; color: #191c1d; }
+    body { font-family: 'Inter', 'Manrope', sans-serif; background-color: #f4f5f7; color: #191c1d; -webkit-font-smoothing: antialiased; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .premium-gradient { background: linear-gradient(135deg, #51036d 0%, #6a2585 55%, #8e3fae 100%); }
     .card-shadow { box-shadow: 0 8px 30px rgba(81, 3, 109, 0.12); }
@@ -211,25 +211,120 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <h3 class="font-extrabold text-gray-900">Oferta Especial</h3>
 <a href="parceiros.php" class="text-sm font-semibold text-[#51036d] hover:underline">Ver todos</a>
 </div>
-<?php if ($banner): ?>
+<?php if (!empty($banners)): ?>
 <div class="p-6">
 <div class="bg-[#b6f570]/20 border border-[#3e6a00]/20 rounded-xl overflow-hidden">
-<?php if ($banner['imagem']): ?>
-<img class="w-full h-44 object-cover" src="<?php echo htmlspecialchars($banner['imagem']); ?>" alt="Banner"/>
+<div class="relative overflow-hidden">
+<div style="position:absolute; top:0; left:0; right:0; z-index:10; height:3px; background:rgba(0,0,0,.08); pointer-events:none;"><div id="bannerProgressUser" style="height:100%; width:0%;"></div></div>
+<div id="bannerTrackUser" style="display:flex; flex-wrap:nowrap; will-change:transform; gap:16px;">
+<?php foreach ($banners as $b): ?>
+<div class="rounded-xl bg-white overflow-hidden shadow-sm" style="flex:0 0 85%; min-width:85%;">
+<?php if ($b['imagem']): ?>
+<img class="w-full h-auto block object-contain" src="<?php echo htmlspecialchars(asset_url($b['imagem'])); ?>" alt="Banner"/>
 <?php endif; ?>
 <div class="p-5">
 <div class="flex items-center justify-between gap-3 flex-wrap">
 <div>
-<h4 class="font-extrabold text-gray-900"><?php echo htmlspecialchars($banner['titulo']); ?></h4>
-<?php if ($banner['desconto']): ?>
-<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-[#3e6a00] text-white text-[10px] font-bold uppercase"><?php echo htmlspecialchars($banner['desconto']); ?></span>
+<h4 class="font-extrabold text-gray-900"><?php echo htmlspecialchars($b['titulo']); ?></h4>
+<?php if ($b['desconto']): ?>
+<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-[#3e6a00] text-white text-[10px] font-bold uppercase"><?php echo htmlspecialchars($b['desconto']); ?></span>
 <?php endif; ?>
-<?php if ($banner['descricao']): ?>
-<p class="text-sm text-gray-500 mt-1"><?php echo htmlspecialchars($banner['descricao']); ?></p>
+<?php if ($b['descricao']): ?>
+<p class="text-sm text-gray-500 mt-1"><?php echo htmlspecialchars($b['descricao']); ?></p>
 <?php endif; ?>
 </div>
-<a href="parceiros.php" class="bg-[#51036d] hover:bg-[#3a024d] text-white text-sm font-bold px-5 py-2.5 rounded-full transition whitespace-nowrap"><?php echo htmlspecialchars($banner['botao_texto'] ?: 'EU QUERO!'); ?></a>
+<a href="<?php echo htmlspecialchars(!empty($b['link_externo']) ? $b['link_externo'] : asset_url($b['imagem'])); ?>" target="_blank" rel="noopener" class="bg-[#51036d] hover:bg-[#3a024d] text-white text-sm font-bold px-5 py-2.5 rounded-full transition whitespace-nowrap"><?php echo htmlspecialchars($b['botao_texto'] ?: 'EU QUERO!'); ?></a>
 </div>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+<?php if (count($banners) > 1): ?>
+<div class="flex justify-center gap-1.5 py-3 border-t border-[#3e6a00]/10">
+<?php foreach ($banners as $i => $b): ?><button type="button" class="ec-dot<?php echo $i === 0 ? ' ec-dot-ativo' : ''; ?>" data-dot="<?php echo $i; ?>" aria-label="Slide <?php echo $i + 1; ?>"></button><?php endforeach; ?>
+</div>
+<style>
+    .ec-dot { width:6px; height:6px; border-radius:9999px; background:rgba(0,0,0,.18); transition:all .35s cubic-bezier(.22,1,.36,1); cursor:pointer; padding:0; border:none; }
+    .ec-dot-ativo { width:22px; background:#3e6a00; }
+    #bannerProgressUser { background:#3e6a00; }
+    @keyframes ec-progress { from { width:0%; } to { width:100%; } }
+</style>
+<script>
+(function(){
+    var track = document.getElementById('bannerTrackUser');
+    if (!track) return;
+    var feeds = Array.prototype.slice.call(track.children);
+    if (feeds.length < 2) return;
+    var realCount = feeds.length;
+    track.appendChild(feeds[0].cloneNode(true));
+    track.insertBefore(feeds[realCount - 1].cloneNode(true), track.firstChild);
+    var idx = 1;
+    var gap = 0;
+    var bar = document.getElementById('bannerProgressUser');
+    var dots = document.querySelectorAll('.ec-dot');
+    var container = track.parentElement;
+    var INTERVALO = 5000;
+    var hover = false;
+    function passo() { return track.children[1].offsetWidth + gap; }
+    function moverComTransicao() {
+        track.style.transition = 'transform 650ms cubic-bezier(0.22,1,0.36,1)';
+        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
+    }
+    function moverImediato() {
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
+        void track.offsetWidth;
+    }
+    function realAtual() { return (idx - 1 + realCount) % realCount; }
+    function atualizarDots() {
+        var r = realAtual();
+        dots.forEach(function(d, i) { d.classList.toggle('ec-dot-ativo', i === r); });
+    }
+    function reiniciarBarra() {
+        if (!bar) return;
+        bar.style.animation = 'none';
+        void bar.offsetWidth;
+        bar.style.animation = 'ec-progress ' + (INTERVALO / 1000) + 's linear forwards';
+        if (hover) bar.style.animationPlayState = 'paused';
+    }
+    function estabilizar() {
+        var mudou = false;
+        if (idx <= 0) { idx = realCount; mudou = true; }
+        else if (idx >= realCount + 1) { idx = 1; mudou = true; }
+        if (mudou) moverImediato();
+        atualizarDots();
+        reiniciarBarra();
+    }
+    function proximo() { idx++; moverComTransicao(); }
+    function anterior() { idx--; moverComTransicao(); }
+    function goPara(n) { idx = n + 1; moverComTransicao(); }
+    track.addEventListener('transitionend', estabilizar);
+    if (bar) bar.addEventListener('animationend', proximo);
+    container.addEventListener('mouseenter', function(){ hover = true; if (bar) bar.style.animationPlayState = 'paused'; });
+    container.addEventListener('mouseleave', function(){ hover = false; if (bar) bar.style.animationPlayState = 'running'; });
+    var x0 = null;
+    container.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; if (bar) bar.style.animationPlayState = 'paused'; }, {passive:true});
+    container.addEventListener('touchend', function(e){
+        if (x0 === null) { if (bar) bar.style.animationPlayState = 'running'; return; }
+        var dx = e.changedTouches[0].clientX - x0;
+        if (dx <= -40) proximo();
+        else if (dx >= 40) anterior();
+        else if (bar && !hover) bar.style.animationPlayState = 'running';
+        x0 = null;
+    });
+    dots.forEach(function(d, i) { d.addEventListener('click', function(){ goPara(i); }); });
+    function medir() {
+        gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        moverImediato();
+    }
+    window.addEventListener('resize', medir);
+    medir();
+    atualizarDots();
+    reiniciarBarra();
+})();
+</script>
+<?php endif; ?>
 </div>
 </div>
 <?php else: ?>

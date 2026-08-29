@@ -114,7 +114,8 @@ function asaas_split_payload(array $cfg, $valor) {
 }
 
 // Cria a cobrança PIX (billingType=PIX) já com o split para o parceiro, quando configurado.
-function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $uid) {
+// $aplicarSplit = false emite a cobrança 100% para a empresa (ex.: taxa do Cartão Físico).
+function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $uid, $aplicarSplit = true) {
     $payload = [
         'customer' => (string)$customerId,
         'billingType' => 'PIX',
@@ -122,7 +123,7 @@ function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $
         'dueDate' => date('Y-m-d'),
         'description' => (string)$descricao
     ];
-    $split = asaas_split_payload($cfg, $valor);
+    $split = $aplicarSplit ? asaas_split_payload($cfg, $valor) : null;
     $splitAplicado = false;
     if ($split) {
         $payload['splits'] = $split;
