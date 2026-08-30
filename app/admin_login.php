@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
-$logoLoginAdmin = $pers['logo_app'] ?? '';
+$logoLoginAdmin = $pers['logo_login_admin'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -50,7 +50,7 @@ $logoLoginAdmin = $pers['logo_app'] ?? '';
 <div class="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
 <div class="text-center mb-8 flex items-center justify-center">
     <?php if ($logoLoginAdmin): ?>
-    <img class="max-w-[250px] max-h-[250px] h-auto object-contain" src="<?php echo htmlspecialchars($logoLoginAdmin); ?>" alt="Logo Economic Card"/>
+    <img class="max-w-[150px] max-h-[150px] h-auto object-contain" src="<?php echo htmlspecialchars(asset_url($logoLoginAdmin)); ?>" alt="Logo Economic Card"/>
     <?php else: ?>
     <span class="material-symbols-outlined text-[#51036d] text-6xl">shield_person</span>
     <?php endif; ?>

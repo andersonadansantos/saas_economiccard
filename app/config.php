@@ -1,6 +1,14 @@
 <?php
 session_start();
 
+// Politica zero cache: garante que nenhum navegador armazene o sistema do cartao,
+// mesmo que mod_headers nao esteja disponivel no servidor.
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
+
 // Segredos locais (fora do git) — veja secrets_exemplo.php.
 // Em produção/Docker use variáveis de ambiente; localmente o XAMPP usa secrets_local.php.
 if (file_exists(__DIR__ . '/secrets_local.php')) {

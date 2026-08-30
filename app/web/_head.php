@@ -104,7 +104,7 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <aside class="hidden lg:flex flex-col fixed inset-y-0 left-0 w-72 premium-gradient text-white z-40">
 <div class="px-6 py-6 flex items-center justify-center border-b border-white/10">
 <?php if ($logoApp): ?>
-<img class="w-[200px] h-auto object-contain" src="<?php echo webUrl($logoApp); ?>" alt="Logo Economic Card"/>
+<img class="w-32 h-auto object-contain" src="<?php echo webUrl($logoApp); ?>" alt="Logo Economic Card"/>
 <?php else: ?>
 <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center"><span class="material-symbols-outlined text-white">credit_card</span></div>
 <?php endif; ?>

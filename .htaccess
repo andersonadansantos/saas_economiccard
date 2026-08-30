@@ -1,5 +1,12 @@
 Options -Indexes
 
+# Politica zero cache: nenhum navegador armazena o sistema do cartao
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

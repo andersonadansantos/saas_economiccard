@@ -7,7 +7,7 @@ $abaAtual = basename($_SERVER['PHP_SELF']);
 ?>
 <aside class="fixed inset-y-0 left-0 w-60 bg-[#51036d] text-white flex flex-col z-40 hidden md:flex">
 <div class="px-5 py-5 flex items-center gap-3">
-<div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+<div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
 <span class="material-symbols-outlined">shield_person</span>
 </div>
 <div>
