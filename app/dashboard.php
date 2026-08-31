@@ -261,7 +261,7 @@ foreach ($idsBroadcast as $mid) {
 <span class="material-symbols-outlined text-white text-[24px]">credit_card</span>
 </div>
 <?php endif; ?>
-<p class="text-[11px] text-on-surface-variant text-left leading-tight max-w-[130px]">Não precisa estar doente para usar o seu Economic card.</p>
+<p class="text-[11px] text-on-surface-variant text-left leading-tight"><span class="block whitespace-nowrap">Não precisa estar doente para</span><span class="block whitespace-nowrap">usar o seu Economic card.</span></p>
 </div>
 <div class="flex items-center gap-2">
 <div class="relative" id="notifWrap">
