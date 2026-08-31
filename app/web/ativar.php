@@ -32,6 +32,14 @@ if (!$u['cartao_ativo']) {
     $stmt->execute();
     $pix = $stmt->get_result()->fetch_assoc();
 }
+$valAdesaoGlobal = 0.0;
+$pPers = $conn->query("SELECT valor_adesao FROM personalizacao WHERE id = 1")->fetch_assoc();
+if ($pPers) $valAdesaoGlobal = (float)($pPers['valor_adesao'] ?? 0);
+$adesaoPaga = (int)($u['adesao_paga'] ?? 0) === 1;
+$planoMensal = null;
+foreach ($planos as $pl) {
+    if (strtolower(trim((string)$pl['nome'])) === 'mensal') { $planoMensal = $pl; break; }
+}
 ?>
 <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 <!-- Card -->
@@ -92,7 +100,7 @@ if (!$u['cartao_ativo']) {
 <div class="mb-6">
 <p class="text-[10px] font-bold text-on-surface-variant uppercase mb-2 text-center">1. Escolha seu plano</p>
 <div class="flex flex-col gap-2">
-<?php foreach ($planos as $i => $pl): $plValor = number_format((float)$pl['valor'], 2, ',', '.'); ?>
+<?php foreach ($planos as $i => $pl): $plValor = number_format((float)($pl['valor_mensal'] ?: $pl['valor_adesao'] ?: $pl['valor']), 2, ',', '.'); ?>
 <div class="flex items-center gap-3 border border-outline-variant rounded-xl px-4 py-3 cursor-pointer transition-all plan-card <?php echo ($i === 0) ? 'border-primary bg-primary/5' : ''; ?>" data-id="<?php echo (int)$pl['id']; ?>" data-valor="<?php echo htmlspecialchars($plValor); ?>" data-dias="<?php echo (int)$pl['dias']; ?>" data-nome="<?php echo htmlspecialchars($pl['nome']); ?>" onclick="selecionarPlano(this)">
 <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 plan-radio <?php echo ($i === 0) ? 'border-primary' : 'border-outline'; ?>">
 <?php if ($i === 0): ?><span class="w-2.5 h-2.5 rounded-full bg-primary"></span><?php endif; ?>
@@ -132,7 +140,7 @@ if (!$u['cartao_ativo']) {
 <?php endif; ?>
 </div>
 <p class="text-sm text-on-surface-variant text-center mb-6">
-Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <b id="pixValorText"><?php echo isset($planos[0]) ? 'R$ ' . number_format((float)$planos[0]['valor'], 2, ',', '.') : ''; ?></b>. A ativação é automática após a confirmação do pagamento.
+Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <b id="pixValorText"><?php echo isset($planos[0]) ? 'R$ ' . number_format((float)($planos[0]['valor_mensal'] ?: $planos[0]['valor_adesao'] ?: $planos[0]['valor']), 2, ',', '.') : ''; ?></b>. A ativação é automática após a confirmação do pagamento.
 </p>
 <?php if ($pix && $pix['qr_code_copia_cola']): ?>
 <div class="mt-6" id="pixCodeBox">
@@ -161,7 +169,7 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 
 <!-- Card Panel -->
 <div id="painelCard" class="hidden">
-<p class="text-sm text-on-surface-variant text-center mb-6">Pague com <b>cartão de crédito</b> para ativar seu cartão por <b id="cardDiasText"><?php echo isset($planos[0]) ? (int)$planos[0]['dias'] : '60'; ?></b> dias. Valor: <b id="cardValorText"><?php echo isset($planos[0]) ? 'R$ ' . number_format((float)$planos[0]['valor'], 2, ',', '.') : ''; ?></b>.</p>
+<p class="text-sm text-on-surface-variant text-center mb-6">Pague com <b>cartão de crédito</b> para ativar seu cartão por <b id="cardDiasText"><?php echo isset($planos[0]) ? (int)$planos[0]['dias'] : '60'; ?></b> dias. Valor: <b id="cardValorText"><?php echo isset($planos[0]) ? 'R$ ' . number_format((float)($planos[0]['valor_mensal'] ?: $planos[0]['valor_adesao'] ?: $planos[0]['valor']), 2, ',', '.') : ''; ?></b>.</p>
 <?php if ($asaasOk): ?>
 <form id="cardForm" class="space-y-4">
 <div>
@@ -196,7 +204,7 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 <div class="bg-error-container/60 border border-error/30 text-[#93000a] rounded-lg px-3.5 py-2.5 text-[13px]" id="cardErrorText"></div>
 </div>
 <button type="submit" id="cardPayBtn" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-full shadow-lg transition flex items-center justify-center gap-2">
-<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ <?php echo isset($planos[0]) ? number_format((float)$planos[0]['valor'], 2, ',', '.') : '5,00'; ?>
+<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ <?php echo isset($planos[0]) ? number_format((float)($planos[0]['valor_mensal'] ?: $planos[0]['valor_adesao'] ?: $planos[0]['valor']), 2, ',', '.') : '5,00'; ?>
 </button>
 </form>
 <?php else: ?>
@@ -213,10 +221,14 @@ Escaneie o QR Code ou use o código PIX abaixo para ativar seu cartão. Valor: <
 </section>
 
 <script>
-let planoAtual = <?php echo isset($planos[0]) ? json_encode(['id' => (int)$planos[0]['id'], 'valor' => number_format((float)$planos[0]['valor'], 2, ',', '.'), 'dias' => (int)$planos[0]['dias'], 'nome' => $planos[0]['nome']]) : 'null'; ?>;
+let planoAtual = <?php echo isset($planos[0]) ? json_encode(['id' => (int)$planos[0]['id'], 'valor' => number_format((float)($planos[0]['valor_mensal'] ?: $planos[0]['valor_adesao'] ?: $planos[0]['valor']), 2, ',', '.'), 'dias' => (int)$planos[0]['dias'], 'nome' => $planos[0]['nome']]) : 'null'; ?>;
 let pixAtivo = <?php echo $pix ? json_encode(['id' => (int)$pix['id'], 'gateway_payment_id' => ($pix['provedor'] ?? 'mp') === 'asaas' ? (string)$pix['asaas_payment_id'] : (string)$pix['mp_payment_id'], 'copia_cola' => $pix['qr_code_copia_cola'], 'plano_id' => (int)($pix['plano_id'] ?? 0)]) : 'null'; ?>;
 let pagamentoLocalId = pixAtivo ? (pixAtivo.id || 0) : 0;
 const pixCodeText = pixAtivo ? pixAtivo.copia_cola : '';
+const planoMensalId = <?php echo $planoMensal ? (int)$planoMensal['id'] : 0; ?>;
+const adesaoPaga = <?php echo $adesaoPaga ? 'true' : 'false'; ?>;
+const valAdesaoGlobal = <?php echo json_encode('R$ ' . number_format($valAdesaoGlobal, 2, ',', '.')); ?>;
+const valAdesaoGlobalNum = <?php echo number_format($valAdesaoGlobal, 2, '.', ''); ?>;
 function selecionarPlano(el) {
     document.querySelectorAll('.plan-card').forEach(c => {
         c.classList.remove('border-primary', 'bg-primary/5');
@@ -227,6 +239,10 @@ function selecionarPlano(el) {
     const radio = el.querySelector('.plan-radio');
     if (radio) { radio.className = 'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 plan-radio border-primary'; radio.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>'; }
     planoAtual = { id: +el.dataset.id, valor: el.dataset.valor, dias: +el.dataset.dias, nome: el.dataset.nome };
+    if (planoMensalId && +el.dataset.id === planoMensalId && !adesaoPaga) {
+        abrirModalMensal();
+        return;
+    }
     const brl = 'R$ ' + planoAtual.valor;
     if (document.getElementById('pixValorText')) document.getElementById('pixValorText').textContent = brl;
     if (document.getElementById('cardValorText')) document.getElementById('cardValorText').textContent = brl;
@@ -428,12 +444,257 @@ if (cardForm) {
 </div>
 <h2 class="text-xl font-extrabold text-on-surface uppercase tracking-tight mb-2">Ative seu cartão</h2>
 <p class="text-sm text-on-surface-variant mb-6">Para acessar seus benefícios, primeiro ative seu cartão escolhendo um de nossos planos :)</p>
-<button class="block w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-full shadow-lg transition" onclick="document.getElementById('modalBloqueado').classList.add('hidden')">Entendi</button>
-</div>
-</div>
-<script>
-if (<?php echo $bloqueado ? 'true' : 'false'; ?>) {
-    document.getElementById('modalBloqueado').classList.remove('hidden');
-}
-</script>
-<?php require_once __DIR__ . '/_foot.php'; ?>
+    <button class="block w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-full shadow-lg transition" onclick="document.getElementById('modalBloqueado').classList.add('hidden')">Entendi</button>
+    </div>
+    </div>
+    <!-- Modal PLANO MENSAL - Taxa de Adesão -->
+    <div class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" id="modalMensal">
+    <div class="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl my-auto">
+    <div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between bg-primary/5">
+    <h3 class="text-lg font-extrabold text-on-surface">Plano Mensal</h3>
+    <button type="button" onclick="fecharModalMensal()" class="text-on-surface-variant p-1 rounded-full hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6">
+    <div class="bg-secondary-container/10 border border-secondary/20 rounded-xl p-4 mb-5">
+    <p class="text-sm text-on-surface-variant leading-relaxed">
+    Na contratação do plano mensal, será cobrada uma taxa de adesão de <b class="text-secondary">R$ <span id="mTaxaValor"><?php echo number_format($valAdesaoGlobal, 2, ',', '.'); ?></span></b>, paga uma única vez. A partir do segundo mês, você pagará apenas o valor da mensalidade do plano escolhido.
+    </p>
+    </div>
+    <div class="flex bg-surface-variant/50 rounded-xl p-1 mb-5">
+    <button type="button" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-primary bg-white shadow-sm flex items-center justify-center gap-1.5 transition-all" id="mTabPixBtn" onclick="mMostrarAba('pix')">
+    <span class="material-symbols-outlined text-[18px]">qr_code_2</span> PIX
+    </button>
+    <?php if ($asaasOk): ?>
+    <button type="button" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-on-surface-variant flex items-center justify-center gap-1.5 transition-all" id="mTabCardBtn" onclick="mMostrarAba('card')">
+    <span class="material-symbols-outlined text-[18px]">credit_card</span> Cartão de crédito
+    </button>
+    <?php endif; ?>
+    </div>
+    <!-- Modal: PIX Panel -->
+    <div id="mPainelPix">
+    <div class="w-40 h-40 bg-surface-variant/50 rounded-xl flex items-center justify-center mb-5 border-2 border-dashed border-outline-variant mx-auto" id="mqrBox">
+    <span class="material-symbols-outlined text-[56px] text-on-surface-variant opacity-40">qr_code_2</span>
+    </div>
+    <p class="text-sm text-on-surface-variant text-center mb-5">Valor a pagar: <b class="text-secondary" id="mPixValorText">R$ <?php echo number_format($valAdesaoGlobal, 2, ',', '.'); ?></b> (taxa de adesão)</p>
+    <button type="button" id="mBtnGerarPix" class="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-white font-bold py-3 rounded-full shadow-lg transition flex items-center justify-center gap-2" onclick="mGerarPix()">
+    <span class="material-symbols-outlined text-[20px]">qr_code_2</span> GERAR QR CODE PIX
+    </button>
+    <div class="w-full mt-4 hidden" id="mPixCodeBox">
+    <p class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 text-left">Código PIX (copia e cola)</p>
+    <div class="w-full bg-surface-variant/50 rounded-lg p-3 flex items-center gap-2">
+    <p class="text-[11px] text-on-surface-variant flex-1 break-all text-left" id="mPixCodeText"></p>
+    <button type="button" class="text-primary font-bold text-[12px] whitespace-nowrap" onclick="mCopiarPix()">COPIAR</button>
+    </div>
+    </div>
+    <div class="w-full mt-4 hidden" id="mPixWaitBox">
+    <div class="bg-secondary-container/20 border border-secondary/20 rounded-xl px-4 py-3 text-center">
+    <p class="text-sm font-semibold text-secondary flex items-center justify-center gap-2"><span class="material-symbols-outlined">hourglass_top</span> Aguardando pagamento...</p>
+    </div>
+    </div>
+    </div>
+    <!-- Modal: Cartão Panel -->
+    <div id="mPainelCard" class="hidden">
+    <p class="text-sm text-on-surface-variant text-center mb-5">Pague com <b>cartão de crédito</b> para ativar seu cartão por <b id="mCardDiasText"><?php echo $planoMensal ? (int)$planoMensal['dias'] : '30'; ?></b> dias. Valor: <b id="mCardValorText">R$ <?php echo number_format($valAdesaoGlobal, 2, ',', '.'); ?></b>.</p>
+    <?php if ($asaasOk): ?>
+    <form id="mCardForm" class="space-y-4">
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardholderName">Nome no cartão</label>
+    <input id="mCardholderName" name="cardholderName" type="text" autocomplete="off" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="Nome impresso no cartão" required/>
+    </div>
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardNumber">Número do cartão</label>
+    <input id="mCardNumber" name="number" type="text" autocomplete="off" inputmode="numeric" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="0000 0000 0000 0000" required/>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardExpirationDate">Vencimento</label>
+    <input id="mCardExpirationDate" name="expiry" type="text" autocomplete="off" inputmode="numeric" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="MM/AA" required/>
+    </div>
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardSecurityCode">Código de segurança</label>
+    <input id="mCardSecurityCode" name="ccc" type="text" autocomplete="off" inputmode="numeric" maxlength="4" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="123" required/>
+    </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardPostalCode">CEP (endereço do titular)</label>
+    <input id="mCardPostalCode" name="postal_code" type="text" autocomplete="off" inputmode="numeric" value="<?php echo htmlspecialchars($cepUsuario); ?>" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="00000-000" required/>
+    </div>
+    <div>
+    <label class="text-[10px] font-bold text-on-surface-variant uppercase mb-1 block" for="mCardAddressNumber">Número</label>
+    <input id="mCardAddressNumber" name="address_number" type="text" autocomplete="off" value="<?php echo htmlspecialchars($numEndereco); ?>" class="w-full bg-surface-variant/50 rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/40" placeholder="Nº" required/>
+    </div>
+    </div>
+    <div id="mCardErrorBox" class="hidden">
+    <div class="bg-error-container/60 border border-error/30 text-[#93000a] rounded-lg px-3.5 py-2.5 text-[13px]" id="mCardErrorText"></div>
+    </div>
+    <button type="submit" id="mCardPayBtn" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-full shadow-lg transition flex items-center justify-center gap-2">
+    <span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ <?php echo number_format($valAdesaoGlobal, 2, ',', '.'); ?>
+    </button>
+    </form>
+    <?php else: ?>
+    <div class="bg-error-container/60 border border-error/30 text-[#93000a] rounded-lg px-3.5 py-2.5 text-[13px]">Pagamento por cartão indisponível no momento.</div>
+    <?php endif; ?>
+    </div>
+    </div>
+    </div>
+    </div>
+    <script>
+        // --- Modal Plano Mensal (taxa de adesão) ---
+        let mPolling = null;
+        let mPagamentoLocalId = 0;
+        function abrirModalMensal() {
+            document.getElementById('modalMensal').classList.remove('hidden');
+            mMostrarAba('pix');
+            const qr = document.getElementById('mqrBox');
+            if (qr) qr.innerHTML = '<span class="material-symbols-outlined text-[56px] text-on-surface-variant opacity-40">qr_code_2</span>';
+            const cb = document.getElementById('mPixCodeBox'); if (cb) cb.classList.add('hidden');
+            const wb = document.getElementById('mPixWaitBox'); if (wb) wb.classList.add('hidden');
+            const btn = document.getElementById('mBtnGerarPix'); if (btn) btn.style.display = '';
+            mPagamentoLocalId = 0;
+            if (mPolling) { clearInterval(mPolling); mPolling = null; }
+        }
+        function fecharModalMensal() {
+            document.getElementById('modalMensal').classList.add('hidden');
+            if (mPolling) { clearInterval(mPolling); mPolling = null; }
+        }
+        function mMostrarAba(aba) {
+            const pp = document.getElementById('mPainelPix');
+            const pc = document.getElementById('mPainelCard');
+            const tb = document.getElementById('mTabPixBtn');
+            const tcb = document.getElementById('mTabCardBtn');
+            const on  = 'flex-1 py-2.5 rounded-lg text-sm font-bold text-primary bg-white shadow-sm flex items-center justify-center gap-1.5 transition-all';
+            const off = 'flex-1 py-2.5 rounded-lg text-sm font-bold text-on-surface-variant flex items-center justify-center gap-1.5 transition-all';
+            if (aba === 'pix') { tb.className = on; tcb.className = off; pp.classList.remove('hidden'); pc.classList.add('hidden'); }
+            else { tcb.className = on; tb.className = off; pc.classList.remove('hidden'); pp.classList.add('hidden'); }
+        }
+        function mGerarPix() {
+            if (!planoAtual) return;
+            const btn = document.getElementById('mBtnGerarPix');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_top</span> GERANDO...'; }
+            const body = new URLSearchParams({ plano_id: planoAtual.id });
+            fetch('../criar_pix.php', { method: 'POST', body: body })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'pending' && d.pix) {
+                        const qr = document.getElementById('mqrBox');
+                        if (qr) qr.innerHTML = '<img class="w-full h-full object-contain" src="data:image/png;base64,' + d.pix.qr_code_base64 + '" alt="QR Code PIX"/>';
+                        const ct = document.getElementById('mPixCodeText');
+                        if (ct) ct.textContent = d.pix.qr_code_copia_cola;
+                        const cb = document.getElementById('mPixCodeBox'); if (cb) cb.classList.remove('hidden');
+                        const wb = document.getElementById('mPixWaitBox'); if (wb) wb.classList.remove('hidden');
+                        if (btn) btn.style.display = 'none';
+                        mPagamentoLocalId = d.pix.id || 0;
+                        if (mPolling) clearInterval(mPolling);
+                        mPolling = setInterval(mVerificarPagamento, 5000);
+                        mVerificarPagamento();
+                    } else if (d.status === 'approved') {
+                        mostrarModalAtivado();
+                    } else {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">qr_code_2</span> GERAR QR CODE PIX'; }
+                        alert(d.message || 'Erro ao gerar o PIX. Tente novamente.');
+                    }
+                })
+                .catch(() => {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">qr_code_2</span> GERAR QR CODE PIX'; }
+                    alert('Erro ao gerar o PIX. Tente novamente.');
+                });
+        }
+        function mCopiarPix() {
+            const el = document.getElementById('mPixCodeText');
+            const valor = el ? el.textContent : '';
+            if (!valor) return;
+            function sucesso() {
+                const b = document.querySelector('#mPixCodeBox button');
+                if (b) { const o = b.textContent; b.textContent = 'COPIADO!'; setTimeout(() => b.textContent = o, 2000); }
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(valor).then(sucesso).catch(() => mFallbackCopiar(valor, sucesso));
+                return;
+            }
+            mFallbackCopiar(valor, sucesso);
+        }
+        function mFallbackCopiar(valor, cb) {
+            const ta = document.createElement('textarea');
+            ta.value = valor; ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.left = '-9999px';
+            ta.setAttribute('readonly', ''); document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            document.body.removeChild(ta);
+            if (ok) { if (cb) cb(); } else { alert('Não foi possível copiar automaticamente. Selecione o código e copie manualmente.'); }
+        }
+        function mVerificarPagamento() {
+            if (!mPagamentoLocalId) return;
+            fetch('../verifica_pagamento.php?id=' + mPagamentoLocalId)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'approved') {
+                        const wb = document.getElementById('mPixWaitBox');
+                        if (wb) wb.innerHTML = '<div class="bg-secondary-container/20 border border-secondary/20 rounded-xl px-4 py-3 text-center"><p class="text-sm font-bold text-secondary">Pagamento confirmado!</p></div>';
+                        if (mPolling) clearInterval(mPolling);
+                        mostrarModalAtivado();
+                    } else if (d.status === 'rejected' || d.status === 'cancelled') {
+                        if (mPolling) clearInterval(mPolling);
+                        fecharModalMensal();
+                        location.reload();
+                    }
+                })
+                .catch(() => {});
+        }
+        function mCardErro(msg) {
+            const eb = document.getElementById('mCardErrorBox');
+            const et = document.getElementById('mCardErrorText');
+            if (eb && et) { et.textContent = msg; eb.classList.remove('hidden'); }
+        }
+        function mPagarBtnReset() {
+            const b = document.getElementById('mCardPayBtn');
+            b.disabled = false;
+            b.innerHTML = '<span class="material-symbols-outlined text-[20px]">lock</span> PAGAR R$ ' + valAdesaoGlobalNum.toFixed(2).replace('.', ',');
+        }
+        const mCardFormEl = document.getElementById('mCardForm');
+        if (mCardFormEl) {
+            mCardFormEl.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const venc = document.getElementById('mCardExpirationDate').value.trim();
+                const partes = venc.match(/^(\d{1,2})\s*\/?\s*(\d{2}|\d{4})$/);
+                if (!partes) { mCardErro('Validade inválida. Use o formato MM/AA.'); return; }
+                let ano = partes[2];
+                if (ano.length === 2) ano = '20' + ano;
+                const eb = document.getElementById('mCardErrorBox'); if (eb) eb.classList.add('hidden');
+                const payBtn = document.getElementById('mCardPayBtn');
+                payBtn.disabled = true;
+                payBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_top</span> PROCESSANDO...';
+                const body = new URLSearchParams({
+                    plano_id: planoAtual ? planoAtual.id : 0,
+                    holder_name: document.getElementById('mCardholderName').value.trim(),
+                    number: document.getElementById('mCardNumber').value.replace(/\D/g, ''),
+                    expiry: partes[1].padStart(2, '0') + '/' + ano,
+                    ccc: document.getElementById('mCardSecurityCode').value.replace(/\D/g, ''),
+                    postal_code: document.getElementById('mCardPostalCode').value.replace(/\D/g, ''),
+                    address_number: document.getElementById('mCardAddressNumber').value.trim()
+                });
+                fetch('../processa_pagamento_cartao.php', { method: 'POST', body: body })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.status === 'approved') {
+                            mostrarModalAtivado();
+                        } else if (d.status === 'pending') {
+                            setTimeout(() => location.reload(), 3000);
+                        } else {
+                            mPagarBtnReset();
+                            mCardErro(d.message || 'Pagamento recusado. Tente novamente.');
+                        }
+                    })
+                    .catch(() => {
+                        mPagarBtnReset();
+                        mCardErro('Erro ao processar o pagamento. Tente novamente.');
+                    });
+            });
+        }
+    </script>
+    <script>
+    if (<?php echo $bloqueado ? 'true' : 'false'; ?>) {
+        document.getElementById('modalBloqueado').classList.remove('hidden');
+    }
+    </script>
+    <?php require_once __DIR__ . '/_foot.php'; ?>

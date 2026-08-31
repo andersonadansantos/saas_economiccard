@@ -48,7 +48,7 @@ if ($status === 'approved') {
         if ($pl) { $dias = (int)$pl['dias']; }
     }
     $validade = date('Y-m-d', strtotime('+' . $dias . ' days'));
-    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ? WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ?, adesao_paga = 1 WHERE id = ?");
     $stmt->bind_param('si', $validade, $uid);
     $stmt->execute();
 

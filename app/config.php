@@ -79,6 +79,57 @@ function exigirCartaoAtivo() {
     }
 }
 
+// Resolve o plano de uma cobrança. Se o plano original foi excluído,
+// cai no plano "Mensal" padrão e passa a cobrar o valor do 2º mês em diante (valor_mensal).
+// Retorna o plano + campo 'cobrar' (valor a ser cobrado) e 'fallback' (bool).
+function obter_plano_seguro($planoId) {
+    global $conn;
+    $fallback = false;
+    $pl = null;
+    $id = (int)$planoId;
+    if ($id > 0) {
+        $r = $conn->query("SELECT * FROM planos WHERE id = " . $id);
+        if ($r) $pl = $r->fetch_assoc();
+    }
+    if (!$pl) {
+        $fallback = true;
+        $r = $conn->query("SELECT * FROM planos WHERE nome = 'Mensal' AND ativo = 1 ORDER BY ordem, id LIMIT 1");
+        if (!$r || !($pl = $r->fetch_assoc())) {
+            $r = $conn->query("SELECT * FROM planos WHERE ativo = 1 ORDER BY ordem, id LIMIT 1");
+            $pl = $r ? $r->fetch_assoc() : null;
+        }
+    }
+    if (!$pl) return null;
+    if ($fallback) {
+        // Plano excluído -> vira "Mensal" e cobra o valor do 2º mês em diante (recorrência)
+        $pl['cobrar'] = ($pl['valor_mensal'] > 0) ? (float)$pl['valor_mensal'] : (float)($pl['valor_adesao'] ?: $pl['valor']);
+    } else {
+        // Plano normal -> primeira cobrança usa o valor de adesão (1º mês)
+        $pl['cobrar'] = (float)($pl['valor_adesao'] ?: $pl['valor']);
+    }
+    $pl['fallback'] = $fallback;
+    return $pl;
+}
+
+// Valor a cobrar na ativação/renovação de um plano (somente o valor monetário).
+// Plano "Mensal" (nome exato): na primeira contratação (usuário sem adesao_paga)
+// cobra a taxa de adesão global (personalizacao.valor_adesao), única vez; a partir
+// do segundo mês (adesao_paga = 1) cobra apenas a mensalidade (valor_mensal).
+// Demais planos: cobram o valor normal do plano (valor_mensal ?: valor_adesao ?: valor).
+function valor_cobranca_plano_ativacao($conn, $plano, $u) {
+    $nome = strtolower(trim((string)($plano['nome'] ?? '')));
+    $ehMensal = ($nome === 'mensal');
+    if ($ehMensal && (int)($u['adesao_paga'] ?? 0) === 0) {
+        $p = $conn->query("SELECT valor_adesao FROM personalizacao WHERE id = 1")->fetch_assoc();
+        $taxa = (float)($p['valor_adesao'] ?? 0);
+        if ($taxa > 0) return $taxa;
+    }
+    $valor = (float)($plano['valor_mensal'] ?? 0);
+    if ($valor <= 0) $valor = (float)($plano['valor_adesao'] ?? 0);
+    if ($valor <= 0) $valor = (float)($plano['valor'] ?? 0);
+    return $valor;
+}
+
 // Valida CPF brasileiro (algoritmo oficial dos dígitos verificadores).
 function cpf_valido($cpf) {
     $cpf = preg_replace('/\D/', '', (string)$cpf);

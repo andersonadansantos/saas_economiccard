@@ -38,7 +38,7 @@ $abaAtual = basename($_SERVER['PHP_SELF']);
 <span class="material-symbols-outlined">palette</span> Personalização
 </a>
 <a href="admin_planos.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_planos.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
-<span class="material-symbols-outlined">credit_score</span> Planos
+<span class="material-symbols-outlined">credit_score</span> Planos Recorrentes
 </a>
 <a href="admin_api_pagamento.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_api_pagamento.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">payments</span> API Pagamento

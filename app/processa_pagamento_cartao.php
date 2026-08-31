@@ -29,12 +29,12 @@ if (!$cfg) {
 }
 
 $planoId = (int)($_POST['plano_id'] ?? 0);
-$plano = $conn->query("SELECT * FROM planos WHERE id = $planoId AND ativo = 1")->fetch_assoc();
+$plano = obter_plano_seguro($planoId);
 if (!$plano) {
     echo json_encode(['status' => 'error', 'message' => 'Plano inválido']);
     exit;
 }
-$valor = (float)$plano['valor'];
+$valor = valor_cobranca_plano_ativacao($conn, $plano, $u);
 $dias = (int)$plano['dias'];
 $nomePlano = $plano['nome'];
 $descricao = "Ativação Economic Card - $nomePlano - $dias dias";
@@ -116,7 +116,7 @@ $statusDb = asaas_status_local((string)($cob['payment']['status'] ?? ''));
 
 if ($statusDb === 'approved') {
     $validade = date('Y-m-d', strtotime('+' . $dias . ' days'));
-    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ? WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ?, adesao_paga = 1 WHERE id = ?");
     $stmt->bind_param('si', $validade, $uid);
     $stmt->execute();
     require_once 'email_sender.php';

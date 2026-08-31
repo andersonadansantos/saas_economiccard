@@ -102,12 +102,13 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <div class="min-h-screen flex">
 <!-- Sidebar -->
 <aside class="hidden lg:flex flex-col fixed inset-y-0 left-0 w-72 premium-gradient text-white z-40">
-<div class="px-6 py-6 flex items-center justify-center border-b border-white/10">
+<div class="px-6 py-6 flex items-center justify-between gap-3 border-b border-white/10">
 <?php if ($logoApp): ?>
-<img class="w-32 h-auto object-contain" src="<?php echo webUrl($logoApp); ?>" alt="Logo Economic Card"/>
+<img class="w-20 h-auto object-contain" src="<?php echo webUrl($logoApp); ?>" alt="Logo Economic Card"/>
 <?php else: ?>
 <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center"><span class="material-symbols-outlined text-white">credit_card</span></div>
 <?php endif; ?>
+<p class="text-[11px] text-white/80 text-left leading-tight">Não precisa estar doente para usar o seu Economic card.</p>
 </div>
 <nav class="flex-1 px-4 py-6 space-y-1">
 <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'dashboard' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
@@ -159,14 +160,10 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <?php else: ?>
 <span class="material-symbols-outlined">credit_card</span>
 <?php endif; ?>
+<span class="text-[11px] text-white/90 leading-tight text-left max-w-[180px]">Não precisa estar doente para usar o seu Economic card.</span>
 </div>
-<span class="font-bold text-sm truncate"><?php echo htmlspecialchars($tituloPagina); ?></span>
 <div class="relative">
-<button class="p-2 rounded-lg hover:bg-white/10 relative" onclick="toggleNotif()"><span class="material-symbols-outlined">notifications</span>
-<?php if ($naoLidas > 0): ?>
-<span class="absolute top-1 right-1 w-4 h-4 bg-error text-on-error text-[9px] font-bold rounded-full flex items-center justify-center"><?php echo $naoLidas; ?></span>
-<?php endif; ?>
-</button>
+<button class="p-2 rounded-lg hover:bg-white/10 relative" onclick="toggleNotif()"><span class="material-symbols-outlined">notifications</span></button>
 </div>
 </header>
 <main class="flex-1 lg:ml-72 px-4 md:px-8 pt-20 lg:pt-8 pb-16 max-w-6xl mx-auto w-full">

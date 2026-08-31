@@ -11,7 +11,7 @@ $uid = (int)$_SESSION['usuario_id'];
 
 $planoId = (int)($_POST['plano_id'] ?? 0);
 asaas_fluxo_log('inicio', "uid=$uid plano_id=$planoId");
-$plano = $conn->query("SELECT * FROM planos WHERE id = $planoId AND ativo = 1")->fetch_assoc();
+$plano = obter_plano_seguro($planoId);
 if (!$plano) {
     asaas_fluxo_log('erro', "plano invalido uid=$uid plano_id=$planoId");
     echo json_encode(['status' => 'error', 'message' => 'Plano inválido']);
@@ -45,7 +45,7 @@ $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'cancelled' WHERE usu
 $stmt->bind_param('i', $uid);
 $stmt->execute();
 
-$valor = (float)$plano['valor'];
+$valor = valor_cobranca_plano_ativacao($conn, $plano, $u);
 $dias = (int)$plano['dias'];
 $nomePlano = $plano['nome'];
 $descricao = "Ativação Economic Card - $nomePlano - $dias dias";

@@ -250,7 +250,7 @@ foreach ($idsBroadcast as $mid) {
 </div>
 <!-- TopAppBar -->
 <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-sm flex items-center justify-between px-container-padding h-20">
-<div class="flex items-center gap-2">
+<div class="flex items-center gap-4">
 <button class="material-symbols-outlined text-primary hover:bg-surface-container-high/50 transition-colors p-2 rounded-full active:scale-95 duration-200" onclick="abrirMenu()">
             menu
         </button>
@@ -261,6 +261,7 @@ foreach ($idsBroadcast as $mid) {
 <span class="material-symbols-outlined text-white text-[24px]">credit_card</span>
 </div>
 <?php endif; ?>
+<p class="text-[11px] text-on-surface-variant text-left leading-tight max-w-[130px]">Não precisa estar doente para usar o seu Economic card.</p>
 </div>
 <div class="flex items-center gap-2">
 <div class="relative" id="notifWrap">
