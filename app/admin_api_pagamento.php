@@ -355,7 +355,7 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
 <div class="md:col-span-2 border-b border-gray-100 pb-3 pt-2">
 <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Sessão: Afiliado</h3>
 <label class="inline-flex items-center gap-2 mt-1 text-xs text-gray-500 cursor-pointer">
-<input type="checkbox" id="split_afiliado_habilitar" <?php echo $algumSplitAfi ? 'checked' : ''; ?> onclick="document.getElementById('bloco-afiliado').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-[#51036d] focus:ring-[#51036d]"/>
+<input type="checkbox" name="split_afiliado_habilitar" value="1" id="split_afiliado_habilitar" <?php echo $algumSplitAfi ? 'checked' : ''; ?> onclick="document.getElementById('bloco-afiliado').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-[#51036d] focus:ring-[#51036d]"/>
 Ativar participação de afiliados no split (ela só vale se o afiliado estiver <b>ativo</b> e tiver <b>Wallet ID</b> preenchido no cadastro).
 </label>
 </div>
