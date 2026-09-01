@@ -101,12 +101,22 @@ foreach ($planos as $pl) {
 <p class="text-[10px] font-bold text-on-surface-variant uppercase mb-2 text-center">1. Escolha seu plano</p>
 <div class="flex flex-col gap-2">
 <?php foreach ($planos as $i => $pl): $plValor = number_format((float)($pl['valor_mensal'] ?: $pl['valor_adesao'] ?: $pl['valor']), 2, ',', '.'); ?>
-<div class="flex items-center gap-3 border border-outline-variant rounded-xl px-4 py-3 cursor-pointer transition-all plan-card <?php echo ($i === 0) ? 'border-primary bg-primary/5' : ''; ?>" data-id="<?php echo (int)$pl['id']; ?>" data-valor="<?php echo htmlspecialchars($plValor); ?>" data-dias="<?php echo (int)$pl['dias']; ?>" data-nome="<?php echo htmlspecialchars($pl['nome']); ?>" onclick="selecionarPlano(this)">
+<?php $ehMensal = $planoMensal && (int)$pl['id'] === (int)$planoMensal['id']; ?>
+<div class="flex items-center gap-3 border border-outline-variant rounded-xl px-4 py-3 cursor-pointer transition-all plan-card <?php echo ($i === 0) ? 'border-primary bg-primary/5' : ''; ?> <?php echo $ehMensal ? 'border-amber-300 bg-amber-50/60' : ''; ?>" data-id="<?php echo (int)$pl['id']; ?>" data-valor="<?php echo htmlspecialchars($plValor); ?>" data-dias="<?php echo (int)$pl['dias']; ?>" data-nome="<?php echo htmlspecialchars($pl['nome']); ?>" onclick="selecionarPlano(this)">
+<?php if ($ehMensal): ?>
+<span class="text-xl shrink-0 leading-none" title="Coroa - plano mais adquirido">👑</span>
+<?php else: ?>
 <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 plan-radio <?php echo ($i === 0) ? 'border-primary' : 'border-outline'; ?>">
 <?php if ($i === 0): ?><span class="w-2.5 h-2.5 rounded-full bg-primary"></span><?php endif; ?>
 </div>
+<?php endif; ?>
 <div class="flex-1">
-<p class="text-sm font-bold text-on-surface"><?php echo htmlspecialchars($pl['nome']); ?></p>
+<p class="text-sm font-bold text-on-surface flex items-center gap-1.5">
+<?php echo htmlspecialchars($pl['nome']); ?>
+<?php if ($ehMensal): ?>
+<span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wide text-amber-600 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">O MAIS ADQUIRIDO</span>
+<?php endif; ?>
+</p>
 <p class="text-[11px] text-on-surface-variant"><?php echo htmlspecialchars($pl['descricao'] ?: $pl['dias'] . ' dias de desconto'); ?></p>
 </div>
 <div class="text-right">
