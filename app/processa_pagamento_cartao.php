@@ -44,6 +44,10 @@ if ($valor < ASAAS_VALOR_MINIMO) {
     exit;
 }
 
+// Regra de split (Admin > API Pagamento > aba Split).
+$tipoCobranca = asaas_tipo_cobranca($conn, $u);
+$walletAfiliado = asaas_wallet_afiliado_usuario($conn, $u);
+
 $holderName = trim($_POST['holder_name'] ?? '');
 $numero = preg_replace('/\D/', '', $_POST['number'] ?? '');
 $ccc = preg_replace('/\D/', '', $_POST['ccc'] ?? '');
@@ -105,7 +109,7 @@ $cob = asaas_criar_cobranca_cartao($cfg, $cust['customer_id'], $valor, $descrica
     'postalCode' => $postalCode,
     'addressNumber' => $addressNumber,
     'phone' => $u['whatsapp'] ?? ''
-]);
+], $tipoCobranca, $walletAfiliado);
 if (!$cob['ok']) {
     echo json_encode(['status' => 'error', 'message' => $cob['message']]);
     exit;

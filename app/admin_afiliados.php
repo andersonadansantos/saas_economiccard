@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cpf = trim($_POST['cpf'] ?? '');
         $senha = $_POST['senha'] ?? '';
         $comissao = (float)str_replace(',', '.', $_POST['comissao'] ?? '0');
+        $wallet = trim($_POST['wallet_afiliado'] ?? '');
         if ($nome === '' || $email === '' || $senha === '') {
             $erro = 'Preencha nome, e-mail e senha do vendedor.';
         } else {
@@ -33,11 +34,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ck->bind_param('s', $codigo);
                     $ck->execute();
                 } while ($ck->get_result()->num_rows > 0);
-                $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, senha, comissao, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param('ssssssss', $codigo, $nome, $email, $telefone, $cpf, $hash, $comissao, $token);
+                $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, senha, comissao, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param('sssssssss', $codigo, $nome, $email, $telefone, $cpf, $hash, $comissao, $wallet, $token);
                 $stmt->execute();
                 registrar_aceite_contrato($conn, 'afiliados', $conn->insert_id);
                 $sucesso = 'Afiliado cadastrado! Código colaborador: ' . $codigo . '. Ele já pode acessar o painel em /card/afiliado.';
+            }
+        }
+    } elseif ($acao === 'editar') {
+        $id = (int)($_POST['id'] ?? 0);
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $cpf = trim($_POST['cpf'] ?? '');
+        $nascimento = trim($_POST['nascimento'] ?? '');
+        $comissao = (float)str_replace(',', '.', $_POST['comissao'] ?? '0');
+        $wallet = trim($_POST['wallet_afiliado'] ?? '');
+        $senha = $_POST['senha'] ?? '';
+        if ($nome === '' || $email === '') {
+            $erro = 'Preencha nome e e-mail do afiliado.';
+        } else {
+            $check = $conn->prepare("SELECT id FROM afiliados WHERE email = ? AND id <> ?");
+            $check->bind_param('si', $email, $id);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                $erro = 'Já existe outro afiliado com este e-mail.';
+            } else {
+                if ($senha !== '') {
+                    $hash = password_hash($senha, PASSWORD_DEFAULT);
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, comissao = ?, wallet_afiliado = ?, senha = ? WHERE id = ?");
+                    $stmt->bind_param('ssssssssi', $nome, $email, $telefone, $cpf, $nascimento, $comissao, $wallet, $hash, $id);
+                } else {
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, comissao = ?, wallet_afiliado = ? WHERE id = ?");
+                    $stmt->bind_param('sssssssi', $nome, $email, $telefone, $cpf, $nascimento, $comissao, $wallet, $id);
+                }
+                $stmt->execute();
+                $sucesso = 'Afiliado atualizado com sucesso!';
             }
         }
     } elseif ($acao === 'alternar') {
@@ -148,6 +180,10 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">CPF</label>
 <input name="cpf" id="cpf" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
 </div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
+<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
+</div>
 <div class="md:col-span-2">
 <button class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition" type="submit">CADASTRAR AFILIADO</button>
 </div>
@@ -166,6 +202,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <th class="px-4 py-3">E-mail</th>
 <th class="px-4 py-3">Link de Indicação</th>
 <th class="px-4 py-3">Comissão</th>
+<th class="px-4 py-3">Wallet ID</th>
 <th class="px-4 py-3">Ativos</th>
 <th class="px-4 py-3">Status</th>
 <th class="px-4 py-3 text-right">Ações</th>
@@ -173,7 +210,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </thead>
 <tbody>
 <?php if ($afiliados->num_rows === 0): ?>
-<tr><td colspan="9" class="px-4 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
+<tr><td colspan="10" class="px-4 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
 <?php endif; ?>
 <?php while ($a = $afiliados->fetch_assoc()): ?>
 <tr class="border-t border-gray-100 hover:bg-gray-50">
@@ -196,11 +233,31 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </div>
 </td>
 <td class="px-4 py-3 font-bold text-[#3e6a00]"><?php echo number_format((float)$a['comissao'], 0, ',', '.') . '%'; ?></td>
+<td class="px-4 py-3">
+<?php if ($a['wallet_afiliado']): ?>
+<code class="text-[11px] text-gray-600"><?php echo htmlspecialchars($a['wallet_afiliado']); ?></code>
+<?php else: ?>
+<span class="text-gray-300">—</span>
+<?php endif; ?>
+</td>
 <td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$a['ativos']; ?></td>
 <td class="px-4 py-3">
 <span class="px-2 py-1 rounded-full <?php echo $a['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?> text-[10px] font-bold uppercase"><?php echo $a['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
 </td>
 <td class="px-4 py-3 text-right space-x-3">
+<button type="button"
+data-id="<?php echo (int)$a['id']; ?>"
+data-nome="<?php echo htmlspecialchars($a['nome'], ENT_QUOTES); ?>"
+data-email="<?php echo htmlspecialchars($a['email'], ENT_QUOTES); ?>"
+data-telefone="<?php echo htmlspecialchars($a['telefone'] ?? '', ENT_QUOTES); ?>"
+data-cpf="<?php echo htmlspecialchars($a['cpf'] ?? '', ENT_QUOTES); ?>"
+data-nascimento="<?php echo htmlspecialchars($a['nascimento'] ?? '', ENT_QUOTES); ?>"
+data-comissao="<?php echo htmlspecialchars((string)(float)$a['comissao'], ENT_QUOTES); ?>"
+data-wallet="<?php echo htmlspecialchars($a['wallet_afiliado'] ?? '', ENT_QUOTES); ?>"
+onclick="abrirEditarAfiliado(this)"
+class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-2 py-1 transition" title="Editar informações do afiliado">
+<span class="material-symbols-outlined text-[16px]">edit</span> Editar
+</button>
 <form method="POST" action="admin_afiliados.php" class="inline">
 <input type="hidden" name="acao" value="logar"/>
 <input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
@@ -245,11 +302,93 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </div>
 </div>
 
+<div id="modalEdicaoAfiliado" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div class="absolute inset-0 bg-black/50" onclick="fecharModalEdicaoAfiliado()"></div>
+<div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
+<div class="bg-[#51036d] px-6 py-4 flex items-center justify-between">
+<h2 class="text-white font-bold flex items-center gap-2"><span class="material-symbols-outlined">edit</span> Editar afiliado</h2>
+<button type="button" onclick="fecharModalEdicaoAfiliado()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+</div>
+<form method="POST" action="admin_afiliados.php" class="overflow-y-auto p-6 space-y-4">
+<input type="hidden" name="acao" value="editar"/>
+<input type="hidden" name="id" id="edit_id"/>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nome completo *</label>
+<input id="edit_nome" name="nome" required class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">E-mail (login) *</label>
+<input id="edit_email" name="email" type="email" required class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Telefone / WhatsApp</label>
+<input id="edit_telefone" name="telefone" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">CPF</label>
+<input id="edit_cpf" name="cpf" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Data de nascimento</label>
+<input id="edit_nascimento" name="nascimento" type="date" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Comissão (%)</label>
+<input id="edit_comissao" name="comissao" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
+<input id="edit_wallet" name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nova senha (opcional)</label>
+<input id="edit_senha" name="senha" type="text" placeholder="Deixe em branco para manter a atual" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+</div>
+<div class="flex gap-3 pt-2">
+<button type="button" onclick="fecharModalEdicaoAfiliado()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2.5 rounded-lg transition">Cancelar</button>
+<button class="flex-1 bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-4 py-2.5 rounded-lg transition" type="submit">SALVAR ALTERAÇÕES</button>
+</div>
+</form>
+</div>
+</div>
+
+<script>
+function abrirEditarAfiliado(btn) {
+    document.getElementById('edit_id').value = btn.dataset.id;
+    document.getElementById('edit_nome').value = btn.dataset.nome;
+    document.getElementById('edit_email').value = btn.dataset.email;
+    document.getElementById('edit_telefone').value = btn.dataset.telefone;
+    document.getElementById('edit_cpf').value = btn.dataset.cpf;
+    document.getElementById('edit_nascimento').value = btn.dataset.nascimento || '';
+    document.getElementById('edit_comissao').value = btn.dataset.comissao;
+    document.getElementById('edit_wallet').value = btn.dataset.wallet;
+    document.getElementById('edit_senha').value = '';
+    const m = document.getElementById('modalEdicaoAfiliado');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+}
+function fecharModalEdicaoAfiliado() {
+    const m = document.getElementById('modalEdicaoAfiliado');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+}
+</script>
+
 <script>
 const tel = document.getElementById('telefone');
 if (tel) tel.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 15); });
 const cpf = document.getElementById('cpf');
 if (cpf) cpf.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{3})/, '$1.$2');
+    e.target.value = v;
+});
+const editTel = document.getElementById('edit_telefone');
+if (editTel) editTel.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 15); });
+const editCpf = document.getElementById('edit_cpf');
+if (editCpf) editCpf.addEventListener('input', (e) => {
     let v = e.target.value.replace(/\D/g, '').slice(0, 11);
     if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');

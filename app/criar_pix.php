@@ -56,6 +56,12 @@ if ($valor < ASAAS_VALOR_MINIMO) {
     exit;
 }
 
+// Regra de split (Admin > API Pagamento > aba Split): classifica o pagamento
+// (adesão / 1ª mensalidade / recorrência) e obtém o wallet do afiliado indicado.
+$tipoCobranca = asaas_tipo_cobranca($conn, $u);
+$walletAfiliado = asaas_wallet_afiliado_usuario($conn, $u);
+asaas_fluxo_log('split_tipo', "uid=$uid valor=$valor tipo=$tipoCobranca afiliado_wallet=" . ($walletAfiliado !== '' ? 'sim' : 'nao'));
+
 $cust = asaas_obter_customer($cfgAsaas, $u);
 if (!$cust['ok']) {
         asaas_fluxo_log('erro', "customer falhou uid=$uid: " . $cust['message']);
@@ -63,7 +69,7 @@ if (!$cust['ok']) {
         exit;
     }
     asaas_fluxo_log('customer_ok', "uid=$uid customer={$cust['customer_id']}");
-    $cob = asaas_criar_cobranca_pix($cfgAsaas, $cust['customer_id'], $valor, $descricao, $uid);
+    $cob = asaas_criar_cobranca_pix($cfgAsaas, $cust['customer_id'], $valor, $descricao, $uid, true, $tipoCobranca, $walletAfiliado);
     if (!$cob['ok']) {
         asaas_fluxo_log('erro', "cobranca falhou uid=$uid valor=$valor: " . $cob['message']);
         echo json_encode(['status' => 'error', 'message' => $cob['message']]);

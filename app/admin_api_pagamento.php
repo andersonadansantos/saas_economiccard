@@ -84,33 +84,60 @@ require_once 'asaas_pix.php';
 
 $sucesso = '';
 $teste = null;
+$erroSplit = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $chaveAsaas = trim($_POST['asaas_api_key'] ?? '');
-    $ambienteAsaas = (($_POST['asaas_ambiente'] ?? 'producao') === 'sandbox') ? 'sandbox' : 'producao';
-    $walletParceiro = trim($_POST['asaas_wallet_parceiro'] ?? '');
-    $valorFixoParceiro = round((float)str_replace(',', '.', $_POST['valor_fixo_parceiro'] ?? '0'), 2);
-    if ($valorFixoParceiro < 0) { $valorFixoParceiro = 0; }
-    // A tela gerencia exclusivamente as credenciais Asaas.
-    $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_api_key=?, asaas_ambiente=?, asaas_wallet_parceiro=?, valor_fixo_parceiro=? WHERE id=1");
-    $stmt->bind_param('sssd', $chaveAsaas, $ambienteAsaas, $walletParceiro, $valorFixoParceiro);
-    $stmt->execute();
-    $sucesso = 'Configuração salva com sucesso!';
-    if ($chaveAsaas !== '') {
-        $cfgNova = [
-            'asaas_api_key' => $chaveAsaas,
-            'asaas_ambiente' => $ambienteAsaas
-        ];
-        $teste = asaas_testar_conexao($cfgNova);
+    $acao = $_POST['acao'] ?? '';
+    if ($acao === 'salvar_split') {
+        // Regra de distribuição (aba Split): valores em R$ por tipo de cobrança.
+        $walletPrc = trim($_POST['split_wallet_parceiro'] ?? '');
+        $adesaoPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_adesao'] ?? '0'), 2);
+        $recorPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_recorrencia'] ?? '0'), 2);
+        $afiliadoHabilitado = !empty($_POST['split_afiliado_habilitar']);
+        if ($afiliadoHabilitado) {
+            $adesaoAfi = round((float)str_replace(',', '.', $_POST['split_afiliado_adesao'] ?? '0'), 2);
+            $afiliado1a = round((float)str_replace(',', '.', $_POST['split_afiliado_1a_mensal'] ?? '0'), 2);
+        } else {
+            $adesaoAfi = 0;
+            $afiliado1a = 0;
+        }
+        if ($adesaoPrc < 0) $adesaoPrc = 0;
+        if ($recorPrc < 0) $recorPrc = 0;
+        if ($adesaoAfi < 0) $adesaoAfi = 0;
+        if ($afiliado1a < 0) $afiliado1a = 0;
+        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_wallet_parceiro=?, split_parceiro_adesao=?, split_parceiro_recorrencia=?, split_afiliado_adesao=?, split_afiliado_1a_mensal=? WHERE id=1");
+        $stmt->bind_param('sdddd', $walletPrc, $adesaoPrc, $recorPrc, $adesaoAfi, $afiliado1a);
+        $stmt->execute();
+        $sucesso = 'Regra de split (aba Split) salva com sucesso!';
     } else {
-        $teste = ['ok' => false, 'message' => 'Chave da API Asaas vazia — os pagamentos (PIX e cartão) ficarão indisponíveis até a configuração.'];
+        $chaveAsaas = trim($_POST['asaas_api_key'] ?? '');
+        $ambienteAsaas = (($_POST['asaas_ambiente'] ?? 'producao') === 'sandbox') ? 'sandbox' : 'producao';
+        // A tela gerencia exclusivamente as credenciais Asaas.
+        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_api_key=?, asaas_ambiente=? WHERE id=1");
+        $stmt->bind_param('ss', $chaveAsaas, $ambienteAsaas);
+        $stmt->execute();
+        $sucesso = 'Configuração salva com sucesso!';
+        if ($chaveAsaas !== '') {
+            $cfgNova = [
+                'asaas_api_key' => $chaveAsaas,
+                'asaas_ambiente' => $ambienteAsaas
+            ];
+            $teste = asaas_testar_conexao($cfgNova);
+        } else {
+            $teste = ['ok' => false, 'message' => 'Chave da API Asaas vazia — os pagamentos (PIX e cartão) ficarão indisponíveis até a configuração.'];
+        }
     }
 }
 
 $cfg = $conn->query("SELECT * FROM api_pagamento WHERE id = 1")->fetch_assoc();
 $asaasAtivo = trim((string)($cfg['asaas_api_key'] ?? '')) !== '';
 $walletPreenchida = trim((string)($cfg['asaas_wallet_parceiro'] ?? '')) !== '';
-$vfParceiro = (float)($cfg['valor_fixo_parceiro'] ?? 0);
-$splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
+$splitAdesaoPrc = (float)($cfg['split_parceiro_adesao'] ?? 0);
+$splitRecorPrc = (float)($cfg['split_parceiro_recorrencia'] ?? 0);
+$splitAdesaoAfi = (float)($cfg['split_afiliado_adesao'] ?? 0);
+$splitAfiliado1a = (float)($cfg['split_afiliado_1a_mensal'] ?? 0);
+$algumSplitPrc = $splitAdesaoPrc > 0 || $splitRecorPrc > 0;
+$algumSplitAfi = $splitAdesaoAfi > 0 || $splitAfiliado1a > 0;
+$splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -133,12 +160,16 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <div class="px-6 py-4 flex items-center justify-between">
 <div>
 <h1 class="text-xl font-extrabold text-gray-800">API Pagamento</h1>
-<p class="text-sm text-gray-500">Split de pagamento Asaas</p>
+<p class="text-sm text-gray-500">Integração Asaas + regra de split por tipo de cobrança</p>
 </div>
 <a href="logout.php?admin=1" class="bg-[#51036d] hover:bg-[#3a024d] text-white rounded-lg px-4 py-2 text-sm font-semibold transition">Sair</a>
 </div>
+<div class="px-6 pb-4 flex gap-2">
+<button type="button" data-aba="credenciais" onclick="trocarAba('credenciais', this)" class="tab-btn px-4 py-2 text-sm font-bold rounded-lg transition bg-[#51036d] text-white">Credenciais Asaas</button>
+<button type="button" data-aba="split" onclick="trocarAba('split', this)" class="tab-btn px-4 py-2 text-sm font-bold rounded-lg transition bg-gray-100 text-gray-600 hover:bg-gray-200">Split de Pagamentos</button>
+</div>
 </header>
-<div class="p-6">
+<div id="aba-credenciais" class="p-6">
 <?php if ($sucesso): ?>
 <div class="mb-6 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm"><?php echo htmlspecialchars($sucesso); ?></div>
 <?php endif; ?>
@@ -151,7 +182,7 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <!-- Status atual -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
 <h2 class="text-lg font-extrabold text-gray-800 mb-1">Status da integração</h2>
-<p class="text-sm text-gray-500 mb-4">O PIX de ativação usa o <b>Split de Pagamentos nativo do Asaas</b>: a cobrança é emitida pela conta da EMPRESA e a parte do parceiro cai automaticamente na conta dele.</p>
+<p class="text-sm text-gray-500 mb-4">O PIX e o cartão usam o <b>Split de Pagamentos nativo do Asaas</b>: a cobrança é emitida pela conta da EMPRESA e as partes de parceiro/afiliado caem automaticamente nas contas deles.</p>
 <div class="flex flex-wrap gap-2 text-xs font-bold">
 <span class="px-3 py-1.5 rounded-full <?php echo $asaasAtivo ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-yellow-100 text-yellow-800 border border-yellow-200'; ?>">
 <?php echo $asaasAtivo ? 'Chave Asaas configurada (' . ($cfg['asaas_ambiente'] === 'sandbox' ? 'SANDBOX' : 'PRODUÇÃO') . ')' : 'Chave Asaas NÃO configurada'; ?>
@@ -160,7 +191,7 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <?php echo $walletPreenchida ? 'Wallet do parceiro cadastrada' : 'Wallet do parceiro pendente'; ?>
 </span>
 <span class="px-3 py-1.5 rounded-full <?php echo $splitAtivoAsaas ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'; ?>">
-<?php echo $splitAtivoAsaas ? 'SPLIT ATIVO: parceiro recebe R$ ' . number_format($vfParceiro, 2, ',', '.') . ' por pagamento' : 'Sem split (100% empresa)'; ?>
+<?php echo $splitAtivoAsaas ? 'SPLIT ATIVO (regra da aba Split)' : 'Sem split ou split pendente (100% empresa)'; ?>
 </span>
 </div>
 <?php if (!$asaasAtivo): ?>
@@ -168,11 +199,12 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <?php endif; ?>
 </div>
 
-<!-- Formulário Asaas -->
+<!-- Credenciais Asaas -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
 <h2 class="text-lg font-extrabold text-gray-800 mb-1">Credenciais Asaas</h2>
 <p class="text-sm text-gray-500 mb-4">Ao salvar, o sistema testa automaticamente a conexão com a API (consulta de saldo da conta).</p>
 <form method="POST" action="admin_api_pagamento.php" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<input type="hidden" name="acao" value="credenciais"/>
 <div class="md:col-span-2">
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Chave de API (conta da empresa)</label>
 <input type="password" name="asaas_api_key" value="<?php echo htmlspecialchars((string)($cfg['asaas_api_key'] ?? '')); ?>" autocomplete="off" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="$aact_prod_...">
@@ -185,16 +217,6 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 <option value="sandbox" <?php echo (($cfg['asaas_ambiente'] ?? '') === 'sandbox') ? 'selected' : ''; ?>>Sandbox (api-sandbox.asaas.com)</option>
 </select>
 <p class="text-xs text-gray-500 mt-1">No sandbox use a chave gerada dentro do ambiente de testes.</p>
-</div>
-<div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Valor fixo do parceiro por pagamento (R$)</label>
-<input type="number" name="valor_fixo_parceiro" min="0" step="0.01" value="<?php echo htmlspecialchars(number_format($vfParceiro, 2, '.', '')); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Ex.: 5.00">
-<p class="text-xs text-gray-500 mt-1">Valor fixo em reais que o parceiro recebe de cada pagamento. O restante fica com a empresa. Com 0, não há split.</p>
-</div>
-<div class="md:col-span-2">
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID do parceiro (recebedor do split)</label>
-<input type="text" name="asaas_wallet_parceiro" value="<?php echo htmlspecialchars((string)($cfg['asaas_wallet_parceiro'] ?? '')); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="UUID da carteira Asaas do parceiro">
-<p class="text-xs text-gray-500 mt-1">Identificador único da carteira Asaas do PARCEIRO. Veja como obter no passo 3 abaixo. Afiliados não participam do split.</p>
 </div>
 <div class="md:col-span-2 flex items-center gap-3">
 <button type="submit" class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition">SALVAR E TESTAR CONEXÃO</button>
@@ -275,8 +297,100 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $vfParceiro > 0;
 </div>
 </div>
 </div>
+
+<div id="aba-split" class="p-6 hidden">
+<?php if ($erroSplit): ?>
+<div class="mb-6 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"><?php echo htmlspecialchars($erroSplit); ?></div>
+<?php endif; ?>
+
+<!-- Como funciona a distribuição -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+<h2 class="text-lg font-extrabold text-gray-800 mb-1">Como funciona a distribuição</h2>
+<p class="text-sm text-gray-500 mb-4">Defina, em reais (R$), a parte de cada tipo de cobrança. O restante de cada pagamento fica automaticamente na conta da empresa (SaaS).</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="border border-gray-200 rounded-xl p-4">
+<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">add_card</span></div>
+<h3 class="font-bold text-sm text-gray-800 mb-1">1º Pagamento (Adesão)</h3>
+<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?></b><?php echo $algumSplitAfi ? ' e afiliado recebe <b class="text-gray-700">R$ ' . number_format($splitAdesaoAfi, 2, ',', '.') . '</b>' : ' (afiliado não configurado)'; ?>.</p>
+</div>
+<div class="border border-gray-200 rounded-xl p-4">
+<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">calendar_month</span></div>
+<h3 class="font-bold text-sm text-gray-800 mb-1">2º Pagamento (1ª mensalidade)</h3>
+<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b><?php echo $algumSplitAfi ? ' e afiliado recebe <b class="text-gray-700">R$ ' . number_format($splitAfiliado1a, 2, ',', '.') . '</b>' : ' (afiliado não configurado)'; ?>.</p>
+</div>
+<div class="border border-gray-200 rounded-xl p-4">
+<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">autorenew</span></div>
+<h3 class="font-bold text-sm text-gray-800 mb-1">3º+ Pagamentos (Recorrência)</h3>
+<p class="text-xs text-gray-500">Só o parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b>. Afiliado não recebe mais.</p>
+</div>
+</div>
+<?php if (!$walletPreenchida): ?>
+<div class="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-3 text-sm"><b>Dica:</b> preencha o <b>Wallet ID do parceiro</b> abaixo para ativar o split. Sem ele, todas as cobranças vão 100% para a empresa.</div>
+<?php endif; ?>
+</div>
+
+<!-- Form: Parceiro e Afiliado -->
+<div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+<h2 class="text-lg font-extrabold text-gray-800 mb-1">Regra de split por tipo de cobrança</h2>
+<p class="text-sm text-gray-500 mb-4">Valores em R$ que saem da conta da empresa para as contas de parceiro/afiliado a cada pagamento.</p>
+<form method="POST" action="admin_api_pagamento.php">
+<input type="hidden" name="acao" value="salvar_split"/>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID do parceiro</label>
+<input type="text" name="split_wallet_parceiro" value="<?php echo htmlspecialchars((string)($cfg['asaas_wallet_parceiro'] ?? '')); ?>" placeholder="8e3...-uuid" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" required/>
+<p class="text-xs text-gray-500 mt-1">UUID da conta Asaas do parceiro (obtido pela API — ver passo a passo na aba Credenciais).</p>
+</div>
+<div class="md:col-span-2 border-b border-gray-100 pb-3">
+<h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Sessão: Parceiro</h3>
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Adesão (1º pagamento) — R$</label>
+<input type="text" name="split_parceiro_adesao" value="<?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Recorrência (2º+) — R$</label>
+<input type="text" name="split_parceiro_recorrencia" value="<?php echo number_format($splitRecorPrc, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+</div>
+<div class="md:col-span-2 border-b border-gray-100 pb-3 pt-2">
+<h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Sessão: Afiliado</h3>
+<label class="inline-flex items-center gap-2 mt-1 text-xs text-gray-500 cursor-pointer">
+<input type="checkbox" id="split_afiliado_habilitar" <?php echo $algumSplitAfi ? 'checked' : ''; ?> onclick="document.getElementById('bloco-afiliado').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-[#51036d] focus:ring-[#51036d]"/>
+Ativar participação de afiliados no split (ela só vale se o afiliado estiver <b>ativo</b> e tiver <b>Wallet ID</b> preenchido no cadastro).
+</label>
+</div>
+<div id="bloco-afiliado" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 <?php echo $algumSplitAfi ? '' : 'hidden'; ?>">
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Adesão (1º pagamento) — R$</label>
+<input type="text" name="split_afiliado_adesao" value="<?php echo number_format($splitAdesaoAfi, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">1ª mensalidade (2º pagamento) — R$</label>
+<input type="text" name="split_afiliado_1a_mensal" value="<?php echo number_format($splitAfiliado1a, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+</div>
+</div>
+<div class="md:col-span-2 flex items-center gap-3">
+<button type="submit" class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition">SALVAR REGRA DE SPLIT</button>
+<span class="text-xs text-gray-500">Vale para PIX e cartão.</span>
+</div>
+</div>
+</form>
+</div>
+</div>
+
 </main>
 <script>
+function trocarAba(nome, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+        var ativo = b === btn;
+        b.classList.toggle('bg-[#51036d]', ativo);
+        b.classList.toggle('text-white', ativo);
+        b.classList.toggle('bg-gray-100', !ativo);
+        b.classList.toggle('text-gray-600', !ativo);
+    });
+    document.getElementById('aba-credenciais').classList.toggle('hidden', nome !== 'credenciais');
+    document.getElementById('aba-split').classList.toggle('hidden', nome !== 'split');
+}
 function copiarTexto(texto, btn) {
     const finalizar = () => {
         const original = btn.textContent;

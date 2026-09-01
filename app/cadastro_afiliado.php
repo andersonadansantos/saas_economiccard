@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cpf = preg_replace('/\D/', '', trim($_POST['cpf'] ?? ''));
     $nascimento = trim($_POST['nascimento'] ?? '');
     $senha = $_POST['senha'] ?? '';
+    $wallet = trim($_POST['wallet_afiliado'] ?? '');
 
     $cpfMascarado = '';
     if (strlen($cpf) === 11) {
@@ -43,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ck->bind_param('s', $codigo);
                 $ck->execute();
             } while ($ck->get_result()->num_rows > 0);
-            $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, nascimento, senha, comissao, token) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)");
-            $stmt->bind_param('ssssssss', $codigo, $nome, $email, $whatsapp, $cpfMascarado, $nascimento, $hash, $token);
+            $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, nascimento, senha, comissao, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)");
+            $stmt->bind_param('sssssssss', $codigo, $nome, $email, $whatsapp, $cpfMascarado, $nascimento, $hash, $wallet, $token);
             if ($stmt->execute()) {
                 registrar_aceite_contrato($conn, 'afiliados', $conn->insert_id);
                 $codigoGerado = $codigo;
@@ -116,6 +117,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Senha do painel *</label>
 <input name="senha" type="password" required minlength="6" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Mínimo 6 caracteres">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
+<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
 </div>
 <label class="flex items-start gap-3 cursor-pointer select-none bg-gray-50 border border-gray-200 rounded-lg p-3">
 <input type="checkbox" id="aceiteContrato" name="aceite_contrato" value="1" required class="mt-1 w-5 h-5 accent-[#3e6a00]">
