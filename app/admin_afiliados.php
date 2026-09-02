@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telefone = trim($_POST['telefone'] ?? '');
         $cpf = trim($_POST['cpf'] ?? '');
         $nascimento = trim($_POST['nascimento'] ?? '');
-        $comissao = (float)str_replace(',', '.', $_POST['comissao'] ?? '0');
+        if ($nascimento === '') { $nascimento = null; }
         $wallet = trim($_POST['wallet_afiliado'] ?? '');
         $senha = $_POST['senha'] ?? '';
         if ($nome === '' || $email === '') {
@@ -62,11 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 if ($senha !== '') {
                     $hash = password_hash($senha, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, comissao = ?, wallet_afiliado = ?, senha = ? WHERE id = ?");
-                    $stmt->bind_param('ssssssssi', $nome, $email, $telefone, $cpf, $nascimento, $comissao, $wallet, $hash, $id);
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, wallet_afiliado = ?, senha = ? WHERE id = ?");
+                    $stmt->bind_param('sssssssi', $nome, $email, $telefone, $cpf, $nascimento, $wallet, $hash, $id);
                 } else {
-                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, comissao = ?, wallet_afiliado = ? WHERE id = ?");
-                    $stmt->bind_param('sssssssi', $nome, $email, $telefone, $cpf, $nascimento, $comissao, $wallet, $id);
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, wallet_afiliado = ? WHERE id = ?");
+                    $stmt->bind_param('ssssssi', $nome, $email, $telefone, $cpf, $nascimento, $wallet, $id);
                 }
                 $stmt->execute();
                 $sucesso = 'Afiliado atualizado com sucesso!';
@@ -252,7 +252,6 @@ data-email="<?php echo htmlspecialchars($a['email'], ENT_QUOTES); ?>"
 data-telefone="<?php echo htmlspecialchars($a['telefone'] ?? '', ENT_QUOTES); ?>"
 data-cpf="<?php echo htmlspecialchars($a['cpf'] ?? '', ENT_QUOTES); ?>"
 data-nascimento="<?php echo htmlspecialchars($a['nascimento'] ?? '', ENT_QUOTES); ?>"
-data-comissao="<?php echo htmlspecialchars((string)(float)$a['comissao'], ENT_QUOTES); ?>"
 data-wallet="<?php echo htmlspecialchars($a['wallet_afiliado'] ?? '', ENT_QUOTES); ?>"
 onclick="abrirEditarAfiliado(this)"
 class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-2 py-1 transition" title="Editar informações do afiliado">
@@ -333,10 +332,6 @@ class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover
 <input id="edit_nascimento" name="nascimento" type="date" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
 </div>
 <div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Comissão (%)</label>
-<input id="edit_comissao" name="comissao" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
-</div>
-<div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
 <input id="edit_wallet" name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
 </div>
@@ -360,7 +355,6 @@ function abrirEditarAfiliado(btn) {
     document.getElementById('edit_telefone').value = btn.dataset.telefone;
     document.getElementById('edit_cpf').value = btn.dataset.cpf;
     document.getElementById('edit_nascimento').value = btn.dataset.nascimento || '';
-    document.getElementById('edit_comissao').value = btn.dataset.comissao;
     document.getElementById('edit_wallet').value = btn.dataset.wallet;
     document.getElementById('edit_senha').value = '';
     const m = document.getElementById('modalEdicaoAfiliado');
