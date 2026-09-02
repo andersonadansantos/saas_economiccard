@@ -42,6 +42,12 @@ function normalizarNascimento($v) {
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoApp = $pers['logo_app'] ?? '';
 
+// URL absoluta do gerador de contrato. Deve ser absoluta porque a página pode ser
+// acessada via link amigável (/indicacao/TOKEN), caso em que URLs relativas
+// ("gerar_contrato.php") resolveriam para /indicacao/gerar_contrato.php (404).
+$contratoBase = asset_url('gerar_contrato.php');
+$contratoStatic = asset_url('Contrato_de_Adesao_Economic_Card.pdf');
+
 $afiliadoToken = '';
 if (!empty($_GET['afiliado']) || !empty($_POST['afiliado'])) {
     $token = trim($_GET['afiliado'] ?? $_POST['afiliado']);
@@ -389,14 +395,14 @@ Li e aceito o
 <div><span class="text-gray-500 font-semibold">E-mail:</span> <span id="ctrEmail" class="text-gray-800 font-medium">—</span></div>
 <div class="col-span-2"><span class="text-gray-500 font-semibold">Endereço:</span> <span id="ctrEnd" class="text-gray-800 font-medium">—</span></div>
 </div>
-<iframe id="modalContratoFrame" src="Contrato_de_Adesao_Economic_Card.pdf" class="flex-1 w-full bg-gray-100" type="application/pdf"></iframe>
+<iframe id="modalContratoFrame" src="<?php echo htmlspecialchars($contratoStatic, ENT_QUOTES); ?>" class="flex-1 w-full bg-gray-100" type="application/pdf"></iframe>
 <div class="shrink-0 border-t border-gray-200 p-4 flex items-center justify-between gap-4 bg-white">
 <div class="flex items-center gap-2 text-sm text-gray-700">
 <span class="material-symbols-outlined text-[#3e6a00]">verified_user</span>
 <span>Clique em <b>Aceitar</b> para concordar com os termos.</span>
 </div>
 <div class="flex items-center gap-2">
-<a id="ctrBaixar" href="gerar_contrato.php" target="_blank" class="shrink-0 border border-[#51036d] text-[#51036d] font-bold px-4 py-2.5 rounded-lg transition hover:bg-[#51036d]/5 flex items-center gap-2">
+<a id="ctrBaixar" href="<?php echo htmlspecialchars($contratoBase, ENT_QUOTES); ?>" target="_blank" class="shrink-0 border border-[#51036d] text-[#51036d] font-bold px-4 py-2.5 rounded-lg transition hover:bg-[#51036d]/5 flex items-center gap-2">
 <span class="material-symbols-outlined text-[18px]">download</span> PDF
 </a>
 <button onclick="aceitarContrato()" class="shrink-0 bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-2.5 rounded-lg transition flex items-center gap-2">
@@ -511,8 +517,8 @@ Li e aceito o
             document.getElementById('ctrWhats').textContent = d.whats || '—';
             document.getElementById('ctrEmail').textContent = d.email || '—';
             document.getElementById('ctrEnd').textContent = d.end || '—';
-            document.getElementById('ctrBaixar').href = 'gerar_contrato.php?' + d.query + '&download=1';
-            document.getElementById('modalContratoFrame').src = 'gerar_contrato.php?' + d.query;
+            document.getElementById('ctrBaixar').href = '<?php echo $contratoBase; ?>?' + d.query + '&download=1';
+            document.getElementById('modalContratoFrame').src = '<?php echo $contratoBase; ?>?' + d.query;
             document.getElementById('modalContrato').classList.remove('hidden');
             document.getElementById('modalContrato').classList.add('flex');
         }
