@@ -33,7 +33,7 @@ $atendimento = $conn->query("SELECT * FROM config_atendimento WHERE id = 1")->fe
 function webUrl($src) {
     if (!$src) return '';
     if (preg_match('#^https?://#i', $src) || strpos($src, 'data:') === 0) return $src;
-    return '../' . ltrim($src, '/');
+    return asset_url($src);
 }
 
 $diasRestantes = null;

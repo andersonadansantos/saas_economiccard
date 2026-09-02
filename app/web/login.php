@@ -55,7 +55,7 @@ $logoLoginUser = $pers['logo_login_user'] ?? '';
 function webUrl($src) {
     if (!$src) return '';
     if (preg_match('#^https?://#i', $src) || strpos($src, 'data:') === 0) return $src;
-    return '../' . ltrim($src, '/');
+    return asset_url($src);
 }
 ?>
 <!DOCTYPE html>

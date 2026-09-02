@@ -190,7 +190,7 @@ $logoLoginUser = $pers['logo_login_user'] ?? '';
 <header class="flex flex-col items-center mt-base md:mt-xl pt-[200px]">
 <div class="float-anim mb-[30px] relative">
 <?php if ($logoLoginUser): ?>
-<img class="w-[200px] h-auto object-contain" src="<?php echo htmlspecialchars($logoLoginUser); ?>" alt="Logo Economic Card"/>
+<img class="w-[200px] h-auto object-contain" src="<?php echo htmlspecialchars(asset_url($logoLoginUser)); ?>" alt="Logo Economic Card"/>
 <?php else: ?>
 <div class="w-24 h-24 glass-card rounded-[2rem] flex items-center justify-center p-md shadow-2xl overflow-hidden group">
 <div class="absolute inset-0 bg-primary-container opacity-20 group-hover:opacity-40 transition-opacity"></div>
