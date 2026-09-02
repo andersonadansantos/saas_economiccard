@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($email !== '') {
                     enviar_template_geral('bemvindo', ['nome' => $nome, 'email' => $email]);
                 }
-                header('Location: dashboard.php');
+                header('Location: ' . site_base() . '/app/dashboard.php');
                 exit;
             } else {
                 $erro = 'Erro ao salvar o cadastro. Tente novamente.';
@@ -264,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($sucesso): ?>
 <div class="mb-md p-md rounded-xl bg-secondary-container/30 border border-secondary/30 text-center">
 <p class="font-headline-sm text-on-secondary-container mb-base">Cadastro realizado com sucesso!</p>
-<a class="inline-block w-full bg-primary text-on-primary font-headline-sm py-4 rounded-full text-center" href="login.php">Ir para o Login</a>
+<a class="inline-block w-full bg-primary text-on-primary font-headline-sm py-4 rounded-full text-center" href="<?php echo site_base(); ?>/app/login.php">Ir para o Login</a>
 </div>
 <?php else: ?>
 <?php if ($erro): ?>
@@ -370,7 +370,7 @@ Li e aceito o
 <div class="text-center mt-lg">
 <p class="font-body-md text-on-surface-variant">
                 Já tem uma conta? 
-                <a class="text-primary font-bold hover:underline" href="login.php">Entrar</a>
+                <a class="text-primary font-bold hover:underline" href="<?php echo site_base(); ?>/app/login.php">Entrar</a>
 </p>
 </div>
 <a href="#" onclick="event.preventDefault(); abrirContrato(); return false;" class="flex items-center justify-center mt-md text-outline hover:text-primary transition-colors cursor-pointer group">
