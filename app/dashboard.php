@@ -213,7 +213,7 @@ foreach ($idsBroadcast as $mid) {
 <div class="flex items-center gap-3 px-3">
 <div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary border-2 border-secondary-container">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($avatar); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">person</span>
 <?php endif; ?>
@@ -255,7 +255,7 @@ foreach ($idsBroadcast as $mid) {
             menu
         </button>
 <?php if ($logoApp): ?>
-<img class="w-[100px] h-auto object-contain" src="<?php echo htmlspecialchars($logoApp); ?>" alt="Logo Economic Card"/>
+<img class="w-[100px] h-auto object-contain" src="<?php echo htmlspecialchars(asset_url($logoApp)); ?>" alt="Logo Economic Card"/>
 <?php else: ?>
 <div class="w-12 h-12 rounded-lg premium-gradient flex items-center justify-center">
 <span class="material-symbols-outlined text-white text-[24px]">credit_card</span>
@@ -298,7 +298,7 @@ foreach ($idsBroadcast as $mid) {
 <section class="flex items-center gap-3">
 <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-secondary-container bg-surface-container-high flex items-center justify-center">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($avatar); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-primary text-[24px]">person</span>
 <?php endif; ?>
@@ -312,7 +312,7 @@ foreach ($idsBroadcast as $mid) {
 <section class="relative group active:scale-[0.98] transition-transform duration-300" onclick="abrirFullscreen()">
 <?php if ($cartaoImg): ?>
 <div class="relative rounded-xl shadow-[0_8px_30px_rgba(106,37,133,0.15)] overflow-hidden aspect-[1.58/1] cursor-pointer">
-<img class="absolute inset-0 w-full h-full object-contain" src="<?php echo htmlspecialchars($cartaoImg); ?>" alt="Cartão Economic Card"/>
+<img class="absolute inset-0 w-full h-full object-contain" src="<?php echo htmlspecialchars(asset_url($cartaoImg)); ?>" alt="Cartão Economic Card"/>
 <div class="absolute inset-0 flex flex-col items-start justify-center gap-1.5 p-6 translate-y-[50px]">
 <p class="font-display-lg text-white text-[16px] truncate max-w-full text-left" style="text-shadow: 0 1px 4px rgba(0,0,0,0.6);"><?php echo htmlspecialchars($u['nome']); ?></p>
 <?php if ($u['cartao_ativo']): ?>
@@ -581,7 +581,7 @@ foreach ($idsBroadcast as $mid) {
 <button class="absolute top-6 right-6 material-symbols-outlined text-white/80 text-3xl" onclick="fecharFullscreen()">close</button>
 <div class="w-full max-w-md premium-gradient rounded-2xl p-8 shadow-2xl relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between">
 <?php if ($cartaoImg): ?>
-<img class="w-full h-full object-contain rounded-2xl" src="<?php echo htmlspecialchars($cartaoImg); ?>" alt="Cartão Economic Card"/>
+<img class="w-full h-full object-contain rounded-2xl" src="<?php echo htmlspecialchars(asset_url($cartaoImg)); ?>" alt="Cartão Economic Card"/>
 <?php else: ?>
 <div class="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
 <div class="flex justify-between items-start z-10">

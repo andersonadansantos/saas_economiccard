@@ -243,7 +243,7 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <td class="px-4 py-3">
 <div class="flex items-center gap-3">
 <?php if ($u['avatar']): ?>
-<img class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" src="<?php echo htmlspecialchars($u['avatar']); ?>" alt="Avatar de <?php echo htmlspecialchars($u['nome']); ?>"/>
+<img class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" src="<?php echo htmlspecialchars(asset_url($u['avatar'])); ?>" alt="Avatar de <?php echo htmlspecialchars($u['nome']); ?>"/>
 <?php else: ?>
 <div class="w-9 h-9 rounded-full bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0">
 <span class="material-symbols-outlined text-[18px]">person</span>

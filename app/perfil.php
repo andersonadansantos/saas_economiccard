@@ -116,7 +116,7 @@ if (!$u) { header('Location: logout.php'); exit; }
 <div class="relative group">
 <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white custom-shadow bg-surface-container-high flex items-center justify-center">
 <?php if ($u['avatar']): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($u['avatar']); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($u['avatar'])); ?>" alt="Foto de perfil"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">person</span>
 <?php endif; ?>

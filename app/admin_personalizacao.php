@@ -101,7 +101,7 @@ foreach ($configs as $campo => $cfg):
 <div class="flex flex-col sm:flex-row sm:items-center gap-6">
 <div class="w-40 h-24 bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
 <?php if ($atual): ?>
-<img src="<?php echo htmlspecialchars($atual); ?>" alt="Logo atual" class="max-w-full max-h-full object-contain p-2">
+<img src="<?php echo htmlspecialchars(asset_url($atual)); ?>" alt="Logo atual" class="max-w-full max-h-full object-contain p-2">
 <?php else: ?>
 <span class="text-xs text-gray-400">Nenhuma logo</span>
 <?php endif; ?>

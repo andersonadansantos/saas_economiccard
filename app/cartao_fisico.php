@@ -63,7 +63,7 @@ $jaPedido = $check->get_result()->num_rows > 0;
 <div class="premium-gradient rounded-xl p-6 shadow-[0_8px_30px_rgba(106,37,133,0.15)] relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between mb-lg">
 <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
 <?php if ($cartaoImg): ?>
-<img class="absolute inset-0 w-full h-full object-contain" src="<?php echo htmlspecialchars($cartaoImg); ?>" alt="Cartão Físico Economic Card"/>
+<img class="absolute inset-0 w-full h-full object-contain" src="<?php echo htmlspecialchars(asset_url($cartaoImg)); ?>" alt="Cartão Físico Economic Card"/>
 <?php endif; ?>
 <div class="flex justify-between items-start z-10">
 <div class="space-y-1"></div>

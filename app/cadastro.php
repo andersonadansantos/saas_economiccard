@@ -249,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <main class="flex-grow pt-24 pb-32 px-container-padding max-w-md mx-auto w-full">
 <div class="flex flex-col items-center mb-lg">
 <?php if ($logoApp): ?>
-<img class="w-[150px] h-auto object-contain mb-xs" src="<?php echo htmlspecialchars($logoApp); ?>" alt="Logo Economic Card"/>
+<img class="w-[150px] h-auto object-contain mb-xs" src="<?php echo htmlspecialchars(asset_url($logoApp)); ?>" alt="Logo Economic Card"/>
 <?php endif; ?>
 <p class="font-body-md text-on-surface-variant text-center px-4">
                 Faça seu cadastro e tenha descontos e benefícios exclusivos.

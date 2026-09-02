@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="glass-card rounded-2xl p-8">
 <div class="text-center mb-6">
 <?php if ($logoLoginUser): ?>
-<img class="w-24 h-auto object-contain mx-auto mb-3" src="<?php echo htmlspecialchars($logoLoginUser); ?>" alt="Logo"/>
+<img class="w-24 h-auto object-contain mx-auto mb-3" src="<?php echo htmlspecialchars(asset_url($logoLoginUser)); ?>" alt="Logo"/>
 <?php endif; ?>
 <h1 class="text-xl font-extrabold">Complete seu cadastro</h1>
 <p class="text-sm text-white/60 mt-1">Faltam poucos dados para ativar seu cartão.</p>

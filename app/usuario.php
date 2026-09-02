@@ -76,7 +76,7 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <div class="px-6 py-6 flex items-center gap-3 border-b border-white/10">
 <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden">
 <?php if ($logoApp): ?>
-<img class="w-full h-full object-contain p-1" src="<?php echo htmlspecialchars($logoApp); ?>" alt="Logo"/>
+<img class="w-full h-full object-contain p-1" src="<?php echo htmlspecialchars(asset_url($logoApp)); ?>" alt="Logo"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-white">credit_card</span>
 <?php endif; ?>
@@ -104,7 +104,7 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <div class="flex items-center gap-3 mb-3">
 <div class="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center border-2 border-[#b6f570]">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($avatar); ?>" alt="Avatar"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-white/80">person</span>
 <?php endif; ?>
@@ -128,7 +128,7 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <div class="flex items-center gap-3">
 <?php if ($avatar): ?>
 <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-[#b6f570] bg-white">
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($avatar); ?>" alt="Avatar"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar"/>
 </div>
 <?php else: ?>
 <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#51036d] border-2 border-[#b6f570]">
@@ -373,7 +373,7 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <div class="flex items-center gap-4 border border-gray-100 rounded-xl p-4 hover:border-[#51036d]/30 transition">
 <div class="w-14 h-14 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
 <?php if ($p['logo']): ?>
-<img class="w-full h-full object-contain p-1.5" src="<?php echo htmlspecialchars($p['logo']); ?>" alt="Logo"/>
+<img class="w-full h-full object-contain p-1.5" src="<?php echo htmlspecialchars(asset_url($p['logo'])); ?>" alt="Logo"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-gray-400">storefront</span>
 <?php endif; ?>

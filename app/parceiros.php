@@ -113,7 +113,7 @@ $categorias = $conn->query("SELECT DISTINCT categoria FROM parceiros WHERE categ
 <span class="absolute top-2 right-3 bg-[#51036d] text-white font-display-lg text-display-lg font-extrabold rounded-lg px-3 py-1"><?php echo number_format((float)$p['porcentagem'], 0, ',', '.') . '%'; ?></span>
 <div class="w-20 h-20 md:w-24 md:h-24 bg-surface-container-low rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
 <?php if ($p['logo']): ?>
-<img class="w-full h-full object-contain p-2" src="<?php echo htmlspecialchars($p['logo']); ?>" alt="Logo de <?php echo htmlspecialchars($p['nome']); ?>"/>
+<img class="w-full h-full object-contain p-2" src="<?php echo htmlspecialchars(asset_url($p['logo'])); ?>" alt="Logo de <?php echo htmlspecialchars($p['nome']); ?>"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-[32px] text-outline">storefront</span>
 <?php endif; ?>

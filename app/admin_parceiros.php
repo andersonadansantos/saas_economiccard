@@ -236,7 +236,7 @@ if (isset($_GET['editar'])) {
 <div class="flex items-center justify-start">
 <div class="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden mr-3">
 <?php if ($p['logo']): ?>
-<img class="w-full h-full object-contain p-1" src="<?php echo htmlspecialchars($p['logo']); ?>" alt="Logo de <?php echo htmlspecialchars($p['nome']); ?>"/>
+<img class="w-full h-full object-contain p-1" src="<?php echo htmlspecialchars(asset_url($p['logo'])); ?>" alt="Logo de <?php echo htmlspecialchars($p['nome']); ?>"/>
 <?php else: ?>
 <span class="material-symbols-outlined text-lg text-outline">storefront</span>
 <?php endif; ?>
