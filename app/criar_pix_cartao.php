@@ -51,7 +51,7 @@ if (!$cob['ok']) {
     exit;
 }
 $payId = (string)$cob['payment']['id'];
-$qr = asaas_qrcode_pix($cfgAsaas, $payId);
+$qr = asaas_qrcode_pix($cfgAsaas, $payId, $valor);
 if (!$qr['ok']) {
     echo json_encode(['status' => 'error', 'message' => $qr['message']]);
     exit;

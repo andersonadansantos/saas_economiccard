@@ -77,7 +77,7 @@ if (!$cust['ok']) {
     }
 asaas_fluxo_log('cobranca_ok', "uid=$uid payment={$cob['payment']['id']} split=" . ($cob['split_aplicado'] ? 'sim' : 'nao'));
 $payId = (string)$cob['payment']['id'];
-$qr = asaas_qrcode_pix($cfgAsaas, $payId);
+$qr = asaas_qrcode_pix($cfgAsaas, $payId, $valor);
 if (!$qr['ok']) {
     asaas_fluxo_log('erro', "qrcode falhou uid=$uid payment=$payId: " . $qr['message']);
     echo json_encode(['status' => 'error', 'message' => $qr['message']]);

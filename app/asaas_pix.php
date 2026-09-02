@@ -277,11 +277,32 @@ function crc16_ccitt_false($str) {
     return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
 }
 
+// Insere o campo 54 (Transaction Amount) no BR Code e recalcula o CRC.
+// O Asaas emite o QR sem embutir o valor; muitos apps de banco recusam o
+// "copia e cola" quando o valor nao esta no payload (mostram "código inválido").
+// Como o campo 26 continua apontando para a MESMA cobrança Asaas, o pagamento
+// continua sendo conciliado normalmente. Retorna false se o payload for inesperado.
+function asaas_brcode_com_valor($payload, $valor) {
+    $payload = trim((string)$payload);
+    if ($payload === '' || strpos($payload, '5303986') === false) return false;
+    $valor = round((float)$valor, 2);
+    if ($valor <= 0) return false;
+    $amt = number_format($valor, 2, '.', '');                    // "60.00"
+    $f54 = '54' . str_pad((string)strlen($amt), 2, '0', STR_PAD_LEFT) . $amt; // 540560.00
+    $pos53 = strpos($payload, '5303986');
+    $crcPos = strrpos($payload, '6304');
+    if ($crcPos === false) return false;
+    $header = substr($payload, 0, $pos53 + 7);                   // ate o fim do campo 53
+    $tail = substr($payload, $pos53 + 7, $crcPos - ($pos53 + 7));// campos 58..62 (sem 63)
+    $novo = $header . $f54 . $tail;                              // agora com 54 antes de 58
+    return $novo . '6304' . crc16_ccitt_false($novo);
+}
+
 // Retorna o QR Code PIX (copia e cola + imagem base64) de uma cobrança.
 // O Asaas pode levar alguns instantes para gerar o QR; valida o BR Code (CRC) e
-// só considera válido quando o payload está íntegro — evita armazenar/exibir um
-// "código inválido" na tela de pagamento.
-function asaas_qrcode_pix(array $cfg, $paymentId) {
+// só considera válido quando o payload está íntegro. Em seguida embute o VALOR
+// (campo 54) no "copia e cola" para que os apps de banco aceitem a colagem.
+function asaas_qrcode_pix(array $cfg, $paymentId, $valor = null) {
     $resp = [];
     for ($i = 0; $i < 3; $i++) {
         $resp = asaas_request($cfg, 'GET', '/payments/' . rawurlencode((string)$paymentId) . '/pixQrCode');
@@ -290,7 +311,12 @@ function asaas_qrcode_pix(array $cfg, $paymentId) {
         if ($payload !== '' && $imagem !== '') {
             $val = asaas_validar_brcode($payload);
             if ($val['ok']) {
-                return ['ok' => true, 'payload' => $payload, 'encoded_image' => $imagem];
+                $payloadFinal = ($valor !== null) ? asaas_brcode_com_valor($payload, $valor) : $payload;
+                if ($payloadFinal === false) {
+                    asaas_fluxo_log('qrcode_valor', "payment=$paymentId erro ao embutir valor");
+                    $payloadFinal = $payload;
+                }
+                return ['ok' => true, 'payload' => $payloadFinal, 'encoded_image' => $imagem];
             }
             asaas_fluxo_log('qrcode_invalido', "payment=$paymentId motivo={$val['motivo']}");
         }
