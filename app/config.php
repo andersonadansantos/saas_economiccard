@@ -48,6 +48,24 @@ function asset_url($src) {
     return $appBase . '/' . ltrim($src, '/');
 }
 
+// Caminho público base do site (ex.: "/card" no XAMPP local, "" quando a raiz é o
+// documento). Usado para montar links amigáveis, ex.: => /card/indicacao/TOKEN.
+function site_base() {
+    static $siteBase = null;
+    if ($siteBase === null) {
+        $docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+        $appAbs = str_replace('\\', '/', __DIR__);
+        if ($docRoot && strpos($appAbs, $docRoot) === 0) {
+            $appBase = '/' . ltrim(substr($appAbs, strlen($docRoot)), '/'); // e.g. /card/app ou /app
+            $siteBase = preg_replace('#/app$#', '', $appBase);              // -> /card ou ''
+        } else {
+            $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
+            $siteBase = preg_replace('#/app$#', '', $scriptDir);
+        }
+    }
+    return rtrim($siteBase, '/');
+}
+
 // Cloudflare Turnstile (proteção das páginas de login) — helpers centralizados em turnstile.php
 require_once __DIR__ . '/turnstile.php';
 

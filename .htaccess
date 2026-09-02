@@ -19,6 +19,9 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^([A-Za-z0-9_\-]+)/?$ app/$1 [L]
+
+    # Link amigável de indicação de afiliado: /indicacao/TOKEN -> app/cadastro.php?afiliado=TOKEN
+    RewriteRule ^indicacao/([A-Za-z0-9]+)/?$ app/cadastro.php?afiliado=$1 [L,QSA]
 </IfModule>
 
 <FilesMatch "asaas.log">

@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $afiliados = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token AND u.cartao_ativo = 1) AS ativos FROM afiliados a ORDER BY a.id DESC");
-$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/card/';
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . site_base() . '/';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -228,8 +228,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <td class="px-4 py-3"><?php echo htmlspecialchars($a['email']); ?></td>
 <td class="px-4 py-3">
 <div class="flex items-center gap-2">
-<code class="text-[11px] text-gray-500 break-all"><?php echo htmlspecialchars($baseUrl . 'cadastro.php?afiliado=' . $a['token']); ?></code>
-<button type="button" class="text-[#51036d] hover:underline text-xs font-semibold shrink-0" onclick="copiarLink('<?php echo htmlspecialchars($baseUrl . 'cadastro.php?afiliado=' . $a['token']); ?>', this)">Copiar</button>
+<code class="text-[11px] text-gray-500 break-all"><?php echo htmlspecialchars($baseUrl . 'indicacao/' . $a['token']); ?></code>
+<button type="button" class="text-[#51036d] hover:underline text-xs font-semibold shrink-0" onclick="copiarLink('<?php echo htmlspecialchars($baseUrl . 'indicacao/' . $a['token']); ?>', this)">Copiar</button>
 </div>
 </td>
 <td class="px-4 py-3 font-bold text-[#3e6a00]"><?php echo number_format((float)$a['comissao'], 0, ',', '.') . '%'; ?></td>

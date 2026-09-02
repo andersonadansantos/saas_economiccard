@@ -37,7 +37,7 @@ if (!empty($_SESSION['afiliado_id'])) {
 }
 
 $usuarios = null;
-$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/card/';
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . site_base() . '/';
 if ($af) {
     $stmt = $conn->prepare("SELECT * FROM usuarios WHERE afiliado_token = ? ORDER BY id DESC");
     $stmt->bind_param('s', $af['token']);
@@ -116,7 +116,7 @@ if ($af) {
 <h2 class="text-sm font-extrabold text-gray-800 uppercase mb-3">Seu link de indicação</h2>
 <p class="text-xs text-gray-500 mb-3">Compartilhe este link. Os cadastros feitos por ele aparecem abaixo.</p>
 <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-<code class="text-xs text-gray-600 break-all flex-1"><?php echo htmlspecialchars($baseUrl . 'cadastro.php?afiliado=' . $af['token']); ?></code>
+<code class="text-xs text-gray-600 break-all flex-1"><?php echo htmlspecialchars($baseUrl . 'indicacao/' . $af['token']); ?></code>
 <button type="button" class="text-[#51036d] hover:underline text-xs font-bold shrink-0" onclick="copiarLink(this)">Copiar</button>
 </div>
 </div>

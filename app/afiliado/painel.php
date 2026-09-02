@@ -14,7 +14,8 @@ if (!$af) {
     header('Location: index.php');
     exit;
 }
-$linkIndicacao = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/card/cadastro.php?afiliado=' . $af['token'];
+$esquema = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
+$linkIndicacao = $esquema . '://' . $_SERVER['HTTP_HOST'] . site_base() . '/indicacao/' . $af['token'];
 
 $stmtU = $conn->prepare("SELECT * FROM usuarios WHERE afiliado_token = ? ORDER BY id DESC");
 $stmtU->bind_param('s', $af['token']);
