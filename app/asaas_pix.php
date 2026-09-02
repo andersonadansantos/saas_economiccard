@@ -238,8 +238,49 @@ function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao
     return ['ok' => false, 'message' => asaas_primeiro_erro($resp, 'Asaas (cartão)')];
 }
 
+// Valida um BR Code PIX (copia e cola / payload EMV) conforme o padrão do Bacen:
+//  - deve começar com "0002" (Payload Format Indicator "000201")
+//  - campo 63 (CRC-16/CCITT-FALSE) deve conferir com o conteúdo anterior
+//  - tamanho mínimo razoável e sem quebras de linha espaços indevidos.
+function asaas_validar_brcode($payload) {
+    $payload = trim((string)$payload);
+    if ($payload === '') return ['ok' => false, 'motivo' => 'vazio'];
+    if (strlen($payload) < 60 || strlen($payload) > 400) {
+        return ['ok' => false, 'motivo' => 'tamanho ' . strlen($payload)];
+    }
+    if (substr($payload, 0, 4) !== '0002') {
+        return ['ok' => false, 'motivo' => 'prefixo ausente'];
+    }
+    if ((substr($payload, -8, 2) ?? '') !== '63') {
+        return ['ok' => false, 'motivo' => 'sem campo CRC'];
+    }
+    $crcInformado = strtoupper(substr($payload, -4));
+    $corpo = substr($payload, 0, -4);
+    $calc = crc16_ccitt_false($corpo);
+    if ($crcInformado !== $calc) {
+        return ['ok' => false, 'motivo' => 'CRC ' . $crcInformado . ' != ' . $calc];
+    }
+    return ['ok' => true];
+}
+
+// CRC-16/CCITT-FALSE (polinômio 0x1021, inicial 0xFFFF, sem reflexão) exigido pelo BR Code.
+function crc16_ccitt_false($str) {
+    $crc = 0xFFFF;
+    $len = strlen($str);
+    for ($i = 0; $i < $len; $i++) {
+        $crc ^= (ord($str[$i]) & 0xFF) << 8;
+        for ($j = 0; $j < 8; $j++) {
+            if ($crc & 0x8000) $crc = (($crc << 1) ^ 0x1021) & 0xFFFF;
+            else $crc = ($crc << 1) & 0xFFFF;
+        }
+    }
+    return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
+}
+
 // Retorna o QR Code PIX (copia e cola + imagem base64) de uma cobrança.
-// O Asaas pode levar alguns instantes para gerar o QR; tenta até 3 vezes.
+// O Asaas pode levar alguns instantes para gerar o QR; valida o BR Code (CRC) e
+// só considera válido quando o payload está íntegro — evita armazenar/exibir um
+// "código inválido" na tela de pagamento.
 function asaas_qrcode_pix(array $cfg, $paymentId) {
     $resp = [];
     for ($i = 0; $i < 3; $i++) {
@@ -247,7 +288,11 @@ function asaas_qrcode_pix(array $cfg, $paymentId) {
         $payload = (string)($resp['dados']['payload'] ?? '');
         $imagem = (string)($resp['dados']['encodedImage'] ?? '');
         if ($payload !== '' && $imagem !== '') {
-            return ['ok' => true, 'payload' => $payload, 'encoded_image' => $imagem];
+            $val = asaas_validar_brcode($payload);
+            if ($val['ok']) {
+                return ['ok' => true, 'payload' => $payload, 'encoded_image' => $imagem];
+            }
+            asaas_fluxo_log('qrcode_invalido', "payment=$paymentId motivo={$val['motivo']}");
         }
         if ($i < 2) { sleep(1); }
     }

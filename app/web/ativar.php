@@ -102,7 +102,10 @@ foreach ($planos as $pl) {
 <div class="flex flex-col gap-2">
 <?php foreach ($planos as $i => $pl): $plValor = number_format((float)($pl['valor_mensal'] ?: $pl['valor_adesao'] ?: $pl['valor']), 2, ',', '.'); ?>
 <?php $ehMensal = $planoMensal && (int)$pl['id'] === (int)$planoMensal['id']; ?>
-<div class="flex items-center gap-3 border border-outline-variant rounded-xl px-4 py-3 cursor-pointer transition-all plan-card <?php echo ($i === 0) ? 'border-primary bg-primary/5' : ''; ?> <?php echo $ehMensal ? 'border-amber-300 bg-amber-50/60' : ''; ?>" data-id="<?php echo (int)$pl['id']; ?>" data-valor="<?php echo htmlspecialchars($plValor); ?>" data-dias="<?php echo (int)$pl['dias']; ?>" data-nome="<?php echo htmlspecialchars($pl['nome']); ?>" onclick="selecionarPlano(this)">
+    <div class="relative flex items-center gap-3 border border-outline-variant rounded-xl px-4 py-3 cursor-pointer transition-all plan-card <?php echo ($i === 0) ? 'border-primary bg-primary/5' : ''; ?> <?php echo $ehMensal ? 'border-amber-300 bg-amber-50/60' : ''; ?>" data-id="<?php echo (int)$pl['id']; ?>" data-valor="<?php echo htmlspecialchars($plValor); ?>" data-dias="<?php echo (int)$pl['dias']; ?>" data-nome="<?php echo htmlspecialchars($pl['nome']); ?>" onclick="selecionarPlano(this)">
+<?php if ($ehMensal && !$adesaoPaga): ?>
+<span class="absolute top-1 right-1.5 z-10 inline-flex items-center rounded-full bg-red-500 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white shadow">Tem Taxa de Adesão</span>
+<?php endif; ?>
 <?php if ($ehMensal): ?>
 <span class="text-xl shrink-0 leading-none" title="Coroa - plano mais adquirido">👑</span>
 <?php else: ?>
