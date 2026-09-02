@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php echo htmlspecialchars($erro); ?>
 </div>
 <?php endif; ?>
-<form class="space-y-card-gutter" id="registrationForm" method="POST" action="cadastro.php">
+<form class="space-y-card-gutter" id="registrationForm" method="POST" action="<?php echo site_base(); ?>/app/cadastro.php">
 <?php if ($afiliadoToken): ?>
 <input type="hidden" name="afiliado" value="<?php echo htmlspecialchars($afiliadoToken); ?>"/>
 <?php endif; ?>
