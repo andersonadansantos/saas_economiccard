@@ -242,6 +242,9 @@ Entrar com Google
                     Ainda não tem cadastro? 
                     <a class="text-secondary-fixed font-bold hover:underline ml-1" href="cadastro.php">Cadastrar-se</a>
 </p>
+<p class="font-body-md text-body-md text-on-primary/70 mt-1">
+                    <a class="hover:underline underline-offset-2" href="politica_privacidade.php">Política de Privacidade</a>
+</p>
 </div>
 </section>
 <footer class="mt-auto pt-lg">

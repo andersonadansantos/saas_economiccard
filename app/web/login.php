@@ -144,6 +144,7 @@ Entrar com Google
 </a>
 <div class="text-center mt-6">
 <p class="text-sm text-on-surface-variant">Ainda não tem cadastro? <a class="text-primary font-bold hover:underline" href="../cadastro.php">Cadastrar-se</a></p>
+<p class="text-xs text-on-surface-variant/70 mt-2"><a class="text-primary hover:underline" href="../politica_privacidade.php">Política de Privacidade</a></p>
 </div>
 <div class="md:hidden text-center mt-8 text-[10px] text-on-surface-variant/60">© 2024 ECONOMIC CARD. TODOS OS DIREITOS RESERVADOS.</div>
 </div>
