@@ -40,7 +40,7 @@ $tituloPagina = 'Política de Privacidade';
     };
 </script>
 <style>
-    body { background-color: #f4f5f7; color: #191c1d; font-family: 'Manrope', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #ffffff; color: #191c1d; font-family: 'Manrope', sans-serif; -webkit-tap-highlight-color: transparent; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .premium-gradient { background: linear-gradient(135deg, #51036d 0%, #6a2585 100%); }
     .card-shadow { box-shadow: 0 8px 30px rgba(81, 3, 109, 0.08); }
@@ -77,9 +77,9 @@ $tituloPagina = 'Política de Privacidade';
 
 <div class="premium-gradient -m-6 md:-m-10 mb-8 p-6 md:p-10 text-white rounded-t-2xl">
 <div class="text-3xl md:text-4xl font-extrabold font-display mb-1">Política de Privacidade</div>
-<p class="text-white/80 text-lg mb-1">Economic Card</p>
-<p class="text-white/60 text-sm">Conforme a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018)</p>
-<div class="mt-5 text-sm text-white/90 leading-relaxed">
+<p class="text-white text-lg mb-1">Economic Card</p>
+<p class="text-white text-sm">Conforme a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018)</p>
+<div class="mt-5 text-sm text-white leading-relaxed">
 <p>Última atualização: <?php echo date('d/m/Y'); ?></p>
 <p>Versão: 1.0</p>
 <p>Responsável: Economic Card LTDA (ou pessoa física responsável)</p>
@@ -306,7 +306,7 @@ E-mail do DPO: negocio@economiccard.com.br
 
 </section>
 
-<footer class="mt-8 text-center pb-8 text-white/60 text-xs">
+<footer class="mt-8 text-center pb-8 text-white text-xs">
 <div class="flex justify-center items-center gap-4">
 <a class="hover:text-white transition-colors" href="login.php">Entrar</a>
 <span class="text-white/30">•</span>
