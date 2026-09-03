@@ -42,14 +42,13 @@ $tituloPagina = 'Política de Privacidade';
 <style>
     body { background-color: #ffffff; color: #191c1d; font-family: 'Manrope', sans-serif; -webkit-tap-highlight-color: transparent; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .premium-gradient { background: linear-gradient(135deg, #51036d 0%, #6a2585 100%); }
     .card-shadow { box-shadow: 0 8px 30px rgba(81, 3, 109, 0.08); }
     .legal-section h2 { color: #51036d; font-weight: 800; font-family: 'Hanken Grotesk', sans-serif; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #51036d; }
-    .legal-section h3 { color: #3e6a00; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-    .legal-section p { line-height: 1.75; color: #282828; margin-bottom: 1rem; }
-    .legal-section ul { padding-left: 1.5rem; list-style: disc; color: #646464; }
+    .legal-section h3 { color: #51036d; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .legal-section p { line-height: 1.75; color: #000000; margin-bottom: 1rem; }
+    .legal-section ul { padding-left: 1.5rem; list-style: disc; color: #000000; }
     .legal-section ul li { margin-bottom: 0.5rem; line-height: 1.6; }
-    .legal-section li b { color: #191c1d; }
+    .legal-section li b { color: #000000; }
     .legal-section table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.875rem; }
     .legal-section table th { background-color: #51036d; color: #fff; padding: 0.6rem; text-align: left; font-weight: 600; }
     .legal-section table td { padding: 0.6rem; border: 1px solid #d1c2d1; vertical-align: top; }
@@ -57,17 +56,17 @@ $tituloPagina = 'Política de Privacidade';
 </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
-<div class="min-h-screen flex flex-col premium-gradient">
-<header class="sticky top-0 z-40 premium-gradient border-b border-white/10">
+<div class="min-h-screen flex flex-col bg-white">
+<header class="sticky top-0 z-40 bg-white border-b border-gray-200">
 <div class="max-w-3xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
 <div class="flex items-center gap-3">
-<a href="login.php"><button class="p-2 -ml-2 rounded-lg hover:bg-white/10"><span class="material-symbols-outlined text-white">arrow_back</span></button></a>
+<a href="login.php"><button class="p-2 -ml-2 rounded-lg hover:bg-gray-100"><span class="material-symbols-outlined text-gray-700">arrow_back</span></button></a>
 <?php if ($logoApp): ?>
-<img class="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5" src="<?php echo polUrl($logoApp); ?>" alt="Logo Economic Card"/>
+<img class="w-8 h-8 rounded-lg object-contain bg-gray-100 p-0.5" src="<?php echo polUrl($logoApp); ?>" alt="Logo Economic Card"/>
 <?php else: ?>
-<span class="material-symbols-outlined text-white">credit_card</span>
+<span class="material-symbols-outlined text-primary">credit_card</span>
 <?php endif; ?>
-<span class="text-sm font-bold text-white">Política de Privacidade</span>
+<span class="text-sm font-bold text-black">Política de Privacidade</span>
 </div>
 </div>
 </header>
@@ -75,11 +74,11 @@ $tituloPagina = 'Política de Privacidade';
 <main class="max-w-3xl mx-auto w-full px-4 md:px-8 py-10">
 <section class="bg-white card-shadow rounded-2xl p-6 md:p-10 legal-section">
 
-<div class="premium-gradient -m-6 md:-m-10 mb-8 p-6 md:p-10 text-white rounded-t-2xl">
-<div class="text-3xl md:text-4xl font-extrabold font-display mb-1">Política de Privacidade</div>
-<p class="text-white text-lg mb-1">Economic Card</p>
-<p class="text-white text-sm">Conforme a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018)</p>
-<div class="mt-5 text-sm text-white leading-relaxed">
+<div class="-m-6 md:-m-10 mb-8 p-6 md:p-10 rounded-t-2xl border-b border-gray-200">
+<div class="text-3xl md:text-4xl font-extrabold font-display mb-1 text-primary">Política de Privacidade</div>
+<p class="text-black text-lg mb-1 font-semibold">Economic Card</p>
+<p class="text-black text-sm">Conforme a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018)</p>
+<div class="mt-5 text-sm text-black leading-relaxed">
 <p>Última atualização: <?php echo date('d/m/Y'); ?></p>
 <p>Versão: 1.0</p>
 <p>Responsável: Economic Card LTDA (ou pessoa física responsável)</p>
@@ -87,7 +86,7 @@ $tituloPagina = 'Política de Privacidade';
 </div>
 
 <h2 class="!mt-0">Índice</h2>
-<ol class="list-decimal list-inside text-on-surface-variant space-y-1 mb-6">
+<ol class="list-decimal list-inside text-black space-y-1 mb-6">
 <?php
 $indices = [
     'Introdução e Escopo',
@@ -306,11 +305,11 @@ E-mail do DPO: negocio@economiccard.com.br
 
 </section>
 
-<footer class="mt-8 text-center pb-8 text-white text-xs">
+<footer class="mt-8 text-center pb-8 text-black text-xs">
 <div class="flex justify-center items-center gap-4">
-<a class="hover:text-white transition-colors" href="login.php">Entrar</a>
-<span class="text-white/30">•</span>
-<a class="hover:text-white transition-colors" href="../index.php">Home</a>
+<a class="hover:text-primary transition-colors text-black" href="login.php">Entrar</a>
+<span class="text-gray-400">•</span>
+<a class="hover:text-primary transition-colors text-black" href="../index.php">Home</a>
 </div>
 <p class="mt-3">© <?php echo date('Y'); ?> ECONOMIC CARD. TODOS OS DIREITOS RESERVADOS.</p>
 </footer>
