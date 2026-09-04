@@ -127,23 +127,23 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <main class="lg:ml-72 flex-1 p-4 md:p-8">
 <?php if (!empty($bannersTopo)): ?>
 <div class="mb-6">
-<div class="relative rounded-2xl overflow-hidden" style="max-width:320px; margin:0 auto;">
+<div class="rounded-2xl overflow-hidden" style="max-width:400px; margin:0 auto;">
 <div id="topoTrackUser" style="display:flex; flex-wrap:nowrap; will-change:transform;">
 <?php foreach ($bannersTopo as $bt): ?>
 <div style="flex:0 0 100%; min-width:100%;">
 <?php if (!empty($bt['link_externo'])): ?>
 <a href="<?php echo htmlspecialchars($bt['link_externo']); ?>" target="_blank" rel="noopener">
-<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="<?php echo htmlspecialchars($bt['titulo']); ?>" class="w-full h-[150px] object-cover rounded-2xl"/>
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[100px] object-cover rounded-2xl"/>
 </a>
 <?php else: ?>
-<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="<?php echo htmlspecialchars($bt['titulo']); ?>" class="w-full h-[150px] object-cover rounded-2xl"/>
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[100px] object-cover rounded-2xl"/>
 <?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>
 <?php if (count($bannersTopo) > 1): ?>
-<div class="flex justify-center gap-1.5 mt-2" id="topoDotsUser">
-<?php foreach ($bannersTopo as $i => $bt): ?><span class="w-1.5 h-1.5 rounded-full bg-gray-300 transition-all duration-300 <?php echo $i === 0 ? '!w-4 !bg-[#51036d]' : ''; ?>" data-dot="<?php echo $i; ?>"></span><?php endforeach; ?>
+<div class="flex justify-center gap-1 mt-2" id="topoDotsUser" style="pointer-events:auto;">
+<?php foreach ($bannersTopo as $i => $bt): ?><span class="w-1.5 h-1.5 rounded-full bg-gray-300/70 transition-all duration-300 cursor-pointer <?php echo $i === 0 ? '!w-4 !bg-[#51036d]' : ''; ?>" data-index="<?php echo $i; ?>" onclick="topoGoTo(<?php echo $i; ?>)"></span><?php endforeach; ?>
 </div>
 <?php endif; ?>
 </div>
@@ -155,6 +155,7 @@ if(!track)return;
 var items=Array.prototype.slice.call(track.children);
 if(items.length<2)return;
 var idx=0,total=items.length,auto;
+window.topoGoTo=function(i){goTo(i);};
 function goTo(i){idx=i;track.style.transition='transform .4s ease';track.style.transform='translateX('+(idx*-100)+'%)';updDots();}
 function next(){goTo((idx+1)%total);}
 function updDots(){var dots=document.querySelectorAll('#topoDotsUser span');dots.forEach(function(d,i){d.classList.toggle('!w-4',i===idx);d.classList.toggle('!bg-[#51036d]',i===idx);d.classList.toggle('!bg-gray-300',i!==idx);});}

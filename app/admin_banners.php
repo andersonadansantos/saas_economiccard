@@ -385,7 +385,7 @@ class="text-[#51036d] hover:text-[#3a024d] font-semibold flex items-center gap-1
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Enviar imagem do banner</label>
 <input type="file" name="imagem_file" accept="image/png,image/jpeg,image/webp,image/gif" class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#51036d] file:text-white file:font-semibold file:cursor-pointer hover:file:bg-[#3a024d]">
-<p class="mt-1 text-xs text-gray-500">Imagem recomendada: <strong class="text-gray-700">320x150 px</strong> com cantos arredondados</p>
+<p class="mt-1 text-xs text-gray-500">Imagem recomendada: <strong class="text-gray-700">400x100 px</strong> com cantos arredondados</p>
 </div>
 <div class="md:col-span-2 flex items-center gap-4">
 <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -562,7 +562,7 @@ class="text-[#51036d] hover:text-[#3a024d] font-semibold flex items-center gap-1
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Enviar nova imagem</label>
 <input type="file" name="imagem_file" accept="image/png,image/jpeg,image/webp,image/gif" class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#51036d] file:text-white file:font-semibold file:cursor-pointer hover:file:bg-[#3a024d]">
-<p class="mt-1 text-xs text-gray-500">Imagem recomendada: <strong class="text-gray-700">320x150 px</strong></p>
+<p class="mt-1 text-xs text-gray-500">Imagem recomendada: <strong class="text-gray-700">400x100 px</strong></p>
 </div>
 <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
 <input id="edit_topo_ativo" type="checkbox" name="ativo" class="w-4 h-4 accent-[#3e6a00]"> Banner ativo
