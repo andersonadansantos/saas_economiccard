@@ -338,6 +338,41 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 })();
 </script>
 <?php endif; ?>
+<!-- Quick Icons Row (3D Flaticon) -->
+<div class="flex justify-center gap-4 py-2" style="max-width:400px; margin:0 auto;">
+<a href="parceiros.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
+<div class="w-12 h-12 flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+</div>
+<span class="text-[11px] font-semibold text-on-surface-variant">Parceiros</span>
+</a>
+<a href="ativar.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
+<div class="w-12 h-12 flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+</div>
+<span class="text-[11px] font-semibold text-on-surface-variant">Cartão</span>
+</a>
+<a href="perfil.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
+<div class="w-12 h-12 flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+</div>
+<span class="text-[11px] font-semibold text-on-surface-variant">Perfil</span>
+</a>
+<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
+<div class="w-12 h-12 flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupons.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+</div>
+<span class="text-[11px] font-semibold text-on-surface-variant">Cupons</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
+<div class="w-12 h-12 flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+</div>
+<span class="text-[11px] font-semibold text-on-surface-variant">Cursos</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
+</div>
+</div>
 <!-- User Greeting -->
 <section class="flex items-center gap-3">
 <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-secondary-container bg-surface-container-high flex items-center justify-center">
