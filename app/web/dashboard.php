@@ -7,9 +7,52 @@ $cartaoAtivado = $pers['cartao_ativado'] ?? '';
 $cartaoDesativado = $pers['cartao_desativado'] ?? '';
 $cartaoImg = $u['cartao_ativo'] ? $cartaoAtivado : $cartaoDesativado;
 $banners = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+$bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 $parceirosDestaque = $conn->query("SELECT * FROM parceiros WHERE ativo = 1 ORDER BY id DESC LIMIT 6");
 $totalParceiros = (int)$conn->query("SELECT COUNT(*) AS t FROM parceiros WHERE ativo = 1")->fetch_assoc()['t'];
 ?>
+
+<?php if (!empty($bannersTopo)): ?>
+<div class="mb-8">
+<div class="relative rounded-2xl overflow-hidden" style="max-width:320px; margin:0 auto;">
+<div id="topoTrackWeb" style="display:flex; flex-wrap:nowrap; will-change:transform;">
+<?php foreach ($bannersTopo as $bt): ?>
+<div style="flex:0 0 100%; min-width:100%;">
+<?php if (!empty($bt['link_externo'])): ?>
+<a href="<?php echo htmlspecialchars($bt['link_externo']); ?>" target="_blank" rel="noopener">
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="<?php echo htmlspecialchars($bt['titulo']); ?>" class="w-full h-[150px] object-cover rounded-2xl"/>
+</a>
+<?php else: ?>
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="<?php echo htmlspecialchars($bt['titulo']); ?>" class="w-full h-[150px] object-cover rounded-2xl"/>
+<?php endif; ?>
+</div>
+<?php endforeach; ?>
+</div>
+<?php if (count($bannersTopo) > 1): ?>
+<div class="flex justify-center gap-1.5 mt-2" id="topoDotsWeb">
+<?php foreach ($bannersTopo as $i => $bt): ?><span class="w-1.5 h-1.5 rounded-full bg-gray-300 transition-all duration-300 <?php echo $i === 0 ? '!w-4 !bg-primary' : ''; ?>" data-dot="<?php echo $i; ?>"></span><?php endforeach; ?>
+</div>
+<?php endif; ?>
+</div>
+</div>
+<script>
+(function(){
+var track=document.getElementById('topoTrackWeb');
+if(!track)return;
+var items=Array.prototype.slice.call(track.children);
+if(items.length<2)return;
+var idx=0,total=items.length,auto;
+function goTo(i){idx=i;track.style.transition='transform .4s ease';track.style.transform='translateX('+(idx*-100)+'%)';updDots();}
+function next(){goTo((idx+1)%total);}
+function updDots(){var dots=document.querySelectorAll('#topoDotsWeb span');dots.forEach(function(d,i){d.classList.toggle('!w-4',i===idx);d.classList.toggle('!bg-primary',i===idx);d.classList.toggle('!bg-gray-300',i!==idx);});}
+function startAuto(){auto=setInterval(next,4000);}
+startAuto();
+var x0=null;
+track.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;clearInterval(auto);},{passive:true});
+track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(dx<-40)goTo((idx+1)%total);else if(dx>40)goTo((idx-1+total)%total);startAuto();x0=null;});
+})();
+</script>
+<?php endif; ?>
 
 <!-- Stat cards -->
 <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

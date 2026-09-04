@@ -38,7 +38,10 @@ function webUrl($src) {
 
 $diasRestantes = null;
 if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
-    $diasRestantes = (int)floor((strtotime($u['cartao_validade']) - strtotime(date('Y-m-d'))) / 86400);
+    $d1 = new DateTime(date('Y-m-d'));
+    $d2 = new DateTime($u['cartao_validade']);
+    $diasRestantes = (int)$d1->diff($d2)->days + 1;
+    if ($d2 < $d1) $diasRestantes = 0;
 }
 
 $msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");

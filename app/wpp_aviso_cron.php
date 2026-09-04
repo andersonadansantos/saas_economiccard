@@ -38,7 +38,9 @@ while ($u = $q->fetch_assoc()) {
     $jaEnviado = $conn->query("SELECT id FROM envios_whatsapp WHERE usuario_id = " . (int)$u['id'] . " AND tipo = 'expira_5dias' AND criado_em > DATE_SUB(NOW(), INTERVAL 24 HOUR)")->num_rows;
     if ($jaEnviado > 0) { continue; }
 
-    $diasRestantes = max(1, (int)((strtotime($u['cartao_validade']) - strtotime(date('Y-m-d'))) / 86400));
+    $d1 = new DateTime(date('Y-m-d'));
+    $d2 = new DateTime($u['cartao_validade']);
+    $diasRestantes = max(1, (int)$d1->diff($d2)->days + 1);
     $msg = $cfg['template'] ?? '';
     $msg = str_replace('{nome}', $u['nome'], $msg);
     $msg = str_replace('{dias}', $diasRestantes, $msg);
