@@ -75,6 +75,17 @@ require_once __DIR__ . '/contrato_aceite.php';
 // Desativa cartões com validade expirada (60 dias)
 $conn->query("UPDATE usuarios SET cartao_ativo = 0 WHERE cartao_ativo = 1 AND cartao_validade IS NOT NULL AND cartao_validade < CURDATE()");
 
+// Garante que a tabela banners_topo existe (slide topo do dashboard)
+$conn->query("CREATE TABLE IF NOT EXISTS banners_topo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL DEFAULT '',
+    imagem VARCHAR(500) NOT NULL DEFAULT '',
+    link_externo VARCHAR(500) NOT NULL DEFAULT '',
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    ordem INT NOT NULL DEFAULT 0,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Bloqueia o acesso enquanto o usuário não ativar o cartão.
 // Redireciona para ativar.php (usado na versão app / raiz).
 function exigirCartaoAtivo() {
