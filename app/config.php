@@ -75,7 +75,14 @@ require_once __DIR__ . '/contrato_aceite.php';
 // Desativa cartões com validade expirada (60 dias)
 $conn->query("UPDATE usuarios SET cartao_ativo = 0 WHERE cartao_ativo = 1 AND cartao_validade IS NOT NULL AND cartao_validade < CURDATE()");
 
-// Garante que a tabela banners_topo existe (slide topo do dashboard)
+// Garante que a tabela banners_topo existe (slide topo do dashboard).
+// Se a tabela existir mas estiver com colunas faltando (ex.: deploy antigo),
+// recria ela para manter o schema correto.
+$colsTopo = $conn->query("SHOW COLUMNS FROM banners_topo")->fetch_all(MYSQLI_ASSOC);
+$colNames = array_column($colsTopo, 'Field');
+if (!$colsTopo || !in_array('titulo', $colNames) || !in_array('link_externo', $colNames)) {
+    $conn->query("DROP TABLE IF EXISTS banners_topo");
+}
 $conn->query("CREATE TABLE IF NOT EXISTS banners_topo (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(255) NOT NULL DEFAULT '',
