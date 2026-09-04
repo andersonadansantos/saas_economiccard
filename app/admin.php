@@ -243,7 +243,10 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <td class="px-4 py-3">
 <div class="flex items-center gap-3">
 <?php if ($u['avatar']): ?>
-<img class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" src="<?php echo htmlspecialchars(asset_url($u['avatar'])); ?>" alt="Avatar de <?php echo htmlspecialchars($u['nome']); ?>"/>
+<img class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" src="<?php echo htmlspecialchars(asset_url($u['avatar'])); ?>" alt="Avatar de <?php echo htmlspecialchars($u['nome']); ?>" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+<div class="w-9 h-9 rounded-full bg-[#51036d]/10 text-[#51036d] items-center justify-center shrink-0 hidden">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
 <?php else: ?>
 <div class="w-9 h-9 rounded-full bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0">
 <span class="material-symbols-outlined text-[18px]">person</span>
@@ -458,7 +461,14 @@ Facebook
 const dados = <?php
 $dados = [];
 $r = $conn->query("SELECT * FROM usuarios");
-while ($linha = $r->fetch_assoc()) { $dados[] = $linha; }
+while ($linha = $r->fetch_assoc()) {
+    if (!empty($linha['avatar']) && strpos($linha['avatar'], 'http') !== 0) {
+        $linha['avatar_url'] = asset_url($linha['avatar']);
+    } else {
+        $linha['avatar_url'] = $linha['avatar'] ?? '';
+    }
+    $dados[] = $linha;
+}
 echo json_encode($dados, JSON_UNESCAPED_UNICODE);
 ?>;
 
@@ -467,10 +477,11 @@ function abrirModal(id) {
     if (!u) return;
     const av = document.getElementById('m-avatar');
     const avIcon = document.getElementById('m-avatar-icon');
-    if (u.avatar) {
-        av.src = u.avatar;
+    if (u.avatar_url) {
+        av.src = u.avatar_url;
         av.classList.remove('hidden');
         avIcon.classList.add('hidden');
+        av.onerror = function() { this.style.display='none'; avIcon.classList.remove('hidden'); };
     } else {
         av.classList.add('hidden');
         avIcon.classList.remove('hidden');

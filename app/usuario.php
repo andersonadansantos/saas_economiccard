@@ -105,7 +105,8 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <div class="flex items-center gap-3 mb-3">
 <div class="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center border-2 border-[#b6f570]">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+<span class="material-symbols-outlined text-white/80 hidden">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-white/80">person</span>
 <?php endif; ?>
@@ -208,7 +209,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <div class="flex items-center gap-3">
 <?php if ($avatar): ?>
 <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-[#b6f570] bg-white">
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar"/>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Avatar" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#51036d] border-2 border-[#b6f570]\'><span class=\'material-symbols-outlined\' style=\'font-variation-settings: \'FILL\' 1;\'>person</span></div>';"/>
 </div>
 <?php else: ?>
 <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#51036d] border-2 border-[#b6f570]">

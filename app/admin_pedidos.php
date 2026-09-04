@@ -24,7 +24,14 @@ $r = $conn->query("SELECT * FROM pedidos_cartao");
 while ($linha = $r->fetch_assoc()) { $dados[] = $linha; }
 $usuarios = $conn->query("SELECT * FROM usuarios");
 $mapa = [];
-while ($u = $usuarios->fetch_assoc()) { $mapa[$u['id']] = $u; }
+while ($u = $usuarios->fetch_assoc()) {
+    if (!empty($u['avatar']) && strpos($u['avatar'], 'http') !== 0) {
+        $u['avatar_url'] = asset_url($u['avatar']);
+    } else {
+        $u['avatar_url'] = $u['avatar'] ?? '';
+    }
+    $mapa[$u['id']] = $u;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -184,10 +191,11 @@ function abrirModal(pedidoId) {
     const u = usuarios[String(p.usuario_id)] || {};
     const av = document.getElementById('m-avatar');
     const avIcon = document.getElementById('m-avatar-icon');
-    if (u.avatar) {
-        av.src = u.avatar;
+    if (u.avatar_url) {
+        av.src = u.avatar_url;
         av.classList.remove('hidden');
         avIcon.classList.add('hidden');
+        av.onerror = function() { this.style.display='none'; avIcon.classList.remove('hidden'); };
     } else {
         av.classList.add('hidden');
         avIcon.classList.remove('hidden');

@@ -139,7 +139,8 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <div class="flex items-center gap-3 mb-3">
 <div class="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center border-2 border-secondary-container shrink-0">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo webUrl($avatar); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover" src="<?php echo webUrl($avatar); ?>" alt="Foto de perfil" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+<span class="material-symbols-outlined text-white/80 hidden">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-white/80">person</span>
 <?php endif; ?>

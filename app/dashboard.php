@@ -216,7 +216,8 @@ foreach ($idsBroadcast as $mid) {
 <div class="flex items-center gap-3 px-3">
 <div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary border-2 border-secondary-container">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover av-fallback-img" data-fallback="sidebar" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-sidebar').style.display='flex';"/>
+<span id="av-fallback-sidebar" class="material-symbols-outlined text-[26px] hidden" style="font-variation-settings:'FILL' 1;">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">person</span>
 <?php endif; ?>
@@ -377,7 +378,8 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <section class="flex items-center gap-3">
 <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-secondary-container bg-surface-container-high flex items-center justify-center">
 <?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil"/>
+<img class="w-full h-full object-cover av-fallback-img" data-fallback="greeting" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-greeting').style.display='flex';"/>
+<span id="av-fallback-greeting" class="material-symbols-outlined text-primary text-[24px] hidden">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-primary text-[24px]">person</span>
 <?php endif; ?>
