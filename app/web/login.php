@@ -8,7 +8,13 @@ if (isset($_SESSION['usuario_id'])) {
     $st->execute();
     $rowLogado = $st->get_result()->fetch_assoc();
     if ($rowLogado && !$rowLogado['cartao_ativo']) {
-        header('Location: ativar.php');
+        if (ehDependente()) {
+            session_unset();
+            session_destroy();
+            header('Location: login.php?acesso_bloqueado=1');
+        } else {
+            header('Location: ativar.php');
+        }
         exit;
     }
     header('Location: dashboard.php');
@@ -22,6 +28,9 @@ if (isset($_SESSION['google_login_erro'])) {
 }
 if (isset($_GET['conta_encerrada'])) {
     $erro = 'Sua conta foi encerrada. Entre em contato com o suporte para mais informações.';
+}
+if (isset($_GET['acesso_bloqueado'])) {
+    $erro = 'Seu acesso como dependente está bloqueado. O cartão do titular está inativo ou vencido.';
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bloqueado = (($_POST['origem'] ?? '') === 'app') ? false : turnstile_bloqueado($erro);
@@ -37,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($userLogin['status'] ?? 'ativo') === 'desativado') {
             $erro = 'Esta conta foi encerrada. Entre em contato com o suporte para mais informações.';
         } else {
+        unset($_SESSION['tipo_conta'], $_SESSION['dependente_id'], $_SESSION['dependente_nome']);
         $_SESSION['usuario_id'] = $userLogin['id'];
         if (!$userLogin['cartao_ativo']) {
             header('Location: ativar.php');
@@ -46,7 +56,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
         }
     } else {
-        $erro = 'CPF não encontrado. Verifique ou faça o cadastro.';
+        $stmtD = $conn->prepare("SELECT d.*, u.status AS dono_status, u.cartao_ativo AS dono_cartao FROM dependentes d JOIN usuarios u ON u.id = d.usuario_id WHERE REPLACE(REPLACE(d.cpf,'.',''),'-','') = ?");
+        $cpfDep = $cpfBusca;
+        $stmtD->bind_param('s', $cpfDep);
+        $stmtD->execute();
+        $resD = $stmtD->get_result();
+        if ($resD->num_rows > 0) {
+            $depLogin = $resD->fetch_assoc();
+            if (($depLogin['dono_status'] ?? 'ativo') === 'desativado') {
+                $erro = 'Esta conta foi encerrada. Entre em contato com o suporte para mais informações.';
+            } elseif (!$depLogin['dono_cartao']) {
+                $erro = 'Seu acesso como dependente está bloqueado. O cartão do titular está inativo ou vencido.';
+            } else {
+                unset($_SESSION['tipo_conta'], $_SESSION['dependente_id'], $_SESSION['dependente_nome']);
+                $_SESSION['usuario_id'] = (int)$depLogin['usuario_id'];
+                $_SESSION['tipo_conta'] = 'dependente';
+                $_SESSION['dependente_id'] = (int)$depLogin['id'];
+                $_SESSION['dependente_nome'] = $depLogin['nome'];
+                header('Location: dashboard.php');
+                exit;
+            }
+        } else {
+            $erro = 'CPF não encontrado. Verifique ou faça o cadastro.';
+        }
     }
     }
 }

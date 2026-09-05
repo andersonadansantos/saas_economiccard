@@ -55,36 +55,38 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </script>
 <?php endif; ?>
 
-<!-- Quick Icons Row (3D Flaticon) -->
+<!-- Quick Icons Row (3D IconScout) -->
 <div class="flex justify-center gap-4 py-4">
 <a href="../parceiros.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(webUrl('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Parceiros</span>
 </a>
+<?php if (!$ehDep): ?>
 <a href="../ativar.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(webUrl('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cartão</span>
 </a>
 <a href="../perfil.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(webUrl('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Perfil</span>
 </a>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(webUrl('../img/icons/cupons.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<?php endif; ?>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupon.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cupons</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
 </div>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(webUrl('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cursos</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
@@ -165,6 +167,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <h3 class="font-extrabold text-on-surface">Acesso Rápido</h3>
 </div>
 <div class="grid grid-cols-2 gap-4 p-6">
+<?php if (!$ehDep): ?>
 <a href="perfil.php" class="flex flex-col items-center justify-center gap-3 border border-outline-variant rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition">
 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">account_circle</span></div>
 <span class="text-xs font-bold text-on-surface uppercase">Perfil</span>
@@ -173,15 +176,18 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary"><span class="material-symbols-outlined">credit_score</span></div>
 <span class="text-xs font-bold text-on-surface uppercase">Ativar Cartão</span>
 </a>
+<?php endif; ?>
 <a href="parceiros.php" class="flex flex-col items-center justify-center gap-3 border border-outline-variant rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition">
 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">storefront</span></div>
 <span class="text-xs font-bold text-on-surface uppercase">Parceiros</span>
 </a>
+<?php if (!$ehDep): ?>
 <a href="cartao_fisico.php" class="flex flex-col items-center justify-center gap-3 border border-outline-variant rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition relative">
 <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">OPCIONAL</span>
 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">contactless</span></div>
 <span class="text-xs font-bold text-on-surface uppercase">Cartão Físico</span>
 </a>
+<?php endif; ?>
 <div class="flex flex-col items-center justify-center gap-3 border border-outline-variant rounded-xl p-5 relative opacity-70 cursor-not-allowed select-none" title="Em breve">
 <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-[#2e5000] text-[8px] font-bold rounded">EM BREVE</span>
 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined">stethoscope</span></div>

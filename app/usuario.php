@@ -100,6 +100,9 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
 <a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white/10 transition">
 <span class="material-symbols-outlined">person</span> Perfil
 </a>
+<a href="dependentes.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white/10 transition">
+<span class="material-symbols-outlined">groups</span> Dependentes
+</a>
 </nav>
 <div class="p-4 border-t border-white/10">
 <div class="flex items-center gap-3 mb-3">
@@ -169,36 +172,36 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </script>
 <?php endif; ?>
 
-<!-- Quick Icons Row (3D Flaticon) -->
+<!-- Quick Icons Row (3D IconScout) -->
 <div class="flex justify-center gap-4 py-4">
 <a href="parceiros.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Parceiros</span>
 </a>
 <a href="ativar.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cartão</span>
 </a>
 <a href="perfil.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Perfil</span>
 </a>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupons.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupon.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cupons</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
 </div>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cursos</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>

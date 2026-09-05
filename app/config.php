@@ -93,6 +93,24 @@ $conn->query("CREATE TABLE IF NOT EXISTS banners_topo (
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Tabela de dependentes (até 5 por usuário).
+$conn->query("CREATE TABLE IF NOT EXISTS dependentes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    nome VARCHAR(255) NOT NULL DEFAULT '',
+    whatsapp VARCHAR(20) NOT NULL DEFAULT '',
+    cpf VARCHAR(20) NOT NULL DEFAULT '',
+    endereco VARCHAR(500) NOT NULL DEFAULT '',
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_usuario (usuario_id),
+    CONSTRAINT fk_dependentes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// Sessão é de um dependente (login pelo CPF do dependente).
+function ehDependente() {
+    return !empty($_SESSION['tipo_conta']) && $_SESSION['tipo_conta'] === 'dependente';
+}
+
 // Bloqueia o acesso enquanto o usuário não ativar o cartão.
 // Redireciona para ativar.php (usado na versão app / raiz).
 function exigirCartaoAtivo() {
@@ -110,7 +128,13 @@ function exigirCartaoAtivo() {
         exit;
     }
     if ($r && !$r['cartao_ativo']) {
-        header('Location: ativar.php?bloqueado=1');
+        if (ehDependente()) {
+            session_unset();
+            session_destroy();
+            header('Location: login.php?acesso_bloqueado=1');
+        } else {
+            header('Location: ativar.php?bloqueado=1');
+        }
         exit;
     }
 }

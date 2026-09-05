@@ -11,6 +11,9 @@ $stmt->execute();
 $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
 
+$ehDep = ehDependente();
+$nomeExib = ($ehDep && !empty($_SESSION['dependente_nome'])) ? $_SESSION['dependente_nome'] : $u['nome'];
+
 $paginaAtiva = $paginaAtiva ?? 'dashboard';
 if (($u['status'] ?? 'ativo') === 'desativado') {
     session_unset();
@@ -18,12 +21,24 @@ if (($u['status'] ?? 'ativo') === 'desativado') {
     header('Location: login.php?conta_encerrada=1');
     exit;
 }
-if ($paginaAtiva !== 'ativar' && !$u['cartao_ativo']) {
-    header('Location: ativar.php?bloqueado=1');
+if (!$u['cartao_ativo']) {
+    if ($ehDep) {
+        session_unset();
+        session_destroy();
+        header('Location: login.php?acesso_bloqueado=1');
+        exit;
+    }
+    if ($paginaAtiva !== 'ativar') {
+        header('Location: ativar.php?bloqueado=1');
+        exit;
+    }
+}
+if ($ehDep && in_array($paginaAtiva, ['perfil', 'ativar', 'cartao_fisico', 'dependentes'], true)) {
+    header('Location: dashboard.php');
     exit;
 }
 
-$primeiroNome = explode(' ', trim($u['nome']))[0];
+$primeiroNome = explode(' ', trim($nomeExib))[0];
 $final = $u['final_cartao'] ?: '4582';
 $avatar = $u['avatar'] ?: '';
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
@@ -35,6 +50,8 @@ function webUrl($src) {
     if (preg_match('#^https?://#i', $src) || strpos($src, 'data:') === 0) return $src;
     return asset_url($src);
 }
+
+$avatarExib = $ehDep ? webUrl('../img/icons/ico_dependente.png') : ($avatar ? webUrl($avatar) : '');
 
 $diasRestantes = null;
 if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
@@ -120,6 +137,7 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <a href="parceiros.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'parceiros' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">storefront</span> Parceiros
 </a>
+<?php if (!$ehDep): ?>
 <a href="ativar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'ativar' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">credit_score</span> Ativar Cartão
 </a>
@@ -129,6 +147,10 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'perfil' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">person</span> Perfil
 </a>
+<a href="dependentes.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'dependentes' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
+<span class="material-symbols-outlined">groups</span> Dependentes
+</a>
+<?php endif; ?>
 <?php if (!empty($atendimento['whatsapp']) || !empty($atendimento['email'])): ?>
 <button type="button" onclick="abrirAtendimento()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition hover:bg-white/10">
 <span class="material-symbols-outlined text-[20px]">support_agent</span> Central de atendimento
@@ -138,16 +160,16 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <div class="p-4 border-t border-white/10">
 <div class="flex items-center gap-3 mb-3">
 <div class="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center border-2 border-secondary-container shrink-0">
-<?php if ($avatar): ?>
-<img class="w-full h-full object-cover" src="<?php echo webUrl($avatar); ?>" alt="Foto de perfil" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+<?php if ($avatarExib): ?>
+<img class="w-full h-full object-cover" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
 <span class="material-symbols-outlined text-white/80 hidden">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-white/80">person</span>
 <?php endif; ?>
 </div>
 <div class="min-w-0">
-<p class="text-sm font-bold truncate"><?php echo htmlspecialchars($u['nome']); ?></p>
-<p class="text-[11px] text-white/60">Usuário do Cartão</p>
+<p class="text-sm font-bold truncate"><?php echo htmlspecialchars($nomeExib); ?><?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/25 text-secondary-container text-[10px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></p>
+<p class="text-[11px] text-white/60"><?php echo $ehDep ? 'Dependente' : 'Usuário do Cartão'; ?></p>
 </div>
 </div>
 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/80 hover:bg-white/10 transition">
@@ -175,7 +197,7 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <div class="hidden lg:flex items-center justify-between gap-4 mb-8">
 <div>
 <h2 class="text-2xl font-extrabold text-on-surface"><?php echo htmlspecialchars($tituloPagina); ?></h2>
-<p class="text-sm text-on-surface-variant mt-0.5">Bem-vindo de volta, <?php echo htmlspecialchars($primeiroNome); ?>!</p>
+<p class="text-sm text-on-surface-variant mt-0.5">Bem-vindo de volta, <?php echo htmlspecialchars($primeiroNome); ?>!<?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/40 text-secondary text-[11px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></p>
 </div>
 <div class="flex items-center gap-3">
 <div class="relative">

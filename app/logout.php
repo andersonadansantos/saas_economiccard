@@ -6,6 +6,7 @@ if (($_GET['admin'] ?? '') === '1') {
     exit;
 }
 unset($_SESSION['usuario_id']);
+unset($_SESSION['tipo_conta'], $_SESSION['dependente_id'], $_SESSION['dependente_nome']);
 unset($_SESSION['google_oauth_pending']);
 unset($_SESSION['fb_oauth_pending']);
 header('Location: login.php');

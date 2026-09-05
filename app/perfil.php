@@ -5,6 +5,10 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 exigirCartaoAtivo();
+if (ehDependente()) {
+    header('Location: dashboard.php');
+    exit;
+}
 $uid = (int)$_SESSION['usuario_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'encerrar_conta') {

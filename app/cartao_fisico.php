@@ -5,6 +5,10 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 exigirCartaoAtivo();
+if (ehDependente()) {
+    header('Location: dashboard.php');
+    exit;
+}
 $uid = (int)$_SESSION['usuario_id'];
 $stmt = $conn->prepare("SELECT * FROM usuarios WHERE id = ?");
 $stmt->bind_param('i', $uid);

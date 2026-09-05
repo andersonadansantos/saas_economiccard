@@ -17,6 +17,10 @@ if (($u['status'] ?? 'ativo') === 'desativado') {
     header('Location: login.php?conta_encerrada=1');
     exit;
 }
+if (ehDependente()) {
+    header('Location: dashboard.php');
+    exit;
+}
 
 $final = $u['final_cartao'] ?: '8829';
 $codigo = str_pad($u['id'], 6, '0', STR_PAD_LEFT);

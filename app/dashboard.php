@@ -12,9 +12,12 @@ $stmt->execute();
 $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
 
-$primeiroNome = explode(' ', trim($u['nome']))[0];
+$ehDep = ehDependente();
+$nomeExib = ($ehDep && !empty($_SESSION['dependente_nome'])) ? $_SESSION['dependente_nome'] : $u['nome'];
+$primeiroNome = explode(' ', trim($nomeExib))[0];
 $final = $u['final_cartao'] ?: '4582';
 $avatar = $u['avatar'] ?: '';
+$avatarExib = $ehDep ? asset_url('../img/icons/ico_dependente.png') : ($avatar ? asset_url($avatar) : '');
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoApp = $pers['logo_app'] ?? '';
 $cartaoAtivado = $pers['cartao_ativado'] ?? '';
@@ -215,20 +218,21 @@ foreach ($idsBroadcast as $mid) {
 <div class="px-3 py-5 border-b border-outline-variant/30">
 <div class="flex items-center gap-3 px-3">
 <div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary border-2 border-secondary-container">
-<?php if ($avatar): ?>
-<img class="w-full h-full object-cover av-fallback-img" data-fallback="sidebar" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-sidebar').style.display='flex';"/>
+<?php if ($avatarExib): ?>
+<img class="w-full h-full object-cover av-fallback-img" data-fallback="sidebar" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-sidebar').style.display='flex';"/>
 <span id="av-fallback-sidebar" class="material-symbols-outlined text-[26px] hidden" style="font-variation-settings:'FILL' 1;">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">person</span>
 <?php endif; ?>
 </div>
 <div>
-<p class="font-headline-sm text-[15px] text-on-surface"><?php echo htmlspecialchars($u['nome']); ?></p>
-<p class="font-label-caps text-label-caps text-on-surface-variant">Usuário do Cartão</p>
+<p class="font-headline-sm text-[15px] text-on-surface"><?php echo htmlspecialchars($nomeExib); ?><?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/40 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></p>
+<p class="font-label-caps text-label-caps text-on-surface-variant"><?php echo $ehDep ? 'Dependente' : 'Usuário do Cartão'; ?></p>
 </div>
 </div>
 </div>
 <nav class="flex-1 px-3 py-4 space-y-1">
+<?php if (!$ehDep): ?>
 <a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
 <span class="material-symbols-outlined text-primary">account_circle</span>
                         Perfil
@@ -237,6 +241,11 @@ foreach ($idsBroadcast as $mid) {
 <span class="material-symbols-outlined text-secondary">credit_score</span>
                         Ativar Cartão
                     </a>
+<a href="dependentes.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
+<span class="material-symbols-outlined text-primary">groups</span>
+                        Dependentes
+                    </a>
+<?php endif; ?>
 <?php if (!empty($atendimento['whatsapp']) || !empty($atendimento['email'])): ?>
 <button type="button" onclick="fecharMenu(); abrirAtendimento();" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
 <span class="material-symbols-outlined text-primary">support_agent</span>
@@ -339,36 +348,38 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 })();
 </script>
 <?php endif; ?>
-<!-- Quick Icons Row (3D Flaticon) -->
+<!-- Quick Icons Row (3D IconScout) -->
 <div class="flex justify-center gap-4 py-2" style="max-width:400px; margin:0 auto;">
 <a href="parceiros.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Parceiros</span>
 </a>
+<?php if (!$ehDep): ?>
 <a href="ativar.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cartão</span>
 </a>
 <a href="perfil.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform"/>
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Perfil</span>
 </a>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupons.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<?php endif; ?>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupon.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cupons</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
 </div>
-<div class="flex flex-col items-center gap-1 opacity-50 pointer-events-none relative">
-<div class="w-12 h-12 flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-md grayscale"/>
+<div class="flex flex-col items-center gap-1 relative">
+<div class="w-[48px] h-[48px] flex items-center justify-center">
+<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-lg"/>
 </div>
 <span class="text-[11px] font-semibold text-on-surface-variant">Cursos</span>
 <span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
@@ -377,15 +388,15 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <!-- User Greeting -->
 <section class="flex items-center gap-3">
 <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-secondary-container bg-surface-container-high flex items-center justify-center">
-<?php if ($avatar): ?>
-<img class="w-full h-full object-cover av-fallback-img" data-fallback="greeting" src="<?php echo htmlspecialchars(asset_url($avatar)); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-greeting').style.display='flex';"/>
+<?php if ($avatarExib): ?>
+<img class="w-full h-full object-cover av-fallback-img" data-fallback="greeting" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-greeting').style.display='flex';"/>
 <span id="av-fallback-greeting" class="material-symbols-outlined text-primary text-[24px] hidden">person</span>
 <?php else: ?>
 <span class="material-symbols-outlined text-primary text-[24px]">person</span>
 <?php endif; ?>
 </div>
 <div class="space-y-xs min-w-0">
-<h2 class="font-headline-md text-headline-md text-on-surface truncate">Olá, <?php echo htmlspecialchars($primeiroNome); ?></h2>
+<h2 class="font-headline-md text-headline-md text-on-surface truncate">Olá, <?php echo htmlspecialchars($primeiroNome); ?><?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/40 text-secondary text-[11px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></h2>
 <p class="font-body-md text-on-surface-variant">Confira o status do seu benefício hoje.</p>
 </div>
 </section>
@@ -484,19 +495,23 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <h3 class="font-label-bold text-on-surface-variant uppercase tracking-wider">ACESSO RÁPIDO</h3>
 <div class="grid grid-cols-2 gap-card-gutter">
 <!-- Perfil -->
+<?php if (!$ehDep): ?>
 <a href="perfil.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
 <span class="material-symbols-outlined text-[28px]">account_circle</span>
 </div>
 <span class="font-label-bold text-on-surface">PERFIL</span>
 </a>
+<?php endif; ?>
 <!-- Ativar Cartão -->
+<?php if (!$ehDep): ?>
 <a href="ativar.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-secondary-container/40 flex items-center justify-center text-secondary">
 <span class="material-symbols-outlined text-[28px]">credit_score</span>
 </div>
 <span class="font-label-bold text-on-surface">ATIVAR CARTÃO</span>
 </a>
+<?php endif; ?>
 <!-- Parceiros -->
 <a href="parceiros.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
 <div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
@@ -505,6 +520,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <span class="font-label-bold text-on-surface">PARCEIROS</span>
 </a>
 <!-- Cartão Físico -->
+<?php if (!$ehDep): ?>
 <a href="cartao_fisico.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200 relative overflow-hidden">
 <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">OPCIONAL</div>
 <div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
@@ -512,6 +528,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </div>
 <span class="font-label-bold text-on-surface">CARTÃO FÍSICO</span>
 </a>
+<?php endif; ?>
 <!-- Telemedicina -->
 <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed">
 <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">EM BREVE</div>
@@ -647,6 +664,12 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <span class="material-symbols-outlined">storefront</span>
 <span class="font-label-bold mt-1">Parceiros</span>
 </a>
+<?php if ($ehDep): ?>
+<button type="button" onclick="abrirAtendimento()" class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-label-bold mt-1">Atendimento</span>
+</button>
+<?php else: ?>
 <a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="ativar.php">
 <span class="material-symbols-outlined">credit_card</span>
 <span class="font-label-bold mt-1">Cartão</span>
@@ -655,6 +678,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <span class="material-symbols-outlined">person</span>
 <span class="font-label-bold mt-1">Perfil</span>
 </a>
+<?php endif; ?>
 </div>
 </nav>
 <!-- Fullscreen Card Overlay -->

@@ -83,6 +83,12 @@ $total = $usuarios->num_rows;
 $statsAtivos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE cartao_ativo = 1")->fetch_assoc()['total'];
 $statsInativos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE cartao_ativo = 0")->fetch_assoc()['total'];
 $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao")->fetch_assoc()['total'];
+
+function fmt_cpf_br($cpf) {
+    $d = preg_replace('/\D/', '', (string)$cpf);
+    if (strlen($d) === 11) return preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $d);
+    return $cpf;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -231,11 +237,12 @@ $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao"
 <th class="px-4 py-3">WhatsApp</th>
 <th class="px-4 py-3">Cartão</th>
 <th class="px-4 py-3">Cadastrado em</th>
+<th class="px-4 py-3">Dependentes</th>
 </tr>
 </thead>
 <tbody>
 <?php if ($total === 0): ?>
-<tr><td colspan="8" class="px-4 py-10 text-center text-gray-500">Nenhum cadastro encontrado.</td></tr>
+<tr><td colspan="9" class="px-4 py-10 text-center text-gray-500">Nenhum cadastro encontrado.</td></tr>
 <?php endif; ?>
 <?php while ($u = $usuarios->fetch_assoc()): ?>
 <tr class="border-t border-gray-100 hover:bg-gray-50 <?php echo (($u['status'] ?? 'ativo') === 'desativado') ? 'opacity-70' : ''; ?>">
@@ -313,6 +320,46 @@ Facebook
 </div>
 </td>
 <td class="px-4 py-3 text-gray-500"><?php echo date('d/m/Y H:i', strtotime($u['criado_em'])); ?></td>
+<td class="px-4 py-3">
+<?php
+$depRows = $conn->query("SELECT * FROM dependentes WHERE usuario_id = " . (int)$u['id'] . " ORDER BY criado_em DESC, id DESC");
+$depCount = $depRows ? (int)$depRows->num_rows : 0;
+?>
+<button type="button" onclick="toggleDependentes(<?php echo (int)$u['id']; ?>, this)" class="inline-flex items-center gap-1.5 text-[#51036d] hover:bg-[#51036d]/10 rounded-lg px-2 py-1.5 transition" title="Ver dependentes de <?php echo htmlspecialchars($u['nome']); ?>">
+<span class="material-symbols-outlined text-[18px]">groups</span>
+<span class="text-xs font-bold"><?php echo $depCount; ?></span>
+<span class="material-symbols-outlined text-[18px] transition-transform duration-200 deps-chevron">expand_more</span>
+</button>
+</td>
+</tr>
+<tr id="deps-row-<?php echo (int)$u['id']; ?>" class="hidden">
+<td colspan="9" class="px-6 py-4 bg-gray-50/80">
+<?php if (!$depRows || $depRows->num_rows === 0): ?>
+<p class="text-sm text-gray-500">Nenhum dependente cadastrado para este usuário.</p>
+<?php else: ?>
+<div class="space-y-2">
+<?php while ($dp = $depRows->fetch_assoc()): ?>
+<div class="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3 flex-wrap">
+<div class="flex items-center gap-2 min-w-[200px]">
+<span class="material-symbols-outlined text-[#51036d] text-[18px]">person</span>
+<span class="font-semibold text-gray-800"><?php echo htmlspecialchars($dp['nome']); ?></span>
+</div>
+<?php if (!empty($dp['cpf'])): ?>
+<span class="text-xs text-gray-500 bg-gray-100 rounded-md px-2 py-1">CPF: <?php echo htmlspecialchars(fmt_cpf_br($dp['cpf'])); ?></span>
+<?php endif; ?>
+<?php if (!empty($dp['whatsapp'])): ?>
+<a class="inline-flex items-center gap-1 text-xs font-semibold text-[#128C7E] hover:opacity-80 transition" href="https://wa.me/<?php echo htmlspecialchars(preg_replace('/\D/', '', $dp['whatsapp'])); ?>" target="_blank" rel="noopener" title="Falar com <?php echo htmlspecialchars($dp['nome']); ?> no WhatsApp">
+<span class="material-symbols-outlined text-[14px]">chat</span> <?php echo htmlspecialchars($dp['whatsapp']); ?>
+</a>
+<?php endif; ?>
+<?php if (!empty($dp['endereco'])): ?>
+<span class="text-xs text-gray-500"><?php echo htmlspecialchars($dp['endereco']); ?></span>
+<?php endif; ?>
+</div>
+<?php endwhile; ?>
+</div>
+<?php endif; ?>
+</td>
 </tr>
 <?php endwhile; ?>
 </tbody>
@@ -583,6 +630,19 @@ function fecharModalConfirmacao() {
     const m = document.getElementById('modalConfirmacao');
     m.classList.add('hidden');
     m.classList.remove('flex');
+}
+
+function toggleDependentes(id, btn) {
+    const row = document.getElementById('deps-row-' + id);
+    if (!row) return;
+    const chev = btn.querySelector('.deps-chevron');
+    if (row.classList.contains('hidden')) {
+        row.classList.remove('hidden');
+        chev.style.transform = 'rotate(180deg)';
+    } else {
+        row.classList.add('hidden');
+        chev.style.transform = '';
+    }
 }
 
 new Chart(document.getElementById('graficoCartoes'), {
