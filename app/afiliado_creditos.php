@@ -100,3 +100,53 @@ function afiliado_totais_creditos($conn, $afiliadoId) {
         'mensalidades' => (int)($row['mensalidades'] ?? 0),
     ];
 }
+
+// Registra créditos RETROATIVOS: todas as mensalidades (pagamentos tipo='plano'
+// com status='approved') já pagas pelo usuário indicado geram crédito para o
+// afiliado dele, pelo valor fixo atualmente configurado. Usado quando o admin
+// vincula manualmente um usuário já cadastrado a um afiliado (Admin >
+// Afiliados > Usuários indicados > Vincular usuário), pois o usuário era
+// indicado daquele afiliado antes de o vínculo existir no sistema.
+//  - Idempotente: UNIQUE KEY (pagamento_id) + INSERT IGNORE nunca duplicam.
+//  - Pagamentos reembolsados/estornados (status='refunded') não geram crédito.
+//  - Afiliado inativo ou com valor fixo zerado não gera crédito.
+// Retorna quantos créditos foram criados agora.
+function afiliado_registrar_creditos_retroativos($conn, $usuarioId) {
+    $usuarioId = (int)$usuarioId;
+    if ($usuarioId <= 0) return 0;
+
+    // Afiliado ativo que indicou o usuário + valor fixo configurado nele.
+    $stmt = $conn->prepare("SELECT a.id AS afiliado_id, a.valor_fixo_mensalidade
+                            FROM usuarios u
+                            INNER JOIN afiliados a ON a.token = u.afiliado_token
+                            WHERE u.id = ? AND a.ativo = 1 LIMIT 1");
+    $stmt->bind_param('i', $usuarioId);
+    $stmt->execute();
+    $af = $stmt->get_result()->fetch_assoc();
+    if (!$af) return 0;
+    $valor = round((float)$af['valor_fixo_mensalidade'], 2);
+    if ($valor <= 0) return 0;
+
+    // Mensalidades efetivamente pagas (aprovadas), em ordem cronológica, para
+    // classificar o contexto de cada uma pela posição — igual ao crédito em
+    // tempo real: 1ª=adesão, 2ª=1ª mensalidade, 3ª em diante=recorrência.
+    $stmt = $conn->prepare("SELECT id FROM pagamentos_pix
+                            WHERE usuario_id = ? AND tipo = 'plano' AND status = 'approved'
+                            ORDER BY criado_em ASC, id ASC");
+    $stmt->bind_param('i', $usuarioId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $criados = 0;
+    $posicao = 0;
+    while ($pag = $res->fetch_assoc()) {
+        $posicao++;
+        $tipoCobranca = $posicao <= 1 ? 'adesao' : ($posicao === 2 ? '1a_mensalidade' : 'recorrencia');
+        $pagamentoIdAtual = (int)$pag['id'];
+        $ins = $conn->prepare("INSERT IGNORE INTO creditos_afiliado (afiliado_id, usuario_id, pagamento_id, valor, tipo_cobranca) VALUES (?, ?, ?, ?, ?)");
+        $ins->bind_param('iiids', $af['afiliado_id'], $usuarioId, $pagamentoIdAtual, $valor, $tipoCobranca);
+        $ins->execute();
+        if ($ins->affected_rows > 0) { $criados++; }
+    }
+    return $criados;
+}

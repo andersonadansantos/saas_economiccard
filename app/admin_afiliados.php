@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'afiliado_creditos.php';
 if (!($_SESSION['admin_logado'] ?? false)) {
     header('Location: admin_login.php');
     exit;
@@ -87,6 +88,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $sucesso = 'Afiliado excluído.';
+    } elseif ($acao === 'vincular_usuario') {
+        // Vínculo manual: identifica um usuário já cadastrado como indicado
+        // deste afiliado. A regra de remuneração passa a valer para ele,
+        // inclusive retroativamente para mensalidades já pagas.
+        $afiliadoId = (int)($_POST['afiliado_id'] ?? 0);
+        $usuarioId = (int)($_POST['usuario_id'] ?? 0);
+        $stA = $conn->prepare("SELECT id, nome, token, ativo FROM afiliados WHERE id = ? LIMIT 1");
+        $stA->bind_param('i', $afiliadoId);
+        $stA->execute();
+        $afV = $stA->get_result()->fetch_assoc();
+        $stU = $conn->prepare("SELECT id, nome, afiliado_token FROM usuarios WHERE id = ? LIMIT 1");
+        $stU->bind_param('i', $usuarioId);
+        $stU->execute();
+        $usV = $stU->get_result()->fetch_assoc();
+        if (!$afV) {
+            $erro = 'Afiliado não encontrado.';
+        } elseif (!$usV) {
+            $erro = 'Usuário não encontrado.';
+        } else {
+            // Regra: o mesmo usuário nunca pode ficar com dois afiliados.
+            // (Token de afiliado que não existe mais não conta como vínculo.)
+            $vinculoAtual = null;
+            if (!empty($usV['afiliado_token'])) {
+                $stT = $conn->prepare("SELECT nome FROM afiliados WHERE token = ? LIMIT 1");
+                $stT->bind_param('s', $usV['afiliado_token']);
+                $stT->execute();
+                $vinculoAtual = $stT->get_result()->fetch_assoc();
+            }
+            if ($vinculoAtual) {
+                $erro = 'Este usuário já está vinculado ao afiliado ' . $vinculoAtual['nome'] . '. Desvincule-o antes, se for o caso.';
+            } else {
+                $stmt = $conn->prepare("UPDATE usuarios SET afiliado_token = ? WHERE id = ? AND (afiliado_token IS NULL OR afiliado_token = '' OR afiliado_token NOT IN (SELECT token FROM afiliados))");
+                $stmt->bind_param('si', $afV['token'], $usuarioId);
+                $stmt->execute();
+                if ($stmt->affected_rows > 0) {
+                    $sucesso = 'Usuário ' . $usV['nome'] . ' vinculado ao afiliado ' . $afV['nome'] . '.';
+                    if ((int)$afV['ativo'] === 1) {
+                        $retro = afiliado_registrar_creditos_retroativos($conn, $usuarioId);
+                        if ($retro > 0) {
+                            $sucesso .= ' Foram gerados ' . $retro . ' crédito(s) retroativo(s) referente(s) a mensalidades já pagas.';
+                        }
+                    } else {
+                        $sucesso .= ' Atenção: o afiliado está inativo — mensalidades pagas só geram crédito quando ele estiver ativo.';
+                    }
+                } else {
+                    $erro = 'Não foi possível vincular o usuário (ele pode ter acabado de ser vinculado a outro afiliado).';
+                }
+            }
+        }
+    } elseif ($acao === 'desvincular_usuario') {
+        // Correção administrativa: remove o vínculo. Os créditos já gerados
+        // permanecem no histórico; novas mensalidades deixam de gerar crédito.
+        $afiliadoId = (int)($_POST['afiliado_id'] ?? 0);
+        $usuarioId = (int)($_POST['usuario_id'] ?? 0);
+        $stA = $conn->prepare("SELECT id, nome, token FROM afiliados WHERE id = ? LIMIT 1");
+        $stA->bind_param('i', $afiliadoId);
+        $stA->execute();
+        $afD = $stA->get_result()->fetch_assoc();
+        if (!$afD) {
+            $erro = 'Afiliado não encontrado.';
+        } else {
+            $stmt = $conn->prepare("UPDATE usuarios SET afiliado_token = NULL WHERE id = ? AND afiliado_token = ?");
+            $stmt->bind_param('is', $usuarioId, $afD['token']);
+            $stmt->execute();
+            if ($stmt->affected_rows > 0) {
+                $sucesso = 'Usuário desvinculado do afiliado ' . $afD['nome'] . '. Os créditos já gerados permanecem no histórico; novas mensalidades deixarão de gerar crédito.';
+            } else {
+                $erro = 'Este usuário não estava vinculado a este afiliado.';
+            }
+        }
     } elseif ($acao === 'logar') {
         $id = (int)($_POST['id'] ?? 0);
         $stmt = $conn->prepare("SELECT id, nome FROM afiliados WHERE id = ?");
@@ -106,9 +177,21 @@ $afiliados = $conn->query("SELECT a.*,
         (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token) AS indicados,
         (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token AND u.cartao_ativo = 1) AS ativos,
         (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades,
-        (SELECT COALESCE(SUM(c.valor), 0) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS saldo
+        (SELECT COALESCE(SUM(c.valor), 0) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS saldo,
+        (SELECT COUNT(*) FROM creditos_afiliado c2 WHERE c2.afiliado_id = a.id) AS creditos_total
     FROM afiliados a ORDER BY a.id DESC");
 $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . site_base() . '/';
+
+// Usuários disponíveis para vínculo manual: sem afiliado atribuído (token
+// vazio ou de afiliado que não existe mais) — garante que nenhum usuário
+// fique com dois afiliados ao mesmo tempo. Alimenta o modal "Vincular
+// usuário"; a busca (nome/e-mail/CPF) é feita no navegador.
+$usuariosSemAfiliado = $conn->query("SELECT u.id, u.nome, u.email, u.cpf,
+        (SELECT COUNT(*) FROM pagamentos_pix p WHERE p.usuario_id = u.id AND p.tipo = 'plano' AND p.status = 'approved') AS mensalidades
+    FROM usuarios u
+    WHERE u.afiliado_token IS NULL OR u.afiliado_token = '' OR NOT EXISTS (SELECT 1 FROM afiliados af WHERE af.token = u.afiliado_token)
+    ORDER BY u.nome ASC
+    LIMIT 500");
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -122,6 +205,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <style>
     body { font-family: 'Manrope', sans-serif; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    summary { list-style: none; }
+    summary::-webkit-details-marker { display: none; }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -227,6 +312,30 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
     $saldoAfiliado = (float)$a['saldo'];
     $temWallet = trim((string)($a['wallet_afiliado'] ?? '')) !== '';
     $dataCadastro = !empty($a['criado_em']) ? date('d/m/Y', strtotime($a['criado_em'])) : '—';
+
+    // Usuários indicados deste afiliado: nome, mensalidades pagas por cada um
+    // e créditos gerados (a remuneração só existe para usuário vinculado).
+    $afiliadoIdAtual = (int)$a['id'];
+    $stmtUsu = $conn->prepare("SELECT u.id, u.nome, u.email, u.cartao_ativo, u.criado_em,
+            (SELECT COUNT(*) FROM pagamentos_pix p WHERE p.usuario_id = u.id AND p.tipo = 'plano' AND p.status = 'approved') AS mensalidades,
+            (SELECT COALESCE(SUM(c.valor), 0) FROM creditos_afiliado c WHERE c.usuario_id = u.id AND c.afiliado_id = ? AND c.status = 'ativo') AS creditos
+        FROM usuarios u
+        WHERE u.afiliado_token = ?
+        ORDER BY u.nome ASC");
+    $stmtUsu->bind_param('is', $afiliadoIdAtual, $a['token']);
+    $stmtUsu->execute();
+    $usuariosAfiliado = $stmtUsu->get_result();
+
+    // Histórico detalhado dos créditos gerados (livro-caixa do afiliado).
+    $stmtHist = $conn->prepare("SELECT c.usuario_id, c.valor, c.tipo_cobranca, c.status, c.criado_em, c.estornado_em, u.nome AS usuario_nome
+        FROM creditos_afiliado c
+        LEFT JOIN usuarios u ON u.id = c.usuario_id
+        WHERE c.afiliado_id = ?
+        ORDER BY c.criado_em DESC, c.id DESC
+        LIMIT 100");
+    $stmtHist->bind_param('i', $afiliadoIdAtual);
+    $stmtHist->execute();
+    $historicoAfiliado = $stmtHist->get_result();
 ?>
 <article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
@@ -319,6 +428,113 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
         </div>
     </div>
 
+    <!-- Indicações e histórico (expansíveis) -->
+    <div class="px-5 sm:px-6 pb-5 space-y-3">
+
+        <!-- Usuários indicados -->
+        <details class="group rounded-xl border border-gray-100 bg-gray-50/60 open:bg-white open:border-gray-200">
+            <summary class="cursor-pointer select-none px-4 py-3 flex items-center justify-between gap-3">
+                <span class="flex items-center gap-2 text-sm font-bold text-gray-700 min-w-0">
+                    <span class="material-symbols-outlined text-[18px] text-[#51036d]">group</span>
+                    Usuários indicados
+                    <span class="shrink-0 text-[10px] font-bold text-[#51036d] bg-[#51036d]/10 rounded-full px-2 py-0.5"><?php echo (int)$a['indicados']; ?></span>
+                </span>
+                <span class="material-symbols-outlined text-[20px] text-gray-400 transition-transform group-open:rotate-180 shrink-0">expand_more</span>
+            </summary>
+            <div class="border-t border-gray-100 px-4 py-3">
+                <?php if ($usuariosAfiliado->num_rows === 0): ?>
+                <div class="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center">
+                    <p class="text-xs font-bold text-gray-500">Nenhum usuário indicado ainda</p>
+                    <p class="mt-1 text-[11px] text-gray-400">Usuários que se cadastrarem pelo link de indicação — ou forem vinculados manualmente — aparecem aqui.</p>
+                    <button type="button" data-afiliado-id="<?php echo (int)$a['id']; ?>" data-afiliado-nome="<?php echo htmlspecialchars($a['nome'], ENT_QUOTES); ?>" onclick="abrirVincularUsuario(this)" class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#3e6a00] hover:text-[#2e5000] bg-[#3e6a00]/10 hover:bg-[#3e6a00]/20 rounded-lg px-3.5 py-2 transition">
+                        <span class="material-symbols-outlined text-[16px]">person_add</span> Vincular usuário
+                    </button>
+                </div>
+                <?php else: ?>
+                <p class="mb-2 text-xs text-gray-500">Cada mensalidade paga por estes usuários gera crédito pelo valor fixo do afiliado.</p>
+                <div class="rounded-xl border border-gray-100 bg-white divide-y divide-gray-100">
+                    <?php while ($u = $usuariosAfiliado->fetch_assoc()): ?>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-sm font-bold text-gray-800 truncate"><?php echo htmlspecialchars($u['nome']); ?></p>
+                                <?php if ((int)$u['cartao_ativo'] === 1): ?>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-[#b6f570]/40 text-[#3e6a00]">Cartão ativo</span>
+                                <?php else: ?>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-gray-200 text-gray-600">Cartão inativo</span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="mt-0.5 text-xs text-gray-400 truncate"><?php echo htmlspecialchars($u['email'] ?: 'sem e-mail'); ?> • desde <?php echo !empty($u['criado_em']) ? date('d/m/Y', strtotime($u['criado_em'])) : '—'; ?></p>
+                        </div>
+                        <div class="flex items-center gap-4 shrink-0 sm:justify-end">
+                            <div class="text-left sm:text-right">
+                                <p class="text-xs font-bold text-gray-600 leading-tight"><?php echo (int)$u['mensalidades']; ?> mensalidade<?php echo (int)$u['mensalidades'] === 1 ? '' : 's'; ?> paga<?php echo (int)$u['mensalidades'] === 1 ? '' : 's'; ?></p>
+                                <p class="text-xs font-extrabold <?php echo (float)$u['creditos'] > 0 ? 'text-[#3e6a00]' : 'text-gray-300'; ?> leading-tight">R$ <?php echo number_format((float)$u['creditos'], 2, ',', '.'); ?> gerados</p>
+                            </div>
+                            <form method="POST" action="admin_afiliados.php" class="inline" data-msg="<?php echo htmlspecialchars('Desvincular ' . $u['nome'] . ' deste afiliado? Os créditos já gerados permanecem no histórico; novas mensalidades deixarão de gerar crédito.', ENT_QUOTES); ?>" onsubmit="confirmarExclusao(event, this, this.dataset.msg)">
+                                <input type="hidden" name="acao" value="desvincular_usuario"/>
+                                <input type="hidden" name="afiliado_id" value="<?php echo (int)$a['id']; ?>"/>
+                                <input type="hidden" name="usuario_id" value="<?php echo (int)$u['id']; ?>"/>
+                                <button type="submit" title="Desvincular usuário deste afiliado" class="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 transition">
+                                    <span class="material-symbols-outlined text-[16px]">link_off</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <?php endwhile; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </details>
+
+        <!-- Histórico de créditos -->
+        <details class="group rounded-xl border border-gray-100 bg-gray-50/60 open:bg-white open:border-gray-200">
+            <summary class="cursor-pointer select-none px-4 py-3 flex items-center justify-between gap-3">
+                <span class="flex items-center gap-2 text-sm font-bold text-gray-700 min-w-0">
+                    <span class="material-symbols-outlined text-[18px] text-[#51036d]">receipt_long</span>
+                    Histórico de créditos
+                    <span class="shrink-0 text-[10px] font-bold text-[#51036d] bg-[#51036d]/10 rounded-full px-2 py-0.5"><?php echo (int)$a['creditos_total']; ?></span>
+                </span>
+                <span class="material-symbols-outlined text-[20px] text-gray-400 transition-transform group-open:rotate-180 shrink-0">expand_more</span>
+            </summary>
+            <div class="border-t border-gray-100 px-4 py-3">
+                <?php if ($historicoAfiliado->num_rows === 0): ?>
+                <div class="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center">
+                    <p class="text-xs font-bold text-gray-500">Nenhum crédito gerado ainda</p>
+                    <p class="mt-1 text-[11px] text-gray-400">Os créditos aparecem conforme os usuários indicados pagam mensalidades.</p>
+                </div>
+                <?php else: ?>
+                <div class="rounded-xl border border-gray-100 bg-white divide-y divide-gray-100">
+                    <?php while ($c = $historicoAfiliado->fetch_assoc()): ?>
+                    <?php
+                        $tiposCobrancaRotulo = ['adesao' => 'Adesão (1º pagamento)', '1a_mensalidade' => '1ª mensalidade', 'recorrencia' => 'Recorrência'];
+                        $rotuloCobranca = $tiposCobrancaRotulo[$c['tipo_cobranca']] ?? $c['tipo_cobranca'];
+                        $dataCredito = !empty($c['criado_em']) ? date('d/m/Y H:i', strtotime($c['criado_em'])) : '—';
+                    ?>
+                    <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-700 truncate"><?php echo htmlspecialchars($c['usuario_nome'] ?? ('Usuário removido #' . (int)$c['usuario_id'])); ?></p>
+                            <p class="text-[11px] text-gray-400 truncate"><?php echo $dataCredito; ?> • <?php echo htmlspecialchars($rotuloCobranca); ?></p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <?php if ($c['status'] === 'ativo'): ?>
+                            <p class="text-sm font-extrabold text-[#3e6a00] leading-tight">+ R$ <?php echo number_format((float)$c['valor'], 2, ',', '.'); ?></p>
+                            <?php else: ?>
+                            <p class="text-sm font-extrabold text-gray-400 leading-tight line-through">R$ <?php echo number_format((float)$c['valor'], 2, ',', '.'); ?></p>
+                            <p class="text-[9px] font-bold uppercase tracking-wide text-red-500 leading-tight">estornado<?php echo !empty($c['estornado_em']) ? ' em ' . date('d/m/Y', strtotime($c['estornado_em'])) : ''; ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endwhile; ?>
+                </div>
+                <?php if ((int)$a['creditos_total'] > 100): ?>
+                <p class="mt-2 text-[11px] text-gray-400 text-right">Exibindo os 100 créditos mais recentes de <?php echo (int)$a['creditos_total']; ?>.</p>
+                <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </details>
+    </div>
+
     <!-- Ações -->
     <div class="px-5 sm:px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center gap-2.5 justify-between">
         <div class="flex flex-wrap items-center gap-2">
@@ -342,6 +558,14 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
                     <span class="material-symbols-outlined text-[16px]">login</span> Logar
                 </button>
             </form>
+            <button type="button"
+            data-afiliado-id="<?php echo (int)$a['id']; ?>"
+            data-afiliado-nome="<?php echo htmlspecialchars($a['nome'], ENT_QUOTES); ?>"
+            onclick="abrirVincularUsuario(this)"
+            class="inline-flex items-center gap-1.5 text-xs font-bold text-[#3e6a00] hover:text-[#2e5000] bg-[#3e6a00]/10 hover:bg-[#3e6a00]/20 rounded-lg px-3 py-2 transition"
+            title="Vincular um usuário já cadastrado como indicado deste afiliado">
+                <span class="material-symbols-outlined text-[16px]">person_add</span> Vincular usuário
+            </button>
         </div>
         <div class="flex flex-wrap items-center gap-2 sm:justify-end">
             <form method="POST" action="admin_afiliados.php" class="inline">
@@ -434,6 +658,46 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </div>
 </div>
 
+<div id="modalVincularUsuario" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+<div class="absolute inset-0 bg-black/50" onclick="fecharModalVincularUsuario()"></div>
+<div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
+<div class="bg-[#51036d] px-6 py-4 flex items-center justify-between">
+<h2 class="text-white font-bold flex items-center gap-2"><span class="material-symbols-outlined">person_add</span> Vincular usuário</h2>
+<button type="button" onclick="fecharModalVincularUsuario()" class="text-white/70 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+</div>
+<form id="formVincularUsuario" method="POST" action="admin_afiliados.php" class="overflow-y-auto p-6 pb-4">
+<input type="hidden" name="acao" value="vincular_usuario"/>
+<input type="hidden" name="afiliado_id" id="vinc_afiliado_id"/>
+<input type="hidden" name="usuario_id" id="vinc_usuario_id"/>
+<p class="text-sm text-gray-600 mb-4">Vincule um usuário já cadastrado como indicado de <b id="vinc_nome_afiliado"></b>. As mensalidades já pagas por ele geram <b>créditos retroativos</b> pelo valor fixo configurado do afiliado.</p>
+<div class="relative mb-3">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
+<input id="buscaUsuarioVincular" type="text" oninput="filtrarUsuariosVincular()" placeholder="Buscar por nome, e-mail ou CPF..." class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d] text-sm">
+</div>
+<div id="listaUsuariosVincular" class="max-h-72 overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-100">
+<?php if ($usuariosSemAfiliado->num_rows === 0): ?>
+<p class="p-6 text-center text-sm text-gray-500">Nenhum usuário disponível — todos os cadastrados já estão vinculados a um afiliado.</p>
+<?php endif; ?>
+<?php while ($u = $usuariosSemAfiliado->fetch_assoc()): ?>
+<div class="busca-item flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
+<div class="min-w-0">
+<p class="text-sm font-bold text-gray-800 truncate"><?php echo htmlspecialchars($u['nome']); ?></p>
+<p class="text-xs text-gray-400 truncate"><?php echo htmlspecialchars(($u['email'] ?: 'sem e-mail') . ' • ' . ($u['cpf'] ?: 'CPF não informado')); ?></p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<span class="text-[10px] font-bold text-gray-400"><?php echo (int)$u['mensalidades']; ?> mensalidade<?php echo (int)$u['mensalidades'] === 1 ? '' : 's'; ?> paga<?php echo (int)$u['mensalidades'] === 1 ? '' : 's'; ?></span>
+<button type="button" onclick="selecionarUsuarioVincular(<?php echo (int)$u['id']; ?>)" class="text-xs font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-3 py-1.5 transition">Vincular</button>
+</div>
+</div>
+<?php endwhile; ?>
+</div>
+</form>
+<div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+<button type="button" onclick="fecharModalVincularUsuario()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2.5 rounded-lg transition">Cancelar</button>
+</div>
+</div>
+</div>
+
 <script>
 function abrirEditarAfiliado(btn) {
     document.getElementById('edit_id').value = btn.dataset.id;
@@ -517,6 +781,40 @@ function fecharModalConfirmacao() {
     const m = document.getElementById('modalConfirmacao');
     m.classList.add('hidden');
     m.classList.remove('flex');
+}
+function abrirVincularUsuario(btn) {
+    document.getElementById('vinc_afiliado_id').value = btn.dataset.afiliadoId;
+    document.getElementById('vinc_nome_afiliado').textContent = btn.dataset.afiliadoNome;
+    document.getElementById('vinc_usuario_id').value = '';
+    const busca = document.getElementById('buscaUsuarioVincular');
+    busca.value = '';
+    filtrarUsuariosVincular();
+    const m = document.getElementById('modalVincularUsuario');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    busca.focus();
+}
+function fecharModalVincularUsuario() {
+    const m = document.getElementById('modalVincularUsuario');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+}
+function normalizarBusca(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+// Índice de busca do modal de vínculo (nome + e-mail + CPF, sem acentos).
+document.querySelectorAll('#listaUsuariosVincular .busca-item').forEach(function (el) {
+    el.dataset.busca = normalizarBusca(el.textContent);
+});
+function filtrarUsuariosVincular() {
+    const q = normalizarBusca(document.getElementById('buscaUsuarioVincular').value.trim());
+    document.querySelectorAll('#listaUsuariosVincular .busca-item').forEach(function (el) {
+        el.style.display = (!q || (el.dataset.busca || '').indexOf(q) !== -1) ? '' : 'none';
+    });
+}
+function selecionarUsuarioVincular(id) {
+    document.getElementById('vinc_usuario_id').value = id;
+    document.getElementById('formVincularUsuario').submit();
 }
 </script>
 </body>
