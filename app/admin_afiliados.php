@@ -103,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $afiliados = $conn->query("SELECT a.*,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token) AS indicados,
         (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token AND u.cartao_ativo = 1) AS ativos,
         (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades,
         (SELECT COALESCE(SUM(c.valor), 0) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS saldo
@@ -197,101 +198,171 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </form>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-<h2 class="px-6 py-4 text-lg font-extrabold text-gray-800 border-b border-gray-100">Afiliados cadastrados</h2>
-<div class="overflow-x-auto">
-<table class="w-full text-sm">
-<thead>
-<tr class="bg-gray-50 text-gray-600 text-left uppercase text-xs tracking-wider">
-<th class="px-4 py-3">#</th>
-<th class="px-4 py-3">Nome</th>
-<th class="px-4 py-3">Código Colaborador</th>
-<th class="px-4 py-3">E-mail</th>
-<th class="px-4 py-3">Link de Indicação</th>
-<th class="px-4 py-3">Valor por Mensalidade</th>
-<th class="px-4 py-3">Wallet ID</th>
-<th class="px-4 py-3">Ativos</th>
-<th class="px-4 py-3">Mensalidades Pagas</th>
-<th class="px-4 py-3">Saldo a Receber</th>
-<th class="px-4 py-3">Status</th>
-<th class="px-4 py-3 text-right">Ações</th>
-</tr>
-</thead>
-<tbody>
+<!-- ====== Afiliados cadastrados ====== -->
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+<div>
+<h2 class="text-lg font-extrabold text-gray-800">Afiliados cadastrados</h2>
+<p class="text-sm text-gray-500 mt-0.5">Remuneração, indicações e histórico de cada afiliado.</p>
+</div>
+<span class="shrink-0 text-xs font-bold text-[#51036d] bg-[#51036d]/10 rounded-full px-3 py-1.5"><?php echo (int)$afiliados->num_rows; ?> no total</span>
+</div>
+
 <?php if ($afiliados->num_rows === 0): ?>
-<tr><td colspan="12" class="px-4 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+<span class="material-symbols-outlined text-gray-200" style="font-size:56px">group_add</span>
+<p class="mt-3 text-sm font-bold text-gray-600">Nenhum afiliado cadastrado ainda</p>
+<p class="mt-1 text-xs text-gray-400">Use o formulário acima ou compartilhe o link de cadastro para começar.</p>
+</div>
 <?php endif; ?>
+
+<div class="space-y-5">
 <?php while ($a = $afiliados->fetch_assoc()): ?>
-<tr class="border-t border-gray-100 hover:bg-gray-50">
-<td class="px-4 py-3 text-gray-500"><?php echo $a['id']; ?></td>
-<td class="px-4 py-3">
-<p class="font-semibold text-gray-800"><?php echo htmlspecialchars($a['nome']); ?></p>
-<?php if ($a['telefone']): ?><p class="text-xs text-gray-500"><?php echo htmlspecialchars($a['telefone']); ?></p><?php endif; ?>
-</td>
-<td class="px-4 py-3">
-<div class="flex items-center gap-2">
-<code class="text-sm font-extrabold tracking-widest text-[#51036d]"><?php echo htmlspecialchars($a['codigo']); ?></code>
-<button type="button" class="text-[#51036d] hover:underline text-xs font-semibold shrink-0" onclick="copiarLink('<?php echo htmlspecialchars($a['codigo']); ?>', this)">Copiar</button>
-</div>
-</td>
-<td class="px-4 py-3"><?php echo htmlspecialchars($a['email']); ?></td>
-<td class="px-4 py-3">
-<div class="flex items-center gap-2">
-<code class="text-[11px] text-gray-500 break-all"><?php echo htmlspecialchars($baseUrl . 'indicacao/' . $a['token']); ?></code>
-<button type="button" class="text-[#51036d] hover:underline text-xs font-semibold shrink-0" onclick="copiarLink('<?php echo htmlspecialchars($baseUrl . 'indicacao/' . $a['token']); ?>', this)">Copiar</button>
-</div>
-</td>
-<td class="px-4 py-3 font-bold text-[#3e6a00]">R$ <?php echo number_format((float)$a['valor_fixo_mensalidade'], 2, ',', '.'); ?></td>
-<td class="px-4 py-3">
-<?php if ($a['wallet_afiliado']): ?>
-<code class="text-[11px] text-gray-600"><?php echo htmlspecialchars($a['wallet_afiliado']); ?></code>
-<?php else: ?>
-<span class="text-gray-300">—</span>
-<?php endif; ?>
-</td>
-<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$a['ativos']; ?></td>
-<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$a['mensalidades']; ?></td>
-<td class="px-4 py-3 font-bold text-[#3e6a00]">R$ <?php echo number_format((float)$a['saldo'], 2, ',', '.'); ?></td>
-<td class="px-4 py-3">
-<span class="px-2 py-1 rounded-full <?php echo $a['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?> text-[10px] font-bold uppercase"><?php echo $a['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
-</td>
-<td class="px-4 py-3 text-right space-x-3">
-<button type="button"
-data-id="<?php echo (int)$a['id']; ?>"
-data-nome="<?php echo htmlspecialchars($a['nome'], ENT_QUOTES); ?>"
-data-email="<?php echo htmlspecialchars($a['email'], ENT_QUOTES); ?>"
-data-telefone="<?php echo htmlspecialchars($a['telefone'] ?? '', ENT_QUOTES); ?>"
-data-cpf="<?php echo htmlspecialchars($a['cpf'] ?? '', ENT_QUOTES); ?>"
-data-nascimento="<?php echo htmlspecialchars($a['nascimento'] ?? '', ENT_QUOTES); ?>"
-data-wallet="<?php echo htmlspecialchars($a['wallet_afiliado'] ?? '', ENT_QUOTES); ?>"
-data-valor-fixo="<?php echo number_format((float)($a['valor_fixo_mensalidade'] ?? 0), 2, ',', '.'); ?>"
-onclick="abrirEditarAfiliado(this)"
-class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-2 py-1 transition" title="Editar informações do afiliado">
-<span class="material-symbols-outlined text-[16px]">edit</span> Editar
-</button>
-<form method="POST" action="admin_afiliados.php" class="inline">
-<input type="hidden" name="acao" value="logar"/>
-<input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
-<button class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-2 py-1 transition" type="submit" title="Logar como afiliado e abrir o painel dele">
-<span class="material-symbols-outlined text-[16px]">login</span> Logar
-</button>
-</form>
-<form method="POST" action="admin_afiliados.php" class="inline">
-<input type="hidden" name="acao" value="alternar"/>
-<input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
-<button class="text-[#51036d] hover:underline font-semibold" type="submit"><?php echo $a['ativo'] ? 'Desativar' : 'Ativar'; ?></button>
-</form>
-<form method="POST" action="admin_afiliados.php" class="inline" onsubmit="confirmarExclusao(event, this, 'Excluir este afiliado? Esta ação não pode ser desfeita.');">
-<input type="hidden" name="acao" value="excluir"/>
-<input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
-<button class="text-red-600 hover:text-red-800 font-semibold" type="submit">Excluir</button>
-</form>
-</td>
-</tr>
+<?php
+    // Iniciais do nome para o avatar do card.
+    $partesNome = preg_split('/\s+/', trim((string)$a['nome']));
+    $iniciais = mb_substr($partesNome[0] ?? 'A', 0, 1);
+    if (count($partesNome) > 1) { $iniciais .= mb_substr($partesNome[count($partesNome) - 1], 0, 1); }
+    $linkIndicacao = $baseUrl . 'indicacao/' . $a['token'];
+    $valorFixo = (float)$a['valor_fixo_mensalidade'];
+    $saldoAfiliado = (float)$a['saldo'];
+    $temWallet = trim((string)($a['wallet_afiliado'] ?? '')) !== '';
+    $dataCadastro = !empty($a['criado_em']) ? date('d/m/Y', strtotime($a['criado_em'])) : '—';
+?>
+<article class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+    <!-- Identidade -->
+    <div class="p-5 sm:p-6 pb-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+        <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0 font-extrabold select-none" title="Afiliado #<?php echo (int)$a['id']; ?>"><?php echo htmlspecialchars($iniciais); ?></div>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <p class="font-extrabold text-gray-800 leading-snug truncate"><?php echo htmlspecialchars($a['nome']); ?></p>
+                    <span class="text-[10px] font-bold text-gray-300 shrink-0">#<?php echo (int)$a['id']; ?></span>
+                </div>
+                <p class="text-sm text-gray-500 truncate"><?php echo htmlspecialchars($a['email']); ?></p>
+                <?php if (!empty($a['telefone'])): ?>
+                <p class="mt-0.5 text-xs text-gray-400 truncate flex items-center gap-1"><span class="material-symbols-outlined text-[13px] text-gray-300">call</span><?php echo htmlspecialchars($a['telefone']); ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <span class="shrink-0 self-start sm:self-center inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide <?php echo $a['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?>">
+            <span class="w-1.5 h-1.5 rounded-full <?php echo $a['ativo'] ? 'bg-[#3e6a00]' : 'bg-gray-400'; ?>"></span>
+            <?php echo $a['ativo'] ? 'Ativo' : 'Inativo'; ?>
+        </span>
+    </div>
+
+    <!-- Números -->
+    <div class="px-5 sm:px-6 pb-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1"><span class="material-symbols-outlined text-[15px] text-gray-400">payments</span> Valor por mensalidade</p>
+            <?php if ($valorFixo > 0): ?>
+            <p class="text-lg font-extrabold text-gray-800 leading-tight">R$ <?php echo number_format($valorFixo, 2, ',', '.'); ?></p>
+            <?php else: ?>
+            <p class="text-lg font-extrabold text-gray-300 leading-tight">Não definido</p>
+            <?php endif; ?>
+        </div>
+        <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1"><span class="material-symbols-outlined text-[15px] text-gray-400">group</span> Usuários indicados</p>
+            <p class="text-lg font-extrabold text-gray-800 leading-tight"><?php echo (int)$a['indicados']; ?></p>
+            <p class="text-[11px] text-gray-400 leading-tight mt-0.5"><?php echo (int)$a['ativos']; ?> ativo<?php echo (int)$a['ativos'] === 1 ? '' : 's'; ?></p>
+        </div>
+        <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1"><span class="material-symbols-outlined text-[15px] text-gray-400">event_repeat</span> Mensalidades pagas</p>
+            <p class="text-lg font-extrabold text-gray-800 leading-tight <?php echo (int)$a['mensalidades'] === 0 ? 'text-gray-300' : ''; ?>"><?php echo (int)$a['mensalidades']; ?></p>
+        </div>
+        <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1"><span class="material-symbols-outlined text-[15px] text-gray-400">account_balance_wallet</span> Total acumulado</p>
+            <?php if ($saldoAfiliado > 0): ?>
+            <p class="text-lg font-extrabold text-[#3e6a00] leading-tight">R$ <?php echo number_format($saldoAfiliado, 2, ',', '.'); ?></p>
+            <?php else: ?>
+            <p class="text-lg font-extrabold text-gray-300 leading-tight">R$ 0,00</p>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Identificação -->
+    <div class="px-5 sm:px-6 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Código colaborador</p>
+            <div class="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
+                <span class="text-sm font-extrabold tracking-[0.25em] text-[#51036d]"><?php echo htmlspecialchars($a['codigo']); ?></span>
+                <button type="button" onclick="copiarLink('<?php echo htmlspecialchars($a['codigo']); ?>', this)" class="ml-auto shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-[#51036d] hover:text-[#3a024d]">
+                    <span class="material-symbols-outlined text-[14px]">content_copy</span><span class="rotulo-copia">Copiar</span>
+                </button>
+            </div>
+        </div>
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Link de indicação</p>
+            <div class="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5 min-w-0">
+                <span class="text-xs text-gray-500 truncate flex-1 min-w-0" title="<?php echo htmlspecialchars($linkIndicacao); ?>"><?php echo htmlspecialchars($linkIndicacao); ?></span>
+                <button type="button" onclick="copiarLink('<?php echo htmlspecialchars($linkIndicacao); ?>', this)" class="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-[#51036d] hover:text-[#3a024d]">
+                    <span class="material-symbols-outlined text-[14px]">content_copy</span><span class="rotulo-copia">Copiar</span>
+                </button>
+            </div>
+        </div>
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Wallet ID Asaas</p>
+            <div class="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5 min-w-0">
+                <?php if ($temWallet): ?>
+                <span class="text-xs text-gray-600 truncate flex-1 min-w-0 font-mono"><?php echo htmlspecialchars($a['wallet_afiliado']); ?></span>
+                <?php else: ?>
+                <span class="text-xs font-semibold text-yellow-700 flex-1 min-w-0">Pendente — sem repasse automático no split</span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cadastrado em</p>
+            <div class="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
+                <span class="material-symbols-outlined text-[15px] text-gray-400">calendar_month</span>
+                <span class="text-sm text-gray-600 font-semibold"><?php echo $dataCadastro; ?></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="px-5 sm:px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center gap-2.5 justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button"
+            data-id="<?php echo (int)$a['id']; ?>"
+            data-nome="<?php echo htmlspecialchars($a['nome'], ENT_QUOTES); ?>"
+            data-email="<?php echo htmlspecialchars($a['email'], ENT_QUOTES); ?>"
+            data-telefone="<?php echo htmlspecialchars($a['telefone'] ?? '', ENT_QUOTES); ?>"
+            data-cpf="<?php echo htmlspecialchars($a['cpf'] ?? '', ENT_QUOTES); ?>"
+            data-nascimento="<?php echo htmlspecialchars($a['nascimento'] ?? '', ENT_QUOTES); ?>"
+            data-wallet="<?php echo htmlspecialchars($a['wallet_afiliado'] ?? '', ENT_QUOTES); ?>"
+            data-valor-fixo="<?php echo number_format((float)($a['valor_fixo_mensalidade'] ?? 0), 2, ',', '.'); ?>"
+            onclick="abrirEditarAfiliado(this)"
+            class="inline-flex items-center gap-1.5 text-xs font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-3 py-2 transition" title="Editar informações do afiliado">
+                <span class="material-symbols-outlined text-[16px]">edit</span> Editar
+            </button>
+            <form method="POST" action="admin_afiliados.php" class="inline">
+                <input type="hidden" name="acao" value="logar"/>
+                <input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
+                <button class="inline-flex items-center gap-1.5 text-xs font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-3 py-2 transition" type="submit" title="Logar como afiliado e abrir o painel dele">
+                    <span class="material-symbols-outlined text-[16px]">login</span> Logar
+                </button>
+            </form>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+            <form method="POST" action="admin_afiliados.php" class="inline">
+                <input type="hidden" name="acao" value="alternar"/>
+                <input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
+                <button class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-800 bg-gray-200/70 hover:bg-gray-200 rounded-lg px-3 py-2 transition" type="submit">
+                    <span class="material-symbols-outlined text-[16px]"><?php echo $a['ativo'] ? 'pause_circle' : 'play_circle'; ?></span>
+                    <?php echo $a['ativo'] ? 'Desativar' : 'Ativar'; ?>
+                </button>
+            </form>
+            <form method="POST" action="admin_afiliados.php" class="inline" onsubmit="confirmarExclusao(event, this, 'Excluir este afiliado? Esta ação não pode ser desfeita.');">
+                <input type="hidden" name="acao" value="excluir"/>
+                <input type="hidden" name="id" value="<?php echo $a['id']; ?>"/>
+                <button class="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg px-3 py-2 transition" type="submit">
+                    <span class="material-symbols-outlined text-[16px]">delete</span> Excluir
+                </button>
+            </form>
+        </div>
+    </div>
+</article>
 <?php endwhile; ?>
-</tbody>
-</table>
-</div>
 </div>
 </div>
 </main>
@@ -407,11 +478,17 @@ if (editCpf) editCpf.addEventListener('input', (e) => {
     e.target.value = v;
 });
 function copiarLink(texto, btn) {
+    // O rótulo pode estar num span próprio (botões com ícone) para o ícone
+    // não ser apagado pelo feedback "Copiado!".
+    const rotulo = btn.querySelector('.rotulo-copia');
+    const alvo = rotulo || btn;
+    const original = alvo.textContent;
+    const finalizar = () => {
+        alvo.textContent = 'Copiado!';
+        setTimeout(() => { alvo.textContent = original; }, 2000);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(texto).then(() => {
-            btn.textContent = 'Copiado!';
-            setTimeout(() => btn.textContent = 'Copiar', 2000);
-        });
+        navigator.clipboard.writeText(texto).then(finalizar);
     } else {
         const ta = document.createElement('textarea');
         ta.value = texto;
@@ -419,8 +496,7 @@ function copiarLink(texto, btn) {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        btn.textContent = 'Copiado!';
-        setTimeout(() => btn.textContent = 'Copiar', 2000);
+        finalizar();
     }
 }
 let formPendente = null;
