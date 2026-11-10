@@ -164,6 +164,54 @@ $conn->query("CREATE TABLE IF NOT EXISTS creditos_afiliado (
     KEY idx_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// ====== REMUNERAÇÃO DE AFILIADOS POR PARCELA (adesão + 2ª/3ª/4ª) ======
+// Novo modelo de remuneração dos vendedores: a 1ª parcela (adesão) e as
+// parcelas 2ª, 3ª e 4ª pagas por usuário indicado geram comissão; a partir da
+// 5ª parcela não há mais comissão. Auto-migração idempotente, sem perda de
+// dados — a coluna antiga valor_fixo_mensalidade é preservada por histórico:
+//  - afiliado_config (id=1): valores PADRÃO GLOBAIS da comissão (valor_adesao,
+//    valor_parcela2, valor_parcela3, valor_parcela4) e a chave geral
+//    remuneracao_ativa (0 desativa toda a remuneração automática). Padrão do
+//    novo modelo: R$ 20,00 na adesão + R$ 5,00 em cada uma das parcelas
+//    2ª/3ª/4ª (total de R$ 35,00 por usuário indicado).
+//  - afiliados.valor_adesao / valor_parcela2 / valor_parcela3 / valor_parcela4:
+//    valores INDIVIDUALIZADOS por vendedor (condições comerciais diferentes);
+//    NULL = usar o padrão global definido no painel.
+//  - creditos_afiliado: nº da parcela de cada crédito (parcela), motivo do
+//    estorno (motivo_estorno) e status 'pago' + data (valores já pagos ao
+//    vendedor, registrados pelo administrador).
+$conn->query("CREATE TABLE IF NOT EXISTS afiliado_config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    valor_adesao DECIMAL(10,2) NOT NULL DEFAULT 20.00,
+    valor_parcela2 DECIMAL(10,2) NOT NULL DEFAULT 5.00,
+    valor_parcela3 DECIMAL(10,2) NOT NULL DEFAULT 5.00,
+    valor_parcela4 DECIMAL(10,2) NOT NULL DEFAULT 5.00,
+    remuneracao_ativa TINYINT(1) NOT NULL DEFAULT 1,
+    atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+$conn->query("INSERT IGNORE INTO afiliado_config (id) VALUES (1)");
+$afParc = @$conn->query("SELECT
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'afiliados' AND COLUMN_NAME = 'valor_adesao') AS tem_overrides,
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creditos_afiliado' AND COLUMN_NAME = 'parcela') AS tem_parcela")->fetch_assoc();
+if ($afParc && (int)$afParc['tem_overrides'] === 0) {
+    @$conn->query("ALTER TABLE afiliados
+        ADD COLUMN valor_adesao DECIMAL(10,2) NULL DEFAULT NULL AFTER valor_fixo_mensalidade,
+        ADD COLUMN valor_parcela2 DECIMAL(10,2) NULL DEFAULT NULL AFTER valor_adesao,
+        ADD COLUMN valor_parcela3 DECIMAL(10,2) NULL DEFAULT NULL AFTER valor_parcela2,
+        ADD COLUMN valor_parcela4 DECIMAL(10,2) NULL DEFAULT NULL AFTER valor_parcela3");
+}
+if ($afParc && (int)$afParc['tem_parcela'] === 0) {
+    @$conn->query("ALTER TABLE creditos_afiliado
+        ADD COLUMN parcela INT NOT NULL DEFAULT 0 AFTER tipo_cobranca,
+        ADD COLUMN motivo_estorno VARCHAR(500) NULL DEFAULT NULL AFTER estornado_em,
+        ADD COLUMN pago_em DATETIME NULL DEFAULT NULL AFTER motivo_estorno");
+}
+// Status 'pago' (valores já pagos ao vendedor), preservando ativo/estornado.
+$afPago = @$conn->query("SELECT COUNT(*) AS tem FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creditos_afiliado' AND COLUMN_NAME = 'status' AND COLUMN_TYPE LIKE '%pago%'")->fetch_assoc();
+if ($afPago && (int)$afPago['tem'] === 0) {
+    @$conn->query("ALTER TABLE creditos_afiliado MODIFY status ENUM('ativo','estornado','pago') NOT NULL DEFAULT 'ativo'");
+}
+
 // ====== REMUNERAÇÃO DO PARCEIRO DA EMPRESA: VALOR FIXO POR TRANSAÇÃO PAGA ======
 // Auto-migração idempotente, sem perda de dados:
 //  - api_pagamento.valor_fixo_parceiro: coluna legada que passa a ser o ÚNICO

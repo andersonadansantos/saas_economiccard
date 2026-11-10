@@ -130,10 +130,12 @@ $walletPreenchida = trim((string)($cfg['asaas_wallet_parceiro'] ?? '')) !== '';
 $valorFixoParceiro = (float)($cfg['valor_fixo_parceiro'] ?? 0);
 $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $valorFixoParceiro > 0;
 
-// Afiliados e seus valores fixos por mensalidade (Admin > Afiliados).
-$afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a.wallet_afiliado, a.ativo,
-        (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades
-    FROM afiliados a ORDER BY a.valor_fixo_mensalidade DESC, a.id ASC");
+// Afiliados e suas comissões por parcela (Admin > Afiliados > Remuneração).
+require_once 'afiliado_creditos.php';
+$afiliadoCfgGlobal = afiliado_config_global($conn);
+$afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_adesao, a.valor_parcela2, a.valor_parcela3, a.valor_parcela4, a.wallet_afiliado, a.ativo,
+        (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status IN ('ativo','pago')) AS comissoes
+    FROM afiliados a ORDER BY a.nome ASC");
 
 // Parceiro da empresa: totais e histórico individualizado das transações
 // que geraram remuneração (livro-caixa em creditos_parceiro).
@@ -316,7 +318,7 @@ $parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_pa
 <!-- Como funciona a remuneração -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
 <h2 class="text-lg font-extrabold text-gray-800 mb-1">Como funciona a remuneração</h2>
-<p class="text-sm text-gray-500 mb-4">O <b>parceiro da empresa</b> (único e exclusivo) recebe o <b>valor fixo configurado abaixo por cada transação efetivamente paga</b>, por PIX ou cartão, de qualquer usuário — com ou sem afiliado, cadastrado direto pelo admin ou por qualquer origem: mensalidade, renovação e taxa do cartão físico. O <b>afiliado</b>, quando o usuário foi indicado por ele, recebe o valor fixo por mensalidade configurado no cadastro dele (Admin > Afiliados). O restante de cada pagamento fica automaticamente na conta da empresa.</p>
+<p class="text-sm text-gray-500 mb-4">O <b>parceiro da empresa</b> (único e exclusivo) recebe o <b>valor fixo configurado abaixo por cada transação efetivamente paga</b>, por PIX ou cartão, de qualquer usuário — com ou sem afiliado, cadastrado direto pelo admin ou por qualquer origem: mensalidade, renovação e taxa do cartão físico. O <b>afiliado (vendedor)</b>, quando o usuário foi indicado por ele, recebe a comissão por parcela configurada em <b>Admin > Afiliados</b> (adesão/1ª parcela + 2ª/3ª/4ª parcelas). O restante de cada pagamento fica automaticamente na conta da empresa.</p>
 <div class="rounded-xl border border-[#51036d]/20 bg-[#51036d]/5 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
 <div class="w-11 h-11 rounded-xl bg-[#51036d] text-white flex items-center justify-center shrink-0"><span class="material-symbols-outlined">storefront</span></div>
 <div class="min-w-0 flex-1">
@@ -336,7 +338,7 @@ $parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_pa
 <!-- Form: Parceiro -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
 <h2 class="text-lg font-extrabold text-gray-800 mb-1">Remuneração do parceiro</h2>
-<p class="text-sm text-gray-500 mb-4">Valor fixo em R$ que o parceiro recebe por cada transação efetivamente confirmada no sistema. Vale para PIX e cartão, todos os usuários e todos os tipos de cobrança (mensalidade, renovação, taxa do cartão físico). A parte do afiliado é configurada por afiliado em <b>Admin > Afiliados</b>.</p>
+<p class="text-sm text-gray-500 mb-4">Valor fixo em R$ que o parceiro recebe por cada transação efetivamente confirmada no sistema. Vale para PIX e cartão, todos os usuários e todos os tipos de cobrança (mensalidade, renovação, taxa do cartão físico). A comissão por parcela do afiliado é configurada em <b>Admin > Afiliados</b>.</p>
 <form method="POST" action="admin_api_pagamento.php">
 <input type="hidden" name="acao" value="salvar_split"/>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -429,12 +431,12 @@ $parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_pa
 <?php endif; ?>
 </div>
 
-<!-- Afiliados: valor fixo por mensalidade -->
+<!-- Afiliados: comissão por parcela -->
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
 <div>
-<h2 class="text-lg font-extrabold text-gray-800">Afiliados — valor fixo por mensalidade</h2>
-<p class="text-xs text-gray-500 mt-1">Cada mensalidade paga por cliente indicado gera para o afiliado o valor fixo configurado no cadastro dele.</p>
+<h2 class="text-lg font-extrabold text-gray-800">Afiliados — comissão por parcela</h2>
+<p class="text-xs text-gray-500 mt-1">A 1ª parcela (adesão) e as parcelas 2ª/3ª/4ª pagas por cliente indicado geram para o afiliado os valores configurados para ele (Admin > Afiliados). A partir da 5ª parcela não há mais comissão.</p>
 </div>
 <a href="admin_afiliados.php" class="shrink-0 inline-flex items-center gap-1 text-sm font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-4 py-2.5 transition">
 <span class="material-symbols-outlined text-[18px]">edit</span> Gerenciar afiliados
@@ -445,20 +447,26 @@ $parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_pa
 <thead>
 <tr class="bg-gray-50 text-gray-600 text-left uppercase text-xs tracking-wider">
 <th class="px-6 py-3">Afiliado</th>
-<th class="px-4 py-3">Valor por mensalidade</th>
+<th class="px-4 py-3">Adesão (1ª)</th>
+<th class="px-4 py-3">2ª/3ª/4ª parcelas</th>
 <th class="px-4 py-3">Wallet ID</th>
-<th class="px-4 py-3">Mensalidades pagas</th>
+<th class="px-4 py-3">Comissões geradas</th>
 <th class="px-6 py-3">Status</th>
 </tr>
 </thead>
 <tbody>
 <?php if ($afiliadosSplit->num_rows === 0): ?>
-<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
+<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
 <?php endif; ?>
 <?php while ($afRow = $afiliadosSplit->fetch_assoc()): ?>
+<?php
+    $vAdesao = afiliado_valor_parcela($afRow, 1, $afiliadoCfgGlobal);
+    $vP2 = afiliado_valor_parcela($afRow, 2, $afiliadoCfgGlobal);
+?>
 <tr class="border-t border-gray-100">
 <td class="px-6 py-3 font-semibold text-gray-800"><?php echo htmlspecialchars($afRow['nome']); ?></td>
-<td class="px-4 py-3 font-bold <?php echo (float)$afRow['valor_fixo_mensalidade'] > 0 ? 'text-[#3e6a00]' : 'text-gray-400'; ?>">R$ <?php echo number_format((float)$afRow['valor_fixo_mensalidade'], 2, ',', '.'); ?></td>
+<td class="px-4 py-3 font-bold <?php echo $vAdesao > 0 ? 'text-[#3e6a00]' : 'text-gray-400'; ?>">R$ <?php echo number_format($vAdesao, 2, ',', '.'); ?></td>
+<td class="px-4 py-3 font-bold <?php echo $vP2 > 0 ? 'text-[#3e6a00]' : 'text-gray-400'; ?>">R$ <?php echo number_format($vP2, 2, ',', '.'); ?> cada</td>
 <td class="px-4 py-3">
 <?php if (!empty($afRow['wallet_afiliado'])): ?>
 <span class="text-[11px] text-gray-500">cadastrada</span>
@@ -466,7 +474,7 @@ $parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_pa
 <span class="text-[11px] text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">pendente (sem repasse automático)</span>
 <?php endif; ?>
 </td>
-<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$afRow['mensalidades']; ?></td>
+<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$afRow['comissoes']; ?></td>
 <td class="px-6 py-3">
 <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase <?php echo $afRow['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?>"><?php echo $afRow['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
 </td>

@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <span class="material-symbols-outlined text-white text-3xl">handshake</span>
 </div>
 <h1 class="text-xl font-extrabold">Seja um Afiliado</h1>
-<p class="text-sm text-white/70 mt-1">Venda assinaturas Economic Card e ganhe um valor fixo por cada mensalidade paga.</p>
+<p class="text-sm text-white/70 mt-1">Venda assinaturas Economic Card e ganhe por parcela paga: adesão + parcelas seguintes.</p>
 </div>
 </div>
 <div class="bg-white rounded-2xl shadow-sm p-8">
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira Asaas para receber os repasses (UUID)">
 </div>
 <div class="bg-[#51036d]/5 border border-[#51036d]/10 rounded-lg p-3 text-xs text-gray-600">
-Seu <b>valor por mensalidade</b> é definido pelo time Economic Card após o cadastro. Cada mensalidade paga por cliente indicado pelo seu link gera esse valor para você, inclusive as recorrências.
+Sua <b>remuneração por parcela</b> é definida pelo time Economic Card após o cadastro. Quando um cliente indicado pelo seu link paga a <b>adesão (1ª parcela)</b> e cada uma das <b>parcelas 2ª, 3ª e 4ª</b>, você recebe os valores de comissão correspondentes.
 </div>
 <label class="flex items-start gap-3 cursor-pointer select-none bg-gray-50 border border-gray-200 rounded-lg p-3">
 <input type="checkbox" id="aceiteContrato" name="aceite_contrato" value="1" required class="mt-1 w-5 h-5 accent-[#3e6a00]">

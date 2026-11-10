@@ -47,8 +47,9 @@ if ($valor < ASAAS_VALOR_MINIMO) {
 }
 
 // Regra de split: o parceiro (único, exclusivo da empresa) recebe o valor fixo
-// por transação em TODA cobrança; o afiliado que indicou o usuário recebe o
-// valor fixo por mensalidade dele (wallet + valor obtidos abaixo).
+// por transação em TODA cobrança; o afiliado que indicou o usuário recebe a
+// comissão da PRÓXIMA PARCELA dele (adesão/2ª/3ª/4ª — wallet + valor obtidos
+// abaixo a partir da sequência real de cobranças pagas do usuário).
 $afiliadoSplit = asaas_afiliado_split_usuario($conn, $u);
 
 $holderName = trim($_POST['holder_name'] ?? '');
@@ -136,8 +137,8 @@ $stmt = $conn->prepare("INSERT INTO pagamentos_pix (usuario_id, plano_id, mp_pay
 $stmt->bind_param('iidsss', $uid, $planoId, $valor, $descricao, $statusDb, $payId);
 $stmt->execute();
 
-// Cartão aprovado na hora: a transação foi paga agora — gera o crédito do
-// AFILIADO que indicou o usuário (valor fixo por mensalidade, quando elegível)
+// Cartão aprovado na hora: a parcela foi paga agora — gera o crédito do
+// AFILIADO que indicou o usuário (comissão por parcela, quando elegível)
 // e o crédito do PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
 if ($statusDb === 'approved') {
     afiliado_registrar_credito_pagamento($conn, (int)$conn->insert_id);

@@ -57,10 +57,11 @@ if ($valor < ASAAS_VALOR_MINIMO) {
 }
 
 // Regra de split: o parceiro (único, exclusivo da empresa) recebe o valor fixo
-// por transação em TODA cobrança; o afiliado que indicou o usuário recebe o
-// valor fixo por mensalidade dele (wallet + valor obtidos abaixo).
+// por transação em TODA cobrança; o afiliado que indicou o usuário recebe a
+// comissão da PRÓXIMA PARCELA dele (adesão/2ª/3ª/4ª — wallet + valor obtidos
+// abaixo a partir da sequência real de cobranças pagas do usuário).
 $afiliadoSplit = asaas_afiliado_split_usuario($conn, $u);
-asaas_fluxo_log('split_regra', "uid=$uid valor=$valor afiliado_wallet=" . ($afiliadoSplit['wallet'] !== '' ? 'sim' : 'nao') . " valor_fixo_afiliado=" . number_format($afiliadoSplit['valor_fixo'], 2, '.', ''));
+asaas_fluxo_log('split_regra', "uid=$uid valor=$valor afiliado_wallet=" . ($afiliadoSplit['wallet'] !== '' ? 'sim' : 'nao') . " parcela=" . (int)$afiliadoSplit['parcela'] . " comissao_afiliado=" . number_format($afiliadoSplit['valor_fixo'], 2, '.', ''));
 
 $cust = asaas_obter_customer($cfgAsaas, $u);
 if (!$cust['ok']) {

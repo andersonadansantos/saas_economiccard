@@ -31,8 +31,8 @@ function aprovar_pagamento_local($conn, $pix) {
     $stmt->bind_param('i', $pix['id']);
     $stmt->execute();
 
-    // Mensalidade efetivamente paga: gera o crédito do AFILIADO que indicou
-    // o usuário (valor fixo por mensalidade, quando elegível) e o crédito do
+    // Parcela efetivamente paga: gera o crédito do AFILIADO que indicou
+    // o usuário (comissão por parcela, quando elegível) e o crédito do
     // PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
     afiliado_registrar_credito_pagamento($conn, (int)$pix['id']);
     parceiro_registrar_credito_pagamento($conn, (int)$pix['id']);

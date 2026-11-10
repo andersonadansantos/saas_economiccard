@@ -59,9 +59,9 @@ if ($status === 'approved') {
         $stmt->bind_param('ii', $pixRow['id'], $uid);
         $stmt->execute();
 
-        // Mensalidade efetivamente paga: gera o crédito do AFILIADO que
-        // indicou o usuário (valor fixo por mensalidade, quando elegível) e o
-        // crédito do PARCEIRO (valor fixo por transação, sempre). Idempotentes.
+        // Parcela efetivamente paga: gera o crédito do AFILIADO que indicou
+        // o usuário (comissão por parcela, quando elegível) e o crédito do
+        // PARCEIRO (valor fixo por transação, sempre). Idempotentes.
         afiliado_registrar_credito_pagamento($conn, (int)$pixRow['id']);
         parceiro_registrar_credito_pagamento($conn, (int)$pixRow['id']);
     }
