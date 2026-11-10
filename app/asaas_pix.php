@@ -1,13 +1,15 @@
 <?php
-// Integração Asaas (API v3) — PIX com Split de Pagamentos nativo.
-// A cobrança é emitida pela conta da EMPRESA e o parceiro recebe automaticamente
-// o VALOR FIXO configurado (api_pagamento.valor_fixo_parceiro, em R$) via walletId.
+// Integração Asaas (API v3) — PIX e cartão com Split de Pagamentos nativo.
+// A cobrança é emitida pela conta da EMPRESA e o PARCEIRO (único, exclusivo da
+// empresa) recebe automaticamente o VALOR FIXO POR TRANSAÇÃO PAGA configurado
+// em api_pagamento.valor_fixo_parceiro (Admin > API Pagamento > aba Split),
+// independente do usuário pagador, do tipo de cobrança e do método.
 // O afiliado que indicou o usuário recebe o VALOR FIXO POR MENSALIDADE dele
 // (afiliados.valor_fixo_mensalidade, configurado no Admin > Afiliados) em cada
 // mensalidade paga. O split é definido na própria cobrança: não há fluxo OAuth
-// nem transferência manual. O crédito no extrato do afiliado é registrado em
-// app/afiliado_creditos.php quando o pagamento é confirmado.
-// Docs: https://docs.asaas.com/docs/split-de-pagamentos
+// nem transferência manual. Os créditos no extrato são registrados em
+// app/afiliado_creditos.php e app/parceiro_creditos.php quando o pagamento é
+// confirmado. Docs: https://docs.asaas.com/docs/split-de-pagamentos
 
 // Valor mínimo por cobrança aceito pelo Asaas.
 define('ASAAS_VALOR_MINIMO', 5.00);
@@ -107,20 +109,6 @@ function asaas_obter_customer(array $cfg, array $u) {
     return ['ok' => false, 'message' => asaas_primeiro_erro($criar, 'Asaas (customer)')];
 }
 
-// Classifica o tipo de cobrança do usuário para aplicar a regra de split:
-//  - 'adesao'        => 1º pagamento do usuário (taxa de adesão do plano Mensal)
-//  - '1a_mensalidade'=> 2º pagamento (1ª mensalidade do plano escolhido)
-//  - 'recorrencia'   => 3º pagamento em diante (mensalidades seguintes)
-// O afiliado recebe seu VALOR FIXO POR MENSALIDADE em todos esses pagamentos.
-function asaas_tipo_cobranca($conn, array $u) {
-    $uid = (int)$u['id'];
-    $r = $conn->query("SELECT COUNT(*) AS n FROM pagamentos_pix WHERE usuario_id = $uid AND tipo = 'plano' AND status = 'approved'");
-    $n = (int)(($r && ($row = $r->fetch_assoc())) ? $row['n'] : 0);
-    if ($n <= 0) return 'adesao';
-    if ($n === 1) return '1a_mensalidade';
-    return 'recorrencia';
-}
-
 // Dados de split do afiliado que indicou o usuário (se houver): wallet da
 // carteira Asaas de recebimento + VALOR FIXO POR MENSALIDADE configurado para
 // ele no Admin > Afiliados. O repasse automático via split ocorre quando o
@@ -141,26 +129,26 @@ function asaas_afiliado_split_usuario($conn, array $u) {
     return $r;
 }
 
-// Monta o array de split conforme a regra de distribuição configurada:
-//  - Parceiro: recebe "Adesão" no 1º pagamento e "Recorrência" a partir da 1ª
-//    mensalidade (enquanto o usuário estiver pagando, em todos os pagamentos).
-//  - Afiliado : recebe o VALOR FIXO POR MENSALIDADE configurado no cadastro
-//    dele (Admin > Afiliados) em TODOS os pagamentos de plano do usuário que
-//    ele indicou (adesão, 1ª mensalidade e recorrências), quando tem Wallet ID.
+// Monta o array de split da cobrança:
+//  - Parceiro (único, exclusivo da empresa): recebe o VALOR FIXO POR
+//    TRANSAÇÃO (api_pagamento.valor_fixo_parceiro) em TODA cobrança —
+//    qualquer usuário, tipo de cobrança (adesão, mensalidade, renovação,
+//    taxa do cartão físico) e método (PIX ou cartão). Não depende de
+//    indicações nem de vínculos.
+//  - Afiliado: quando o usuário foi indicado por um afiliado, recebe o VALOR
+//    FIXO POR MENSALIDADE dele em cada mensalidade paga.
 // O restante do valor fica automaticamente com a empresa (conta que emite a cobrança).
 // Retorna null quando não houver split configurado/válido (100% fica com a empresa).
-function asaas_split_payload(array $cfg, $valor, $tipo = 'adesao', $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
+function asaas_split_payload(array $cfg, $valor, $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
     $soma = 0.0;
     $splits = [];
 
-    // Parceiro
+    // Parceiro: valor fixo por transação paga — igual para todos os pagamentos.
     $walletParceiro = trim((string)($cfg['asaas_wallet_parceiro'] ?? ''));
-    $valorParceiro = $tipo === 'adesao'
-        ? (float)($cfg['split_parceiro_adesao'] ?? 0)
-        : (float)($cfg['split_parceiro_recorrencia'] ?? 0);
+    $valorParceiro = round((float)($cfg['valor_fixo_parceiro'] ?? 0), 2);
     if ($walletParceiro !== '' && $valorParceiro > 0 && $valorParceiro < (float)$valor) {
-        $splits[] = ['walletId' => $walletParceiro, 'fixedValue' => round($valorParceiro, 2)];
-        $soma += round($valorParceiro, 2);
+        $splits[] = ['walletId' => $walletParceiro, 'fixedValue' => $valorParceiro];
+        $soma += $valorParceiro;
     }
 
     // Afiliado: valor fixo por mensalidade paga (configurado por afiliado),
@@ -179,12 +167,26 @@ function asaas_split_payload(array $cfg, $valor, $tipo = 'adesao', $walletAfilia
     return $splits;
 }
 
-// Cria a cobrança PIX (billingType=PIX) já com o split conforme a regra da aba Split.
-// $tipo: 'adesao' | '1a_mensalidade' | 'recorrencia' (contexto da cobrança).
+// Split SOMENTE do parceiro (sem o afiliado), para cobranças em que o
+// afiliado não participa (ex.: taxa do cartão físico) — o parceiro recebe
+// seu valor fixo por TODA transação paga, independente do tipo.
+function asaas_split_payload_somente_parceiro(array $cfg, $valor) {
+    $walletParceiro = trim((string)($cfg['asaas_wallet_parceiro'] ?? ''));
+    $valorParceiro = round((float)($cfg['valor_fixo_parceiro'] ?? 0), 2);
+    if ($walletParceiro === '' || $valorParceiro <= 0 || $valorParceiro >= (float)$valor) {
+        return null;
+    }
+    return [['walletId' => $walletParceiro, 'fixedValue' => $valorParceiro]];
+}
+
+// Cria a cobrança PIX (billingType=PIX) já com o split conforme a regra:
+// parceiro (valor fixo por transação) + afiliado que indicou o usuário.
 // $walletAfiliado / $valorFixoAfiliado: carteira e valor fixo por mensalidade do
 // afiliado que indicou o usuário ('' / 0 se não houver).
-// $aplicarSplit = false emite a cobrança 100% para a empresa (ex.: taxa do Cartão Físico).
-function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $uid, $aplicarSplit = true, $tipo = 'adesao', $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
+// $aplicarSplit = false emite a cobrança sem o split do AFILIADO (ex.: taxa do
+// Cartão Físico) — o split do PARCEIRO permanece, pois ele recebe por toda
+// transação confirmada.
+function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $uid, $aplicarSplit = true, $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
     $payload = [
         'customer' => (string)$customerId,
         'billingType' => 'PIX',
@@ -192,7 +194,7 @@ function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $
         'dueDate' => date('Y-m-d'),
         'description' => (string)$descricao
     ];
-    $split = $aplicarSplit ? asaas_split_payload($cfg, $valor, $tipo, $walletAfiliado, $valorFixoAfiliado) : null;
+    $split = $aplicarSplit ? asaas_split_payload($cfg, $valor, $walletAfiliado, $valorFixoAfiliado) : asaas_split_payload_somente_parceiro($cfg, $valor);
     $splitAplicado = false;
     if ($split) {
         $payload['splits'] = $split;
@@ -207,8 +209,9 @@ function asaas_criar_cobranca_pix(array $cfg, $customerId, $valor, $descricao, $
     return ['ok' => false, 'message' => asaas_primeiro_erro($resp, 'Asaas (cobrança)')];
 }
 
-// Cria a cobrança de CARTÃO DE CRÉDITO (billingType=CREDIT_CARD) com split conforme a regra.
-function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao, $uid, array $cartao, $tipo = 'adesao', $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
+// Cria a cobrança de CARTÃO DE CRÉDITO (billingType=CREDIT_CARD) com split
+// conforme a regra: parceiro (valor fixo por transação) + afiliado indicador.
+function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao, $uid, array $cartao, $walletAfiliado = '', $valorFixoAfiliado = 0.0) {
     $payload = [
         'customer' => (string)$customerId,
         'billingType' => 'CREDIT_CARD',
@@ -231,7 +234,7 @@ function asaas_criar_cobranca_cartao(array $cfg, $customerId, $valor, $descricao
             'phone' => preg_replace('/\D/', '', (string)($cartao['phone'] ?? ''))
         ]
     ];
-    $split = asaas_split_payload($cfg, $valor, $tipo, $walletAfiliado, $valorFixoAfiliado);
+    $split = asaas_split_payload($cfg, $valor, $walletAfiliado, $valorFixoAfiliado);
     $splitAplicado = false;
     if ($split) {
         $payload['splits'] = $split;

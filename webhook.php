@@ -6,6 +6,7 @@ require_once __DIR__ . '/app/config.php';
 require_once __DIR__ . '/app/asaas_pix.php';
 require_once __DIR__ . '/app/cartao_fisico_pix.php';
 require_once __DIR__ . '/app/afiliado_creditos.php';
+require_once __DIR__ . '/app/parceiro_creditos.php';
 
 function responder($dados) {
     echo json_encode($dados);
@@ -30,9 +31,11 @@ function aprovar_pagamento_local($conn, $pix) {
     $stmt->bind_param('i', $pix['id']);
     $stmt->execute();
 
-    // Mensalidade efetivamente paga: gera o crédito do afiliado que indicou o
-    // usuário (valor fixo por mensalidade; idempotente, sem duplicar).
+    // Mensalidade efetivamente paga: gera o crédito do AFILIADO que indicou
+    // o usuário (valor fixo por mensalidade, quando elegível) e o crédito do
+    // PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
     afiliado_registrar_credito_pagamento($conn, (int)$pix['id']);
+    parceiro_registrar_credito_pagamento($conn, (int)$pix['id']);
 
     if ($conn->affected_rows > 0) {
         $u = $conn->query("SELECT nome, email FROM usuarios WHERE id = $uid")->fetch_assoc();
@@ -86,17 +89,21 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
             if ($conn->affected_rows > 0) {
                 registrar_pedido_cartao($conn, (int)$pix['usuario_id']);
                 notificar_admin_pedido_cartao($conn, (int)$pix['usuario_id']);
+                // Transação paga (taxa do cartão físico): o parceiro recebe seu
+                // valor fixo por toda transação confirmada, mesmo não sendo mensalidade.
+                parceiro_registrar_credito_pagamento($conn, (int)$pix['id']);
             }
         } else {
             aprovar_pagamento_local($conn, $pix);
         }
     } elseif ($status === 'refunded' && in_array($pix['status'], ['pending', 'approved'], true)) {
-        // Reembolso/estorno da mensalidade: marca o pagamento como reembolsado
-        // e desfaz o crédito do afiliado (evita remuneração indevida).
+        // Reembolso/estorno: marca o pagamento como reembolsado e desfaz o
+        // crédito do afiliado e do parceiro (ajuste financeiro correto).
         $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'refunded' WHERE id = ?");
         $stmt->bind_param('i', $pix['id']);
         $stmt->execute();
         afiliado_estornar_credito_pagamento($conn, (int)$pix['id']);
+        parceiro_estornar_credito_pagamento($conn, (int)$pix['id']);
     } elseif ($status === 'cancelled' && $pix['status'] === 'pending') {
         $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'cancelled' WHERE id = ?");
         $stmt->bind_param('i', $pix['id']);

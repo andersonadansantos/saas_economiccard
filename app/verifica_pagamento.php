@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'asaas_pix.php';
 require_once 'afiliado_creditos.php';
+require_once 'parceiro_creditos.php';
 header('Content-Type: application/json');
 if (!isset($_SESSION['usuario_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sessão inválida']);
@@ -58,9 +59,11 @@ if ($status === 'approved') {
         $stmt->bind_param('ii', $pixRow['id'], $uid);
         $stmt->execute();
 
-        // Mensalidade efetivamente paga: gera o crédito do afiliado que
-        // indicou o usuário (valor fixo por mensalidade; idempotente).
+        // Mensalidade efetivamente paga: gera o crédito do AFILIADO que
+        // indicou o usuário (valor fixo por mensalidade, quando elegível) e o
+        // crédito do PARCEIRO (valor fixo por transação, sempre). Idempotentes.
         afiliado_registrar_credito_pagamento($conn, (int)$pixRow['id']);
+        parceiro_registrar_credito_pagamento($conn, (int)$pixRow['id']);
     }
 
     if ($conn->affected_rows > 0) {
@@ -70,12 +73,13 @@ if ($status === 'approved') {
         }
     }
 } elseif ($status === 'refunded' && $pixRow && in_array($pixRow['status'], ['pending', 'approved'], true)) {
-    // Reembolso/estorno da mensalidade: marca o pagamento como reembolsado e
-    // desfaz o crédito do afiliado (evita remuneração indevida).
+    // Reembolso/estorno: marca o pagamento como reembolsado e desfaz o
+    // crédito do afiliado e do parceiro (ajuste financeiro correto).
     $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'refunded' WHERE id = ?");
     $stmt->bind_param('i', $pixRow['id']);
     $stmt->execute();
     afiliado_estornar_credito_pagamento($conn, (int)$pixRow['id']);
+    parceiro_estornar_credito_pagamento($conn, (int)$pixRow['id']);
 }
 
 echo json_encode(['status' => $status]);

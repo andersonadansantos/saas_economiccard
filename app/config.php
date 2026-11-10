@@ -164,6 +164,35 @@ $conn->query("CREATE TABLE IF NOT EXISTS creditos_afiliado (
     KEY idx_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// ====== REMUNERAÇÃO DO PARCEIRO DA EMPRESA: VALOR FIXO POR TRANSAÇÃO PAGA ======
+// Auto-migração idempotente, sem perda de dados:
+//  - api_pagamento.valor_fixo_parceiro: coluna legada que passa a ser o ÚNICO
+//    parâmetro do parceiro — valor em R$ por pagamento confirmado (qualquer
+//    usuário, tipo de cobrança e método). As colunas antigas
+//    split_parceiro_adesao/split_parceiro_recorrencia são preservadas por
+//    histórico e sincronizadas com o valor fixo ao salvar no painel.
+//    Em instalações novas o padrão é R$ 6,00.
+//  - creditos_parceiro: livro-caixa do parceiro — uma linha por transação
+//    confirmada, com valor, usuário pagador e estorno (UNIQUE por pagamento:
+//    nunca duplica crédito em notificações repetidas dos gateways).
+$parc = @$conn->query("SELECT
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'api_pagamento' AND COLUMN_NAME = 'valor_fixo_parceiro') AS tem_coluna")->fetch_assoc();
+if ($parc && (int)$parc['tem_coluna'] === 0) {
+    @$conn->query("ALTER TABLE api_pagamento ADD COLUMN valor_fixo_parceiro DECIMAL(10,2) NOT NULL DEFAULT 6.00 AFTER asaas_wallet_parceiro");
+    @$conn->query("UPDATE api_pagamento SET valor_fixo_parceiro = 6.00 WHERE valor_fixo_parceiro <= 0");
+}
+$conn->query("CREATE TABLE IF NOT EXISTS creditos_parceiro (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pagamento_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    valor DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    status ENUM('ativo','estornado') NOT NULL DEFAULT 'ativo',
+    estornado_em DATETIME NULL DEFAULT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_pagamento (pagamento_id),
+    KEY idx_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 
 // Sessão é de um dependente (login pelo CPF do dependente).
 function ehDependente() {

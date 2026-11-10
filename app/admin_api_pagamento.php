@@ -88,19 +88,22 @@ $erroSplit = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = $_POST['acao'] ?? '';
     if ($acao === 'salvar_split') {
-        // Regra de distribuição (aba Split): valores em R$ por tipo de cobrança.
-        // Somente o PARCEIRO é configurado aqui — o afiliado recebe o VALOR FIXO
-        // POR MENSALIDADE configurado individualmente nele (Admin > Afiliados).
-        // As colunas split_afiliado_* são legadas e mantêm 0.
+        // Regra do PARCEIRO (aba Split): valor fixo em R$ por transação
+        // efetivamente confirmada. O parceiro é único e exclusivo da empresa —
+        // recebe por TODO pagamento (mensalidade, renovação, taxa do cartão
+        // físico; PIX ou cartão), de qualquer usuário, com ou sem afiliado.
+        // O afiliado recebe o VALOR FIXO POR MENSALIDADE configurado
+        // individualmente nele (Admin > Afiliados).
+        // As colunas split_parceiro_adesao/split_parceiro_recorrencia são
+        // legadas: ficam sincronizadas com o valor fixo apenas por
+        // consistência de histórico (não controlam mais nada).
         $walletPrc = trim($_POST['split_wallet_parceiro'] ?? '');
-        $adesaoPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_adesao'] ?? '0'), 2);
-        $recorPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_recorrencia'] ?? '0'), 2);
-        if ($adesaoPrc < 0) $adesaoPrc = 0;
-        if ($recorPrc < 0) $recorPrc = 0;
-        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_wallet_parceiro=?, split_parceiro_adesao=?, split_parceiro_recorrencia=?, split_afiliado_adesao=0, split_afiliado_1a_mensal=0 WHERE id=1");
-        $stmt->bind_param('sdd', $walletPrc, $adesaoPrc, $recorPrc);
+        $valorFixoParceiro = round((float)str_replace(',', '.', $_POST['valor_fixo_parceiro'] ?? '0'), 2);
+        if ($valorFixoParceiro < 0) $valorFixoParceiro = 0;
+        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_wallet_parceiro=?, valor_fixo_parceiro=?, split_parceiro_adesao=?, split_parceiro_recorrencia=?, split_afiliado_adesao=0, split_afiliado_1a_mensal=0 WHERE id=1");
+        $stmt->bind_param('sddd', $walletPrc, $valorFixoParceiro, $valorFixoParceiro, $valorFixoParceiro);
         $stmt->execute();
-        $sucesso = 'Regra de split (aba Split) salva com sucesso!';
+        $sucesso = 'Remuneração do parceiro salva com sucesso!';
     } else {
         $chaveAsaas = trim($_POST['asaas_api_key'] ?? '');
         $ambienteAsaas = (($_POST['asaas_ambiente'] ?? 'producao') === 'sandbox') ? 'sandbox' : 'producao';
@@ -124,15 +127,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $cfg = $conn->query("SELECT * FROM api_pagamento WHERE id = 1")->fetch_assoc();
 $asaasAtivo = trim((string)($cfg['asaas_api_key'] ?? '')) !== '';
 $walletPreenchida = trim((string)($cfg['asaas_wallet_parceiro'] ?? '')) !== '';
-$splitAdesaoPrc = (float)($cfg['split_parceiro_adesao'] ?? 0);
-$splitRecorPrc = (float)($cfg['split_parceiro_recorrencia'] ?? 0);
-$algumSplitPrc = $splitAdesaoPrc > 0 || $splitRecorPrc > 0;
-$splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
+$valorFixoParceiro = (float)($cfg['valor_fixo_parceiro'] ?? 0);
+$splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $valorFixoParceiro > 0;
 
 // Afiliados e seus valores fixos por mensalidade (Admin > Afiliados).
 $afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a.wallet_afiliado, a.ativo,
         (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades
     FROM afiliados a ORDER BY a.valor_fixo_mensalidade DESC, a.id ASC");
+
+// Parceiro da empresa: totais e histórico individualizado das transações
+// que geraram remuneração (livro-caixa em creditos_parceiro).
+require_once 'parceiro_creditos.php';
+$parceiroTotais = parceiro_totais_creditos($conn);
+$parceiroHistorico = $conn->query("SELECT cp.pagamento_id, cp.usuario_id, cp.valor, cp.status, cp.criado_em, cp.estornado_em,
+        u.nome AS usuario_nome,
+        p.tipo AS pagamento_tipo, p.descricao AS pagamento_descricao, p.valor AS pagamento_valor
+    FROM creditos_parceiro cp
+    LEFT JOIN usuarios u ON u.id = cp.usuario_id
+    LEFT JOIN pagamentos_pix p ON p.id = cp.pagamento_id
+    ORDER BY cp.criado_em DESC, cp.id DESC
+    LIMIT 100");
+$parceiroTotalLinhas = (int)@$conn->query("SELECT COUNT(*) AS n FROM creditos_parceiro")->fetch_assoc()['n'];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -155,7 +170,7 @@ $afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a
 <div class="px-6 py-4 flex items-center justify-between">
 <div>
 <h1 class="text-xl font-extrabold text-gray-800">API Pagamento</h1>
-<p class="text-sm text-gray-500">Integração Asaas + regra de split por tipo de cobrança</p>
+<p class="text-sm text-gray-500">Integração Asaas + remuneração fixa do parceiro por transação paga</p>
 </div>
 <a href="logout.php?admin=1" class="bg-[#51036d] hover:bg-[#3a024d] text-white rounded-lg px-4 py-2 text-sm font-semibold transition">Sair</a>
 </div>
@@ -186,7 +201,7 @@ $afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a
 <?php echo $walletPreenchida ? 'Wallet do parceiro cadastrada' : 'Wallet do parceiro pendente'; ?>
 </span>
 <span class="px-3 py-1.5 rounded-full <?php echo $splitAtivoAsaas ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'; ?>">
-<?php echo $splitAtivoAsaas ? 'SPLIT ATIVO (regra da aba Split)' : 'Sem split ou split pendente (100% empresa)'; ?>
+<?php echo $splitAtivoAsaas ? 'SPLIT ATIVO (parceiro recebe R$ ' . number_format($valorFixoParceiro, 2, ',', '.') . ' por transação paga)' : 'Sem split ou split pendente (100% empresa)'; ?>
 </span>
 </div>
 <?php if (!$asaasAtivo): ?>
@@ -298,36 +313,30 @@ $afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a
 <div class="mb-6 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"><?php echo htmlspecialchars($erroSplit); ?></div>
 <?php endif; ?>
 
-<!-- Como funciona a distribuição -->
+<!-- Como funciona a remuneração -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-<h2 class="text-lg font-extrabold text-gray-800 mb-1">Como funciona a distribuição</h2>
-<p class="text-sm text-gray-500 mb-4">O <b>parceiro</b> recebe o valor configurado abaixo por tipo de cobrança. O <b>afiliado</b> recebe o valor fixo por mensalidade configurado no cadastro dele (Admin > Afiliados) — em <b>todos</b> os pagamentos de plano do cliente que ele indicou (adesão, 1ª mensalidade e recorrências). O restante de cada pagamento fica automaticamente na conta da empresa (SaaS).</p>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<div class="border border-gray-200 rounded-xl p-4">
-<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">add_card</span></div>
-<h3 class="font-bold text-sm text-gray-800 mb-1">1º Pagamento (Adesão)</h3>
-<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?></b> e o afiliado indicado recebe o <b class="text-gray-700">valor fixo dele</b>.</p>
+<h2 class="text-lg font-extrabold text-gray-800 mb-1">Como funciona a remuneração</h2>
+<p class="text-sm text-gray-500 mb-4">O <b>parceiro da empresa</b> (único e exclusivo) recebe o <b>valor fixo configurado abaixo por cada transação efetivamente paga</b>, por PIX ou cartão, de qualquer usuário — com ou sem afiliado, cadastrado direto pelo admin ou por qualquer origem: mensalidade, renovação e taxa do cartão físico. O <b>afiliado</b>, quando o usuário foi indicado por ele, recebe o valor fixo por mensalidade configurado no cadastro dele (Admin > Afiliados). O restante de cada pagamento fica automaticamente na conta da empresa.</p>
+<div class="rounded-xl border border-[#51036d]/20 bg-[#51036d]/5 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+<div class="w-11 h-11 rounded-xl bg-[#51036d] text-white flex items-center justify-center shrink-0"><span class="material-symbols-outlined">storefront</span></div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-extrabold text-gray-800">Parceiro da empresa</p>
+<p class="text-sm text-gray-600">Recebe o valor fixo por <b>cada pagamento confirmado</b> no sistema — exatamente um crédito por transação, sem duplicar. Não é afiliado e não depende de indicações ou vínculos: pagamentos pendentes, recusados ou cancelados não geram crédito; estornos desfazem o crédito correspondente.</p>
 </div>
-<div class="border border-gray-200 rounded-xl p-4">
-<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">calendar_month</span></div>
-<h3 class="font-bold text-sm text-gray-800 mb-1">2º Pagamento (1ª mensalidade)</h3>
-<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b> e o afiliado indicado recebe o <b class="text-gray-700">valor fixo dele</b>.</p>
-</div>
-<div class="border border-gray-200 rounded-xl p-4">
-<div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">autorenew</span></div>
-<h3 class="font-bold text-sm text-gray-800 mb-1">3º+ Pagamentos (Recorrência)</h3>
-<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b> e o afiliado indicado <b class="text-gray-700">continua</b> recebendo o valor fixo dele a cada mensalidade paga.</p>
+<div class="text-right shrink-0">
+<p class="text-2xl font-extrabold text-[#51036d] leading-tight">R$ <?php echo number_format($valorFixoParceiro, 2, ',', '.'); ?></p>
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">por transação paga</p>
 </div>
 </div>
 <?php if (!$walletPreenchida): ?>
-<div class="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-3 text-sm"><b>Dica:</b> preencha o <b>Wallet ID do parceiro</b> abaixo para ativar o split. Sem ele, todas as cobranças vão 100% para a empresa.</div>
+<div class="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-3 text-sm"><b>Dica:</b> preencha o <b>Wallet ID do parceiro</b> abaixo para ativar o repasse automático. Sem ele, todas as cobranças vão 100% para a empresa.</p>
 <?php endif; ?>
 </div>
 
 <!-- Form: Parceiro -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-<h2 class="text-lg font-extrabold text-gray-800 mb-1">Regra de split do parceiro</h2>
-<p class="text-sm text-gray-500 mb-4">Valores em R$ que saem da conta da empresa para a conta do parceiro a cada pagamento. A parte do afiliado é configurada por afiliado em <b>Admin > Afiliados</b>.</p>
+<h2 class="text-lg font-extrabold text-gray-800 mb-1">Remuneração do parceiro</h2>
+<p class="text-sm text-gray-500 mb-4">Valor fixo em R$ que o parceiro recebe por cada transação efetivamente confirmada no sistema. Vale para PIX e cartão, todos os usuários e todos os tipos de cobrança (mensalidade, renovação, taxa do cartão físico). A parte do afiliado é configurada por afiliado em <b>Admin > Afiliados</b>.</p>
 <form method="POST" action="admin_api_pagamento.php">
 <input type="hidden" name="acao" value="salvar_split"/>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -336,23 +345,88 @@ $afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a
 <input type="text" name="split_wallet_parceiro" value="<?php echo htmlspecialchars((string)($cfg['asaas_wallet_parceiro'] ?? '')); ?>" placeholder="8e3...-uuid" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" required/>
 <p class="text-xs text-gray-500 mt-1">UUID da conta Asaas do parceiro (obtido pela API — ver passo a passo na aba Credenciais).</p>
 </div>
-<div class="md:col-span-2 border-b border-gray-100 pb-3">
-<h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Sessão: Parceiro</h3>
-</div>
 <div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Adesão (1º pagamento) — R$</label>
-<input type="text" name="split_parceiro_adesao" value="<?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
-</div>
-<div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Recorrência (2º+) — R$</label>
-<input type="text" name="split_parceiro_recorrencia" value="<?php echo number_format($splitRecorPrc, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Valor fixo por transação paga — R$</label>
+<input type="text" name="valor_fixo_parceiro" value="<?php echo number_format($valorFixoParceiro, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
+<p class="text-xs text-gray-500 mt-1">Cada pagamento efetivamente confirmado gera exatamente um crédito deste valor. <b>0</b> desativa a remuneração do parceiro.</p>
 </div>
 <div class="md:col-span-2 flex items-center gap-3">
-<button type="submit" class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition">SALVAR REGRA DE SPLIT</button>
+<button type="submit" class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition">SALVAR REMUNERAÇÃO DO PARCEIRO</button>
 <span class="text-xs text-gray-500">Vale para PIX e cartão.</span>
 </div>
 </div>
 </form>
+</div>
+
+<!-- Parceiro: totais e histórico -->
+<div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+<div class="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div>
+<h2 class="text-lg font-extrabold text-gray-800">Parceiro — histórico de remuneração</h2>
+<p class="text-xs text-gray-500 mt-1">Cada transação confirmada gera um crédito; estornos/reembolsos são ajustados no registro correspondente.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 border-b border-gray-100">
+<div class="px-6 py-4">
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">task_alt</span> Transações pagas</p>
+<p class="mt-1 text-xl font-extrabold text-gray-800"><?php echo (int)$parceiroTotais['transacoes']; ?></p>
+</div>
+<div class="px-6 py-4">
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">account_balance_wallet</span> Total acumulado</p>
+<p class="mt-1 text-xl font-extrabold text-[#3e6a00]">R$ <?php echo number_format($parceiroTotais['saldo'], 2, ',', '.'); ?></p>
+</div>
+<div class="px-6 py-4">
+<p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">undo</span> Estornado (reembolsos)</p>
+<p class="mt-1 text-xl font-extrabold <?php echo $parceiroTotais['estornado'] > 0 ? 'text-red-500' : 'text-gray-300'; ?>"><?php echo $parceiroTotais['estornado'] > 0 ? 'R$ ' . number_format($parceiroTotais['estornado'], 2, ',', '.') : '—'; ?></p>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="bg-gray-50 text-gray-600 text-left uppercase text-xs tracking-wider">
+<th class="px-6 py-3">Data</th>
+<th class="px-4 py-3">Usuário pagador</th>
+<th class="px-4 py-3">Transação</th>
+<th class="px-4 py-3">Valor pago</th>
+<th class="px-6 py-3">Remuneração</th>
+</tr>
+</thead>
+<tbody>
+<?php if ($parceiroHistorico->num_rows === 0): ?>
+<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Nenhuma transação remunerada ainda. Os créditos aparecem conforme os pagamentos são confirmados.</td></tr>
+<?php endif; ?>
+<?php while ($pc = $parceiroHistorico->fetch_assoc()): ?>
+<?php
+    $tiposRotulo = ['plano' => 'Mensalidade (plano)', 'cartao_fisico' => 'Taxa do cartão físico'];
+    $rotuloTipo = $tiposRotulo[$pc['pagamento_tipo'] ?? ''] ?? ($pc['pagamento_tipo'] ?: 'Pagamento');
+    $dataCredito = !empty($pc['criado_em']) ? date('d/m/Y H:i', strtotime($pc['criado_em'])) : '—';
+?>
+<tr class="border-t border-gray-100">
+<td class="px-6 py-3 whitespace-nowrap text-gray-600"><?php echo $dataCredito; ?></td>
+<td class="px-4 py-3 font-semibold text-gray-800"><?php echo htmlspecialchars($pc['usuario_nome'] ?? ('Usuário removido #' . (int)$pc['usuario_id'])); ?></td>
+<td class="px-4 py-3">
+<p class="text-xs font-semibold text-gray-700"><?php echo htmlspecialchars($rotuloTipo); ?> <span class="text-gray-400">#<?php echo (int)$pc['pagamento_id']; ?></span></p>
+<?php if (!empty($pc['pagamento_descricao'])): ?>
+<p class="text-[11px] text-gray-400 truncate max-w-[220px]" title="<?php echo htmlspecialchars($pc['pagamento_descricao']); ?>"><?php echo htmlspecialchars($pc['pagamento_descricao']); ?></p>
+<?php endif; ?>
+</td>
+<td class="px-4 py-3 font-bold text-gray-600 whitespace-nowrap">R$ <?php echo number_format((float)$pc['pagamento_valor'], 2, ',', '.'); ?></td>
+<td class="px-6 py-3 whitespace-nowrap">
+<?php if (($pc['status'] ?? '') === 'ativo'): ?>
+<span class="font-extrabold text-[#3e6a00]">+ R$ <?php echo number_format((float)$pc['valor'], 2, ',', '.'); ?></span>
+<?php else: ?>
+<span class="font-extrabold text-gray-400 line-through">R$ <?php echo number_format((float)$pc['valor'], 2, ',', '.'); ?></span>
+<span class="block text-[9px] font-bold uppercase tracking-wide text-red-500">estornado<?php echo !empty($pc['estornado_em']) ? ' em ' . date('d/m/Y', strtotime($pc['estornado_em'])) : ''; ?></span>
+<?php endif; ?>
+</td>
+</tr>
+<?php endwhile; ?>
+</tbody>
+</table>
+</div>
+<?php if ($parceiroTotalLinhas > 100): ?>
+<p class="px-6 py-3 text-[11px] text-gray-400 text-right border-t border-gray-100">Exibindo as 100 transações mais recentes de <?php echo $parceiroTotalLinhas; ?>.</p>
+<?php endif; ?>
 </div>
 
 <!-- Afiliados: valor fixo por mensalidade -->

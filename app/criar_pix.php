@@ -56,12 +56,11 @@ if ($valor < ASAAS_VALOR_MINIMO) {
     exit;
 }
 
-// Regra de split (Admin > API Pagamento > aba Split): classifica o pagamento
-// (adesão / 1ª mensalidade / recorrência) e obtém wallet + valor fixo por
-// mensalidade do afiliado que indicou o usuário.
-$tipoCobranca = asaas_tipo_cobranca($conn, $u);
+// Regra de split: o parceiro (único, exclusivo da empresa) recebe o valor fixo
+// por transação em TODA cobrança; o afiliado que indicou o usuário recebe o
+// valor fixo por mensalidade dele (wallet + valor obtidos abaixo).
 $afiliadoSplit = asaas_afiliado_split_usuario($conn, $u);
-asaas_fluxo_log('split_tipo', "uid=$uid valor=$valor tipo=$tipoCobranca afiliado_wallet=" . ($afiliadoSplit['wallet'] !== '' ? 'sim' : 'nao') . " valor_fixo_afiliado=" . number_format($afiliadoSplit['valor_fixo'], 2, '.', ''));
+asaas_fluxo_log('split_regra', "uid=$uid valor=$valor afiliado_wallet=" . ($afiliadoSplit['wallet'] !== '' ? 'sim' : 'nao') . " valor_fixo_afiliado=" . number_format($afiliadoSplit['valor_fixo'], 2, '.', ''));
 
 $cust = asaas_obter_customer($cfgAsaas, $u);
 if (!$cust['ok']) {
@@ -70,7 +69,7 @@ if (!$cust['ok']) {
         exit;
     }
     asaas_fluxo_log('customer_ok', "uid=$uid customer={$cust['customer_id']}");
-    $cob = asaas_criar_cobranca_pix($cfgAsaas, $cust['customer_id'], $valor, $descricao, $uid, true, $tipoCobranca, $afiliadoSplit['wallet'], $afiliadoSplit['valor_fixo']);
+    $cob = asaas_criar_cobranca_pix($cfgAsaas, $cust['customer_id'], $valor, $descricao, $uid, true, $afiliadoSplit['wallet'], $afiliadoSplit['valor_fixo']);
     if (!$cob['ok']) {
         asaas_fluxo_log('erro', "cobranca falhou uid=$uid valor=$valor: " . $cob['message']);
         echo json_encode(['status' => 'error', 'message' => $cob['message']]);

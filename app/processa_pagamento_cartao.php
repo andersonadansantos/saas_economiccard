@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'asaas_pix.php';
 require_once 'afiliado_creditos.php';
+require_once 'parceiro_creditos.php';
 header('Content-Type: application/json');
 if (!isset($_SESSION['usuario_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sessão inválida']);
@@ -45,10 +46,9 @@ if ($valor < ASAAS_VALOR_MINIMO) {
     exit;
 }
 
-// Regra de split (Admin > API Pagamento > aba Split): classifica o pagamento
-// (adesão / 1ª mensalidade / recorrência) e obtém wallet + valor fixo por
-// mensalidade do afiliado que indicou o usuário.
-$tipoCobranca = asaas_tipo_cobranca($conn, $u);
+// Regra de split: o parceiro (único, exclusivo da empresa) recebe o valor fixo
+// por transação em TODA cobrança; o afiliado que indicou o usuário recebe o
+// valor fixo por mensalidade dele (wallet + valor obtidos abaixo).
 $afiliadoSplit = asaas_afiliado_split_usuario($conn, $u);
 
 $holderName = trim($_POST['holder_name'] ?? '');
@@ -112,7 +112,7 @@ $cob = asaas_criar_cobranca_cartao($cfg, $cust['customer_id'], $valor, $descrica
     'postalCode' => $postalCode,
     'addressNumber' => $addressNumber,
     'phone' => $u['whatsapp'] ?? ''
-], $tipoCobranca, $afiliadoSplit['wallet'], $afiliadoSplit['valor_fixo']);
+], $afiliadoSplit['wallet'], $afiliadoSplit['valor_fixo']);
 if (!$cob['ok']) {
     echo json_encode(['status' => 'error', 'message' => $cob['message']]);
     exit;
@@ -136,10 +136,12 @@ $stmt = $conn->prepare("INSERT INTO pagamentos_pix (usuario_id, plano_id, mp_pay
 $stmt->bind_param('iidsss', $uid, $planoId, $valor, $descricao, $statusDb, $payId);
 $stmt->execute();
 
-// Cartão aprovado na hora: a mensalidade foi paga agora — gera o crédito do
-// afiliado que indicou o usuário (valor fixo por mensalidade; idempotente).
+// Cartão aprovado na hora: a transação foi paga agora — gera o crédito do
+// AFILIADO que indicou o usuário (valor fixo por mensalidade, quando elegível)
+// e o crédito do PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
 if ($statusDb === 'approved') {
     afiliado_registrar_credito_pagamento($conn, (int)$conn->insert_id);
+    parceiro_registrar_credito_pagamento($conn, (int)$conn->insert_id);
 }
 
 echo json_encode([

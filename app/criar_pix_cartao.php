@@ -45,6 +45,8 @@ if (!$cust['ok']) {
     echo json_encode(['status' => 'error', 'message' => $cust['message']]);
     exit;
 }
+// Taxa do cartão físico: sem split do AFILIADO (não é mensalidade de plano),
+// mas o PARCEIRO continua recebendo seu valor fixo por toda transação paga.
 $cob = asaas_criar_cobranca_pix($cfgAsaas, $cust['customer_id'], $valor, $descricao, $uid, false);
 if (!$cob['ok']) {
     echo json_encode(['status' => 'error', 'message' => $cob['message']]);

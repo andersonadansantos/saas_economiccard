@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'asaas_pix.php';
 require_once 'cartao_fisico_pix.php';
+require_once 'parceiro_creditos.php';
 header('Content-Type: application/json');
 if (!isset($_SESSION['usuario_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sessão inválida']);
@@ -40,6 +41,9 @@ if ($status === 'approved' && $pix['status'] !== 'approved') {
     if ($conn->affected_rows > 0) {
         registrar_pedido_cartao($conn, $uid);
         notificar_admin_pedido_cartao($conn, $uid);
+        // Transação paga (taxa do cartão físico): o parceiro recebe seu valor
+        // fixo por toda transação confirmada, mesmo não sendo mensalidade.
+        parceiro_registrar_credito_pagamento($conn, (int)$pix['id']);
     }
 }
 
