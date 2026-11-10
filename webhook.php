@@ -5,6 +5,7 @@ http_response_code(200);
 require_once __DIR__ . '/app/config.php';
 require_once __DIR__ . '/app/asaas_pix.php';
 require_once __DIR__ . '/app/cartao_fisico_pix.php';
+require_once __DIR__ . '/app/afiliado_creditos.php';
 
 function responder($dados) {
     echo json_encode($dados);
@@ -28,6 +29,10 @@ function aprovar_pagamento_local($conn, $pix) {
     $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'approved' WHERE id = ?");
     $stmt->bind_param('i', $pix['id']);
     $stmt->execute();
+
+    // Mensalidade efetivamente paga: gera o crédito do afiliado que indicou o
+    // usuário (valor fixo por mensalidade; idempotente, sem duplicar).
+    afiliado_registrar_credito_pagamento($conn, (int)$pix['id']);
 
     if ($conn->affected_rows > 0) {
         $u = $conn->query("SELECT nome, email FROM usuarios WHERE id = $uid")->fetch_assoc();
@@ -85,9 +90,16 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
         } else {
             aprovar_pagamento_local($conn, $pix);
         }
-    } elseif ($status !== 'approved' && $pix['status'] === 'pending' && in_array($status, ['cancelled', 'refunded'], true)) {
-        $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = ? WHERE id = ?");
-        $stmt->bind_param('si', $status, $pix['id']);
+    } elseif ($status === 'refunded' && in_array($pix['status'], ['pending', 'approved'], true)) {
+        // Reembolso/estorno da mensalidade: marca o pagamento como reembolsado
+        // e desfaz o crédito do afiliado (evita remuneração indevida).
+        $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'refunded' WHERE id = ?");
+        $stmt->bind_param('i', $pix['id']);
+        $stmt->execute();
+        afiliado_estornar_credito_pagamento($conn, (int)$pix['id']);
+    } elseif ($status === 'cancelled' && $pix['status'] === 'pending') {
+        $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'cancelled' WHERE id = ?");
+        $stmt->bind_param('i', $pix['id']);
         $stmt->execute();
     }
 

@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ck->bind_param('s', $codigo);
                 $ck->execute();
             } while ($ck->get_result()->num_rows > 0);
-            $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, nascimento, senha, comissao, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, nascimento, senha, valor_fixo_mensalidade, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)");
             $stmt->bind_param('sssssssss', $codigo, $nome, $email, $whatsapp, $cpfMascarado, $nascimento, $hash, $wallet, $token);
             if ($stmt->execute()) {
                 registrar_aceite_contrato($conn, 'afiliados', $conn->insert_id);
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <span class="material-symbols-outlined text-white text-3xl">handshake</span>
 </div>
 <h1 class="text-xl font-extrabold">Seja um Afiliado</h1>
-<p class="text-sm text-white/70 mt-1">Venda assinaturas Economic Card e ganhe comissão.</p>
+<p class="text-sm text-white/70 mt-1">Venda assinaturas Economic Card e ganhe um valor fixo por cada mensalidade paga.</p>
 </div>
 </div>
 <div class="bg-white rounded-2xl shadow-sm p-8">
@@ -120,7 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
-<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
+<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira Asaas para receber os repasses (UUID)">
+</div>
+<div class="bg-[#51036d]/5 border border-[#51036d]/10 rounded-lg p-3 text-xs text-gray-600">
+Seu <b>valor por mensalidade</b> é definido pelo time Economic Card após o cadastro. Cada mensalidade paga por cliente indicado pelo seu link gera esse valor para você, inclusive as recorrências.
 </div>
 <label class="flex items-start gap-3 cursor-pointer select-none bg-gray-50 border border-gray-200 rounded-lg p-3">
 <input type="checkbox" id="aceiteContrato" name="aceite_contrato" value="1" required class="mt-1 w-5 h-5 accent-[#3e6a00]">

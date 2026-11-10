@@ -129,6 +129,42 @@ $conn->query("CREATE TABLE IF NOT EXISTS dependentes (
     CONSTRAINT fk_dependentes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// ====== REMUNERAÇÃO DE AFILIADOS: VALOR FIXO POR MENSALIDADE PAGA ======
+// Auto-migração idempotente (mesmo estilo das tabelas acima), sem perda de
+// dados — as colunas antigas (afiliados.comissao, api_pagamento.split_afiliado_*)
+// são preservadas, apenas deixam de ser usadas:
+//  - afiliados.valor_fixo_mensalidade: valor em R$ que o afiliado recebe por
+//    mensalidade efetivamente paga por usuário indicado (configurável por afiliado).
+//  - pagamentos_pix.status: acrescenta 'refunded' para registrar reembolsos/
+//    estornos de mensalidades (necessário para desfazer o crédito do afiliado).
+//  - creditos_afiliado: livro-caixa dos créditos — uma linha por mensalidade
+//    paga, com usuário pagador, afiliado, valor, data e a mensalidade
+//    correspondente (UNIQUE por pagamento: nunca duplica crédito).
+$fixo = @$conn->query("SELECT
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'afiliados' AND COLUMN_NAME = 'valor_fixo_mensalidade') AS tem_coluna,
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pagamentos_pix' AND COLUMN_NAME = 'status' AND COLUMN_TYPE LIKE '%refunded%') AS tem_refunded")->fetch_assoc();
+if ($fixo && (int)$fixo['tem_coluna'] === 0) {
+    @$conn->query("ALTER TABLE afiliados ADD COLUMN valor_fixo_mensalidade DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER comissao");
+}
+if ($fixo && (int)$fixo['tem_refunded'] === 0) {
+    @$conn->query("ALTER TABLE pagamentos_pix MODIFY status ENUM('pending','approved','rejected','cancelled','refunded') NOT NULL DEFAULT 'pending'");
+}
+$conn->query("CREATE TABLE IF NOT EXISTS creditos_afiliado (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    afiliado_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    pagamento_id INT NOT NULL,
+    valor DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    tipo_cobranca VARCHAR(20) NOT NULL DEFAULT '',
+    status ENUM('ativo','estornado') NOT NULL DEFAULT 'ativo',
+    estornado_em DATETIME NULL DEFAULT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_pagamento (pagamento_id),
+    KEY idx_afiliado (afiliado_id),
+    KEY idx_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+
 // Sessão é de um dependente (login pelo CPF do dependente).
 function ehDependente() {
     return !empty($_SESSION['tipo_conta']) && $_SESSION['tipo_conta'] === 'dependente';

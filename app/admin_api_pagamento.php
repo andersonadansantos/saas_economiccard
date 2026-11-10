@@ -89,23 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = $_POST['acao'] ?? '';
     if ($acao === 'salvar_split') {
         // Regra de distribuição (aba Split): valores em R$ por tipo de cobrança.
+        // Somente o PARCEIRO é configurado aqui — o afiliado recebe o VALOR FIXO
+        // POR MENSALIDADE configurado individualmente nele (Admin > Afiliados).
+        // As colunas split_afiliado_* são legadas e mantêm 0.
         $walletPrc = trim($_POST['split_wallet_parceiro'] ?? '');
         $adesaoPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_adesao'] ?? '0'), 2);
         $recorPrc = round((float)str_replace(',', '.', $_POST['split_parceiro_recorrencia'] ?? '0'), 2);
-        $afiliadoHabilitado = !empty($_POST['split_afiliado_habilitar']);
-        if ($afiliadoHabilitado) {
-            $adesaoAfi = round((float)str_replace(',', '.', $_POST['split_afiliado_adesao'] ?? '0'), 2);
-            $afiliado1a = round((float)str_replace(',', '.', $_POST['split_afiliado_1a_mensal'] ?? '0'), 2);
-        } else {
-            $adesaoAfi = 0;
-            $afiliado1a = 0;
-        }
         if ($adesaoPrc < 0) $adesaoPrc = 0;
         if ($recorPrc < 0) $recorPrc = 0;
-        if ($adesaoAfi < 0) $adesaoAfi = 0;
-        if ($afiliado1a < 0) $afiliado1a = 0;
-        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_wallet_parceiro=?, split_parceiro_adesao=?, split_parceiro_recorrencia=?, split_afiliado_adesao=?, split_afiliado_1a_mensal=? WHERE id=1");
-        $stmt->bind_param('sdddd', $walletPrc, $adesaoPrc, $recorPrc, $adesaoAfi, $afiliado1a);
+        $stmt = $conn->prepare("UPDATE api_pagamento SET asaas_wallet_parceiro=?, split_parceiro_adesao=?, split_parceiro_recorrencia=?, split_afiliado_adesao=0, split_afiliado_1a_mensal=0 WHERE id=1");
+        $stmt->bind_param('sdd', $walletPrc, $adesaoPrc, $recorPrc);
         $stmt->execute();
         $sucesso = 'Regra de split (aba Split) salva com sucesso!';
     } else {
@@ -133,11 +126,13 @@ $asaasAtivo = trim((string)($cfg['asaas_api_key'] ?? '')) !== '';
 $walletPreenchida = trim((string)($cfg['asaas_wallet_parceiro'] ?? '')) !== '';
 $splitAdesaoPrc = (float)($cfg['split_parceiro_adesao'] ?? 0);
 $splitRecorPrc = (float)($cfg['split_parceiro_recorrencia'] ?? 0);
-$splitAdesaoAfi = (float)($cfg['split_afiliado_adesao'] ?? 0);
-$splitAfiliado1a = (float)($cfg['split_afiliado_1a_mensal'] ?? 0);
 $algumSplitPrc = $splitAdesaoPrc > 0 || $splitRecorPrc > 0;
-$algumSplitAfi = $splitAdesaoAfi > 0 || $splitAfiliado1a > 0;
 $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
+
+// Afiliados e seus valores fixos por mensalidade (Admin > Afiliados).
+$afiliadosSplit = $conn->query("SELECT a.id, a.nome, a.valor_fixo_mensalidade, a.wallet_afiliado, a.ativo,
+        (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades
+    FROM afiliados a ORDER BY a.valor_fixo_mensalidade DESC, a.id ASC");
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -306,22 +301,22 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
 <!-- Como funciona a distribuição -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
 <h2 class="text-lg font-extrabold text-gray-800 mb-1">Como funciona a distribuição</h2>
-<p class="text-sm text-gray-500 mb-4">Defina, em reais (R$), a parte de cada tipo de cobrança. O restante de cada pagamento fica automaticamente na conta da empresa (SaaS).</p>
+<p class="text-sm text-gray-500 mb-4">O <b>parceiro</b> recebe o valor configurado abaixo por tipo de cobrança. O <b>afiliado</b> recebe o valor fixo por mensalidade configurado no cadastro dele (Admin > Afiliados) — em <b>todos</b> os pagamentos de plano do cliente que ele indicou (adesão, 1ª mensalidade e recorrências). O restante de cada pagamento fica automaticamente na conta da empresa (SaaS).</p>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 <div class="border border-gray-200 rounded-xl p-4">
 <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">add_card</span></div>
 <h3 class="font-bold text-sm text-gray-800 mb-1">1º Pagamento (Adesão)</h3>
-<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?></b><?php echo $algumSplitAfi ? ' e afiliado recebe <b class="text-gray-700">R$ ' . number_format($splitAdesaoAfi, 2, ',', '.') . '</b>' : ' (afiliado não configurado)'; ?>.</p>
+<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitAdesaoPrc, 2, ',', '.'); ?></b> e o afiliado indicado recebe o <b class="text-gray-700">valor fixo dele</b>.</p>
 </div>
 <div class="border border-gray-200 rounded-xl p-4">
 <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">calendar_month</span></div>
 <h3 class="font-bold text-sm text-gray-800 mb-1">2º Pagamento (1ª mensalidade)</h3>
-<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b><?php echo $algumSplitAfi ? ' e afiliado recebe <b class="text-gray-700">R$ ' . number_format($splitAfiliado1a, 2, ',', '.') . '</b>' : ' (afiliado não configurado)'; ?>.</p>
+<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b> e o afiliado indicado recebe o <b class="text-gray-700">valor fixo dele</b>.</p>
 </div>
 <div class="border border-gray-200 rounded-xl p-4">
 <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center mb-2"><span class="material-symbols-outlined text-xl">autorenew</span></div>
 <h3 class="font-bold text-sm text-gray-800 mb-1">3º+ Pagamentos (Recorrência)</h3>
-<p class="text-xs text-gray-500">Só o parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b>. Afiliado não recebe mais.</p>
+<p class="text-xs text-gray-500">Parceiro recebe <b class="text-gray-700">R$ <?php echo number_format($splitRecorPrc, 2, ',', '.'); ?></b> e o afiliado indicado <b class="text-gray-700">continua</b> recebendo o valor fixo dele a cada mensalidade paga.</p>
 </div>
 </div>
 <?php if (!$walletPreenchida): ?>
@@ -329,10 +324,10 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
 <?php endif; ?>
 </div>
 
-<!-- Form: Parceiro e Afiliado -->
+<!-- Form: Parceiro -->
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-<h2 class="text-lg font-extrabold text-gray-800 mb-1">Regra de split por tipo de cobrança</h2>
-<p class="text-sm text-gray-500 mb-4">Valores em R$ que saem da conta da empresa para as contas de parceiro/afiliado a cada pagamento.</p>
+<h2 class="text-lg font-extrabold text-gray-800 mb-1">Regra de split do parceiro</h2>
+<p class="text-sm text-gray-500 mb-4">Valores em R$ que saem da conta da empresa para a conta do parceiro a cada pagamento. A parte do afiliado é configurada por afiliado em <b>Admin > Afiliados</b>.</p>
 <form method="POST" action="admin_api_pagamento.php">
 <input type="hidden" name="acao" value="salvar_split"/>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,29 +347,60 @@ $splitAtivoAsaas = $asaasAtivo && $walletPreenchida && $algumSplitPrc;
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Recorrência (2º+) — R$</label>
 <input type="text" name="split_parceiro_recorrencia" value="<?php echo number_format($splitRecorPrc, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
 </div>
-<div class="md:col-span-2 border-b border-gray-100 pb-3 pt-2">
-<h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Sessão: Afiliado</h3>
-<label class="inline-flex items-center gap-2 mt-1 text-xs text-gray-500 cursor-pointer">
-<input type="checkbox" name="split_afiliado_habilitar" value="1" id="split_afiliado_habilitar" <?php echo $algumSplitAfi ? 'checked' : ''; ?> onclick="document.getElementById('bloco-afiliado').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-[#51036d] focus:ring-[#51036d]"/>
-Ativar participação de afiliados no split (ela só vale se o afiliado estiver <b>ativo</b> e tiver <b>Wallet ID</b> preenchido no cadastro).
-</label>
-</div>
-<div id="bloco-afiliado" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 <?php echo $algumSplitAfi ? '' : 'hidden'; ?>">
-<div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Adesão (1º pagamento) — R$</label>
-<input type="text" name="split_afiliado_adesao" value="<?php echo number_format($splitAdesaoAfi, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
-</div>
-<div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">1ª mensalidade (2º pagamento) — R$</label>
-<input type="text" name="split_afiliado_1a_mensal" value="<?php echo number_format($splitAfiliado1a, 2, ',', '.'); ?>" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]"/>
-</div>
-</div>
 <div class="md:col-span-2 flex items-center gap-3">
 <button type="submit" class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition">SALVAR REGRA DE SPLIT</button>
 <span class="text-xs text-gray-500">Vale para PIX e cartão.</span>
 </div>
 </div>
 </form>
+</div>
+
+<!-- Afiliados: valor fixo por mensalidade -->
+<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+<div>
+<h2 class="text-lg font-extrabold text-gray-800">Afiliados — valor fixo por mensalidade</h2>
+<p class="text-xs text-gray-500 mt-1">Cada mensalidade paga por cliente indicado gera para o afiliado o valor fixo configurado no cadastro dele.</p>
+</div>
+<a href="admin_afiliados.php" class="shrink-0 inline-flex items-center gap-1 text-sm font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-4 py-2.5 transition">
+<span class="material-symbols-outlined text-[18px]">edit</span> Gerenciar afiliados
+</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="bg-gray-50 text-gray-600 text-left uppercase text-xs tracking-wider">
+<th class="px-6 py-3">Afiliado</th>
+<th class="px-4 py-3">Valor por mensalidade</th>
+<th class="px-4 py-3">Wallet ID</th>
+<th class="px-4 py-3">Mensalidades pagas</th>
+<th class="px-6 py-3">Status</th>
+</tr>
+</thead>
+<tbody>
+<?php if ($afiliadosSplit->num_rows === 0): ?>
+<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
+<?php endif; ?>
+<?php while ($afRow = $afiliadosSplit->fetch_assoc()): ?>
+<tr class="border-t border-gray-100">
+<td class="px-6 py-3 font-semibold text-gray-800"><?php echo htmlspecialchars($afRow['nome']); ?></td>
+<td class="px-4 py-3 font-bold <?php echo (float)$afRow['valor_fixo_mensalidade'] > 0 ? 'text-[#3e6a00]' : 'text-gray-400'; ?>">R$ <?php echo number_format((float)$afRow['valor_fixo_mensalidade'], 2, ',', '.'); ?></td>
+<td class="px-4 py-3">
+<?php if (!empty($afRow['wallet_afiliado'])): ?>
+<span class="text-[11px] text-gray-500">cadastrada</span>
+<?php else: ?>
+<span class="text-[11px] text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">pendente (sem repasse automático)</span>
+<?php endif; ?>
+</td>
+<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$afRow['mensalidades']; ?></td>
+<td class="px-6 py-3">
+<span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase <?php echo $afRow['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?>"><?php echo $afRow['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
+</td>
+</tr>
+<?php endwhile; ?>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 

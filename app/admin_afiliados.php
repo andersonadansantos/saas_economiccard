@@ -15,7 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telefone = trim($_POST['telefone'] ?? '');
         $cpf = trim($_POST['cpf'] ?? '');
         $senha = $_POST['senha'] ?? '';
-        $comissao = (float)str_replace(',', '.', $_POST['comissao'] ?? '0');
+        $valorFixo = round((float)str_replace(',', '.', $_POST['valor_fixo_mensalidade'] ?? '0'), 2);
+        if ($valorFixo < 0) { $valorFixo = 0.0; }
         $wallet = trim($_POST['wallet_afiliado'] ?? '');
         if ($nome === '' || $email === '' || $senha === '') {
             $erro = 'Preencha nome, e-mail e senha do vendedor.';
@@ -34,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ck->bind_param('s', $codigo);
                     $ck->execute();
                 } while ($ck->get_result()->num_rows > 0);
-                $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, senha, comissao, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param('sssssssss', $codigo, $nome, $email, $telefone, $cpf, $hash, $comissao, $wallet, $token);
+                $stmt = $conn->prepare("INSERT INTO afiliados (codigo, nome, email, telefone, cpf, senha, valor_fixo_mensalidade, wallet_afiliado, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param('ssssssdss', $codigo, $nome, $email, $telefone, $cpf, $hash, $valorFixo, $wallet, $token);
                 $stmt->execute();
                 registrar_aceite_contrato($conn, 'afiliados', $conn->insert_id);
                 $sucesso = 'Afiliado cadastrado! Código colaborador: ' . $codigo . '. Ele já pode acessar o painel em /card/afiliado.';
@@ -49,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cpf = trim($_POST['cpf'] ?? '');
         $nascimento = trim($_POST['nascimento'] ?? '');
         if ($nascimento === '') { $nascimento = null; }
+        $valorFixo = round((float)str_replace(',', '.', $_POST['valor_fixo_mensalidade'] ?? '0'), 2);
+        if ($valorFixo < 0) { $valorFixo = 0.0; }
         $wallet = trim($_POST['wallet_afiliado'] ?? '');
         $senha = $_POST['senha'] ?? '';
         if ($nome === '' || $email === '') {
@@ -62,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 if ($senha !== '') {
                     $hash = password_hash($senha, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, wallet_afiliado = ?, senha = ? WHERE id = ?");
-                    $stmt->bind_param('sssssssi', $nome, $email, $telefone, $cpf, $nascimento, $wallet, $hash, $id);
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, valor_fixo_mensalidade = ?, wallet_afiliado = ?, senha = ? WHERE id = ?");
+                    $stmt->bind_param('sssssdssi', $nome, $email, $telefone, $cpf, $nascimento, $valorFixo, $wallet, $hash, $id);
                 } else {
-                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, wallet_afiliado = ? WHERE id = ?");
-                    $stmt->bind_param('ssssssi', $nome, $email, $telefone, $cpf, $nascimento, $wallet, $id);
+                    $stmt = $conn->prepare("UPDATE afiliados SET nome = ?, email = ?, telefone = ?, cpf = ?, nascimento = ?, valor_fixo_mensalidade = ?, wallet_afiliado = ? WHERE id = ?");
+                    $stmt->bind_param('sssssdsi', $nome, $email, $telefone, $cpf, $nascimento, $valorFixo, $wallet, $id);
                 }
                 $stmt->execute();
                 $sucesso = 'Afiliado atualizado com sucesso!';
@@ -99,7 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$afiliados = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token AND u.cartao_ativo = 1) AS ativos FROM afiliados a ORDER BY a.id DESC");
+$afiliados = $conn->query("SELECT a.*,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.afiliado_token = a.token AND u.cartao_ativo = 1) AS ativos,
+        (SELECT COUNT(*) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS mensalidades,
+        (SELECT COALESCE(SUM(c.valor), 0) FROM creditos_afiliado c WHERE c.afiliado_id = a.id AND c.status = 'ativo') AS saldo
+    FROM afiliados a ORDER BY a.id DESC");
 $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . site_base() . '/';
 ?>
 <!DOCTYPE html>
@@ -123,7 +130,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <div class="px-6 py-4 flex items-center justify-between">
 <div>
 <h1 class="text-xl font-extrabold text-gray-800">Afiliados</h1>
-<p class="text-sm text-gray-500">Cadastro de vendedores para comissionamento</p>
+<p class="text-sm text-gray-500">Vendedores remunerados por valor fixo por mensalidade paga</p>
 </div>
 <a href="logout.php?admin=1" class="bg-[#51036d] hover:bg-[#3a024d] text-white rounded-lg px-4 py-2 text-sm font-semibold transition">Sair</a>
 </div>
@@ -169,8 +176,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <input name="senha" type="text" required class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Defina a senha de acesso ao painel">
 </div>
 <div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Comissão (%)</label>
-<input name="comissao" value="0" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Valor Fixo por Mensalidade (R$)</label>
+<input name="valor_fixo_mensalidade" value="0,00" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Ex.: 10,00 — ganho por mensalidade paga de usuário indicado">
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Telefone / WhatsApp</label>
@@ -182,7 +189,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
-<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
+<input name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira Asaas para receber os repasses (UUID)">
 </div>
 <div class="md:col-span-2">
 <button class="bg-[#3e6a00] hover:bg-[#2e5000] text-white font-bold px-6 py-3 rounded-lg transition" type="submit">CADASTRAR AFILIADO</button>
@@ -201,16 +208,18 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <th class="px-4 py-3">Código Colaborador</th>
 <th class="px-4 py-3">E-mail</th>
 <th class="px-4 py-3">Link de Indicação</th>
-<th class="px-4 py-3">Comissão</th>
+<th class="px-4 py-3">Valor por Mensalidade</th>
 <th class="px-4 py-3">Wallet ID</th>
 <th class="px-4 py-3">Ativos</th>
+<th class="px-4 py-3">Mensalidades Pagas</th>
+<th class="px-4 py-3">Saldo a Receber</th>
 <th class="px-4 py-3">Status</th>
 <th class="px-4 py-3 text-right">Ações</th>
 </tr>
 </thead>
 <tbody>
 <?php if ($afiliados->num_rows === 0): ?>
-<tr><td colspan="10" class="px-4 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
+<tr><td colspan="12" class="px-4 py-10 text-center text-gray-500">Nenhum afiliado cadastrado.</td></tr>
 <?php endif; ?>
 <?php while ($a = $afiliados->fetch_assoc()): ?>
 <tr class="border-t border-gray-100 hover:bg-gray-50">
@@ -232,7 +241,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <button type="button" class="text-[#51036d] hover:underline text-xs font-semibold shrink-0" onclick="copiarLink('<?php echo htmlspecialchars($baseUrl . 'indicacao/' . $a['token']); ?>', this)">Copiar</button>
 </div>
 </td>
-<td class="px-4 py-3 font-bold text-[#3e6a00]"><?php echo number_format((float)$a['comissao'], 0, ',', '.') . '%'; ?></td>
+<td class="px-4 py-3 font-bold text-[#3e6a00]">R$ <?php echo number_format((float)$a['valor_fixo_mensalidade'], 2, ',', '.'); ?></td>
 <td class="px-4 py-3">
 <?php if ($a['wallet_afiliado']): ?>
 <code class="text-[11px] text-gray-600"><?php echo htmlspecialchars($a['wallet_afiliado']); ?></code>
@@ -241,6 +250,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
 <?php endif; ?>
 </td>
 <td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$a['ativos']; ?></td>
+<td class="px-4 py-3 font-bold text-[#51036d]"><?php echo (int)$a['mensalidades']; ?></td>
+<td class="px-4 py-3 font-bold text-[#3e6a00]">R$ <?php echo number_format((float)$a['saldo'], 2, ',', '.'); ?></td>
 <td class="px-4 py-3">
 <span class="px-2 py-1 rounded-full <?php echo $a['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?> text-[10px] font-bold uppercase"><?php echo $a['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
 </td>
@@ -253,6 +264,7 @@ data-telefone="<?php echo htmlspecialchars($a['telefone'] ?? '', ENT_QUOTES); ?>
 data-cpf="<?php echo htmlspecialchars($a['cpf'] ?? '', ENT_QUOTES); ?>"
 data-nascimento="<?php echo htmlspecialchars($a['nascimento'] ?? '', ENT_QUOTES); ?>"
 data-wallet="<?php echo htmlspecialchars($a['wallet_afiliado'] ?? '', ENT_QUOTES); ?>"
+data-valor-fixo="<?php echo number_format((float)($a['valor_fixo_mensalidade'] ?? 0), 2, ',', '.'); ?>"
 onclick="abrirEditarAfiliado(this)"
 class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-2 py-1 transition" title="Editar informações do afiliado">
 <span class="material-symbols-outlined text-[16px]">edit</span> Editar
@@ -332,8 +344,12 @@ class="inline-flex items-center gap-1 text-xs font-semibold text-[#51036d] hover
 <input id="edit_nascimento" name="nascimento" type="date" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
 </div>
 <div>
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Valor Fixo por Mensalidade (R$)</label>
+<input id="edit_valor_fixo" name="valor_fixo_mensalidade" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Ex.: 10,00 — ganho por mensalidade paga de usuário indicado">
+</div>
+<div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Wallet ID Afiliado</label>
-<input id="edit_wallet" name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira para receber comissões (UUID)">
+<input id="edit_wallet" name="wallet_afiliado" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]" placeholder="Carteira Asaas para receber os repasses (UUID)">
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nova senha (opcional)</label>
@@ -356,6 +372,7 @@ function abrirEditarAfiliado(btn) {
     document.getElementById('edit_cpf').value = btn.dataset.cpf;
     document.getElementById('edit_nascimento').value = btn.dataset.nascimento || '';
     document.getElementById('edit_wallet').value = btn.dataset.wallet;
+    document.getElementById('edit_valor_fixo').value = btn.dataset.valorFixo || '0,00';
     document.getElementById('edit_senha').value = '';
     const m = document.getElementById('modalEdicaoAfiliado');
     m.classList.remove('hidden');
