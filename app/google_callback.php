@@ -1,121 +1,194 @@
 <?php
 require_once 'config.php';
 
-// ====== CREDENCIAIS GOOGLE OAuth ======
-// Valores definidos em secrets_local.php (fora do git) ou via variáveis de ambiente.
-if (!defined('GOOGLE_CLIENT_ID')) {
-    define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');
-}
-if (!defined('GOOGLE_CLIENT_SECRET')) {
-    define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
-}
-define('GOOGLE_REDIRECT_URI', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/google_callback.php');
+// ====== LOGIN COM GOOGLE (retorno do OAuth 2.0) =====
+// O Google devolve ?code=...&state=... (sucesso) ou ?error=... (falha/cancelamento).
+// O state prova que o pedido partiu desta instalação (proteção CSRF do OAuth).
 
+$origem       = (($_SESSION['google_oauth_origem'] ?? 'app') === 'web') ? 'web' : 'app';
+$destinoLogin = ($origem === 'web') ? 'web/login.php' : 'login.php';
+$redirectUri  = google_redirect_uri();
+
+// HTTP POST/GET para as APIs do Google, com verificação SSL ativada,
+// timeouts e captura de falhas de rede (curl_errno) para diagnóstico.
 function googleHttpPost($url, $data) {
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST            => true,
+        CURLOPT_POSTFIELDS      => http_build_query($data),
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT         => 30,
+        CURLOPT_SSL_VERIFYPEER  => true,
+        CURLOPT_SSL_VERIFYHOST  => 2,
+    ]);
     $res = curl_exec($ch);
+    if ($res === false) {
+        app_log('google', 'curl POST falhou em ' . $url . ': ' . curl_error($ch) . ' (errno ' . curl_errno($ch) . ')');
+    }
     curl_close($ch);
     return $res;
 }
 
-$origem = $_SESSION['google_oauth_origem'] ?? 'app';
+function googleHttpGetJson($url, $bearer) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $bearer, 'Accept: application/json'],
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT         => 30,
+        CURLOPT_SSL_VERIFYPEER  => true,
+        CURLOPT_SSL_VERIFYHOST  => 2,
+    ]);
+    $res = curl_exec($ch);
+    if ($res === false) {
+        app_log('google', 'curl GET falhou em ' . $url . ': ' . curl_error($ch) . ' (errno ' . curl_errno($ch) . ')');
+    }
+    curl_close($ch);
+    return $res;
+}
+
+$erro = '';
+$g    = null;
 
 if (isset($_GET['error'])) {
-    $erro = 'Você cancelou o login ou ocorreu um erro na autenticação com o Google.';
+    $detalhe = (string)$_GET['error'];
+    app_log('google', 'autorização recusada pelo Google: ' . $detalhe);
+    $erro = ($detalhe === 'access_denied')
+        ? 'Você cancelou o login com o Google. Tente novamente ou entre com seu CPF.'
+        : 'Não foi possível concluir o login com o Google (' . $detalhe . '). Tente novamente.';
 } elseif (empty($_GET['code'])) {
-    $erro = 'Resposta inválida do Google (código ausente).';
-} elseif (empty($_GET['state']) || empty($_SESSION['google_oauth_state']) || $_GET['state'] !== $_SESSION['google_oauth_state']) {
-    $erro = 'Falha de segurança: estado inválido. Tente novamente.';
+    $erro = 'Resposta inválida do Google (código ausente). Tente novamente.';
+} elseif (empty($_GET['state']) || empty($_SESSION['google_oauth_state']) || !hash_equals($_SESSION['google_oauth_state'], (string)$_GET['state'])) {
+    // Sessão expirou (o cookie dura 7 dias, mas o state só vale uma tentativa).
+    app_log('google', 'state inválido/expirado (sessão perdida ou reuso do link).');
+    $erro = 'Sua sessão de login com o Google expirou. Clique novamente em "Entrar com Google".';
 } else {
-    // Troca o code por token de acesso
-    $token = googleHttpPost('https://oauth2.googleapis.com/token', [
+    // 1) Troca o code pelo token de acesso.
+    $tokenJson = googleHttpPost('https://oauth2.googleapis.com/token', [
         'code'          => $_GET['code'],
         'client_id'     => GOOGLE_CLIENT_ID,
         'client_secret' => GOOGLE_CLIENT_SECRET,
-        'redirect_uri'  => GOOGLE_REDIRECT_URI,
+        'redirect_uri'  => $redirectUri,
         'grant_type'    => 'authorization_code',
     ]);
-    $tokenData = json_decode($token, true);
 
-    if (empty($tokenData['access_token'])) {
+    $tokenData = $tokenJson !== false ? json_decode($tokenJson, true) : null;
+    if (!is_array($tokenData)) {
+        app_log('google', 'resposta sem JSON do endpoint token.');
+        $erro = 'Falha na comunicação com o Google. Tente novamente em instantes.';
+    } elseif (isset($tokenData['error'])) {
+        $code = (string)$tokenData['error'];
+        app_log('google', 'endpoint token erro: ' . $code . ' — ' . (string)($tokenData['error_description'] ?? ''));
+        if ($code === 'invalid_client') {
+            $erro = 'Login com Google indisponível no momento (credenciais inválidas). Entre com seu CPF.';
+        } elseif ($code === 'invalid_grant') {
+            $erro = 'O código de autorização expirou ou já foi usado. Clique novamente em "Entrar com Google".';
+        } elseif ($code === 'redirect_uri_mismatch') {
+            app_log('google', 'redirect_uri NÃO registrado no Google Cloud Console: ' . $redirectUri);
+            $erro = 'Configuração do Google incompleta (URI de retorno não autorizada). Entre com seu CPF e avise o suporte.';
+        } else {
+            $erro = 'Não foi possível concluir o login com o Google. Tente novamente.';
+        }
+    } elseif (empty($tokenData['access_token'])) {
+        app_log('google', 'token de acesso ausente na resposta.');
         $erro = 'Falha ao obter o token de acesso do Google. Tente novamente.';
     } else {
-        // Busca o perfil do usuário (e-mail, nome, avatar)
-        $ch = curl_init('https://openidconnect.googleapis.com/v1/userinfo');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenData['access_token']]);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $profile = curl_exec($ch);
-        curl_close($ch);
-        $g = json_decode($profile, true);
+        // 2) Busca o perfil do usuário (e-mail, nome, avatar, google_id).
+        $profileJson = googleHttpGetJson('https://openidconnect.googleapis.com/v1/userinfo', $tokenData['access_token']);
+        $g = $profileJson !== false ? json_decode($profileJson, true) : null;
 
-        if (empty($g['email'])) {
+        if (!is_array($g)) {
+            app_log('google', 'resposta sem JSON do userinfo.');
+            $erro = 'Não foi possível ler seus dados do Google. Tente novamente.';
+        } elseif (empty($g['email'])) {
             $erro = 'Não foi possível obter o e-mail da sua conta Google.';
-        } else {
-            $gEmail   = strtolower(trim($g['email']));
-            $gName    = trim($g['name'] ?? '');
-            $gAvatar  = trim($g['picture'] ?? '');
-            $gId      = trim($g['sub'] ?? '');
-
-            // Procura por google_id ou e-mail
-            $stmt = $conn->prepare("SELECT * FROM usuarios WHERE google_id = ? OR email = ? LIMIT 1");
-            $stmt->bind_param('ss', $gId, $gEmail);
-            $stmt->execute();
-            $userLogin = $stmt->get_result()->fetch_assoc();
-
-            if ($userLogin) {
-                // Vincula o google_id se ainda não estiver salvo
-                if (empty($userLogin['google_id'])) {
-                    $upd = $conn->prepare("UPDATE usuarios SET google_id = ? WHERE id = ?");
-                    $upd->bind_param('si', $gId, $userLogin['id']);
-                    $upd->execute();
-                }
-                $_SESSION['usuario_id'] = $userLogin['id'];
-                unset($_SESSION['google_oauth_state'], $_SESSION['google_oauth_origem']);
-
-                $destino = 'dashboard.php';
-                if ($origem === 'web') {
-                    $destino = 'web/dashboard.php';
-                }
-                if (!$userLogin['cartao_ativo']) {
-                    $destino = ($origem === 'web' ? 'web/' : '') . 'ativar.php';
-                }
-                header('Location: ' . $destino);
-                exit;
-            } else {
-                // Novo usuário: completa o cadastro com CPF (email/nome já preenchidos)
-                $afiliadoToken = '';
-                if (!empty($_GET['afiliado'])) {
-                    $token = trim($_GET['afiliado']);
-                    $st = $conn->prepare("SELECT id FROM afiliados WHERE token = ?");
-                    $st->bind_param('s', $token);
-                    $st->execute();
-                    if ($st->get_result()->num_rows > 0) { $afiliadoToken = $token; }
-                }
-                $_SESSION['google_oauth_pending'] = [
-                    'google_id' => $gId,
-                    'nome'      => $gName,
-                    'email'     => $gEmail,
-                    'avatar'    => $gAvatar,
-                    'afiliado'  => $afiliadoToken,
-                    'origem'    => $origem,
-                ];
-                unset($_SESSION['google_oauth_state'], $_SESSION['google_oauth_origem']);
-                header('Location: cadastro_google.php');
-                exit;
-            }
+        } elseif (empty($g['email_verified'])) {
+            $erro = 'Seu e-mail Google não é verificado. Verifique o e-mail na sua conta do Google e tente novamente.';
         }
     }
 }
 
-// Em caso de erro, redireciona de volta ao login correto
-if (isset($erro)) {
+if ($erro === '' && is_array($g)) {
+    $gEmail  = strtolower(trim((string)$g['email']));
+    $gName   = trim((string)($g['name'] ?? ''));
+    $gAvatar = trim((string)($g['picture'] ?? ''));
+    $gId     = trim((string)($g['sub'] ?? ''));
+
+    // 3) Procura o usuário por google_id (login repetido) ou por e-mail
+    //    (conta criada por outro método com o mesmo e-mail → vincula o Google).
+    $stmt = $conn->prepare("SELECT * FROM usuarios WHERE (google_id = ? AND ? <> '') OR email = ? ORDER BY (google_id = ?) DESC LIMIT 1");
+    $stmt->bind_param('ssss', $gId, $gId, $gEmail, $gId);
+    $stmt->execute();
+    $userLogin = $stmt->get_result()->fetch_assoc();
+
+    if ($userLogin) {
+        if (($userLogin['status'] ?? 'ativo') === 'desativado') {
+            app_log('google', 'login google bloqueado: conta desativada (id ' . $userLogin['id'] . ').');
+            $erro = 'Esta conta foi encerrada. Entre em contato com o suporte para mais informações.';
+        } else {
+            // Vincula o google_id (e avatar, se o usuário não tiver) sem perder dados.
+            if (empty($userLogin['google_id']) && $gId !== '') {
+                if (empty($userLogin['avatar']) && $gAvatar !== '') {
+                    $upd = $conn->prepare("UPDATE usuarios SET google_id = ?, avatar = ? WHERE id = ?");
+                    $upd->bind_param('ssi', $gId, $gAvatar, $userLogin['id']);
+                } else {
+                    $upd = $conn->prepare("UPDATE usuarios SET google_id = ? WHERE id = ?");
+                    $upd->bind_param('si', $gId, $userLogin['id']);
+                }
+                $upd->execute();
+            } elseif (empty($userLogin['avatar']) && $gAvatar !== '') {
+                $upd = $conn->prepare("UPDATE usuarios SET avatar = ? WHERE id = ?");
+                $upd->bind_param('si', $gAvatar, $userLogin['id']);
+                $upd->execute();
+            }
+
+            unset($_SESSION['tipo_conta'], $_SESSION['dependente_id'], $_SESSION['dependente_nome']);
+            $_SESSION['usuario_id'] = (int)$userLogin['id'];
+            unset($_SESSION['google_oauth_state'], $_SESSION['google_oauth_origem'], $_SESSION['google_oauth_afiliado']);
+            app_log('google', 'login ok: usuario id ' . $userLogin['id'] . ' (origem ' . $origem . ')');
+
+            $destino = ($origem === 'web') ? 'web/dashboard.php' : 'dashboard.php';
+            if (!$userLogin['cartao_ativo']) {
+                $destino = ($origem === 'web') ? 'web/ativar.php' : 'ativar.php';
+            }
+            header('Location: ' . $destino);
+            exit;
+        }
+    } else {
+        // 4) Novo usuário: completa o cadastro (CPF obrigatório).
+        //    O token de afiliado veio pela sessão (google_login.php validou).
+        $afiliadoToken = '';
+        $afiliadoSessao = $_SESSION['google_oauth_afiliado'] ?? '';
+        $afiliadoGet    = trim((string)($_GET['afiliado'] ?? ''));
+        foreach ([$afiliadoSessao, $afiliadoGet] as $tk) {
+            if ($tk === '') continue;
+            $st = $conn->prepare("SELECT id FROM afiliados WHERE token = ?");
+            $st->bind_param('s', $tk);
+            $st->execute();
+            if ($st->get_result()->num_rows > 0) {
+                $afiliadoToken = $tk;
+                break;
+            }
+        }
+
+        $_SESSION['google_oauth_pending'] = [
+            'google_id' => $gId,
+            'nome'      => $gName,
+            'email'     => $gEmail,
+            'avatar'    => $gAvatar,
+            'afiliado'  => $afiliadoToken,
+            'origem'    => $origem,
+        ];
+        unset($_SESSION['google_oauth_state'], $_SESSION['google_oauth_origem'], $_SESSION['google_oauth_afiliado']);
+        header('Location: cadastro_google.php');
+        exit;
+    }
+}
+
+// Em caso de erro, volta para a tela de login correta com mensagem amigável.
+if ($erro !== '') {
     $_SESSION['google_login_erro'] = $erro;
-    $destinoLogin = ($origem === 'web') ? 'web/login.php' : 'login.php';
     header('Location: ' . $destinoLogin);
     exit;
 }

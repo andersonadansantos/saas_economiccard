@@ -24,6 +24,6 @@ Options -Indexes
     RewriteRule ^indicacao/([A-Za-z0-9]+)/?$ app/cadastro.php?afiliado=$1 [L,QSA]
 </IfModule>
 
-<FilesMatch "asaas.log">
+<FilesMatch "\.log$">
 Require all denied
 </FilesMatch>

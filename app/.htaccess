@@ -15,6 +15,6 @@ RewriteRule ^usuario/?$ web/login.php [L]
 # /web abre o login da versão web
 RewriteRule ^web/?$ web/login.php [L]
 
-<FilesMatch "asaas\.log">
+<FilesMatch "\.log$">
 Require all denied
 </FilesMatch>

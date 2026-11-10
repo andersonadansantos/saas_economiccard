@@ -1,4 +1,27 @@
 <?php
+// Detecta HTTPS mesmo atrás de proxy reverso (Traefik/Nginx terminam o TLS e
+// repassam HTTP puro ao container; o esquema real vem no X-Forwarded-Proto).
+// Necessário para o OAuth do Google, que exige https no redirect_uri registrado.
+function request_is_https() {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        $partes = array_map('trim', explode(',', strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'])));
+        return in_array('https', $partes, true);
+    }
+    return (string)($_SERVER['SERVER_PORT'] ?? '') === '443';
+}
+
+// Sessão persistente (7 dias): mantém o usuário logado ao fechar/reabrir o app
+// ou navegador. SameSite=Lax é obrigatório para o OAuth (retorno do Google é
+// navegação top-level GET) e httponly/secure protegem o cookie de sessão.
+ini_set('session.gc_maxlifetime', 604800);
+session_set_cookie_params([
+    'lifetime' => 604800,
+    'path'     => '/',
+    'secure'   => request_is_https(),
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 session_start();
 
 // Politica zero cache: garante que nenhum navegador armazene o sistema do cartao,
@@ -207,4 +230,38 @@ function cpf_valido($cpf) {
         }
     }
     return true;
+}
+
+// ====== LOGIN COM GOOGLE (OAuth 2.0) =====
+// Credenciais: secrets_local.php (fora do git) ou variáveis de ambiente.
+if (!defined('GOOGLE_CLIENT_ID')) {
+    define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '');
+}
+if (!defined('GOOGLE_CLIENT_SECRET')) {
+    define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
+}
+
+// URI de retorno canônica do OAuth. Deve coincidir, byte a byte, com uma das
+// "Authorized redirect URIs" do OAuth Client no Google Cloud Console.
+// Override manual: define('GOOGLE_REDIRECT_URI', 'https://host/app/google_callback.php');
+function google_redirect_uri() {
+    if (defined('GOOGLE_REDIRECT_URI') && GOOGLE_REDIRECT_URI !== '') {
+        return GOOGLE_REDIRECT_URI;
+    }
+    $esquema = request_is_https() ? 'https' : 'http';
+    $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $dir     = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+    return $esquema . '://' . $host . $dir . '/google_callback.php';
+}
+
+// Log de eventos da aplicação (app/logs/<canal>.log) — usado para diagnosticar
+// falhas de OAuth/integrações. Os arquivos são bloqueados pelo .htaccess (*.log).
+function app_log($canal, $mensagem) {
+    $dir = __DIR__ . '/logs';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+    $arquivo = $dir . '/' . preg_replace('/[^a-z0-9_\-]/', '', strtolower((string)$canal)) . '.log';
+    $linha   = '[' . date('Y-m-d H:i:s') . '] ' . $mensagem . PHP_EOL;
+    @file_put_contents($arquivo, $linha, FILE_APPEND | LOCK_EX);
 }

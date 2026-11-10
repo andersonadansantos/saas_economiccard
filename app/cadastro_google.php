@@ -11,6 +11,8 @@ if (!$pending || empty($pending['google_id'])) {
     exit;
 }
 
+$origemAtual = ($pending['origem'] ?? 'app') === 'web' ? 'web' : 'app';
+
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoLoginUser = $pers['logo_login_user'] ?? '';
 
@@ -41,12 +43,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!validarCpfGoogle($cpf)) {
         $erro = 'CPF inválido. Verifique os números digitados.';
     } else {
-        $check = $conn->prepare("SELECT id FROM usuarios WHERE cpf = ?");
-        $check->bind_param('s', $cpfMascarado);
-        $check->execute();
-        if ($check->get_result()->num_rows > 0) {
-            $erro = 'CPF já cadastrado. Faça o login.';
+        // Evita duas contas com o mesmo e-mail (o login Google procura por
+        // google_id OU e-mail; duplicar o e-mail criaria contas conflitantes).
+        $checkEmail = $conn->prepare("SELECT id FROM usuarios WHERE email = ? LIMIT 1");
+        $checkEmail->bind_param('s', $email);
+        $checkEmail->execute();
+        $emailExistente = $checkEmail->get_result()->fetch_assoc();
+        if ($emailExistente) {
+            $erro = 'Este e-mail já está cadastrado. Faça o login com ele (Google ou CPF).';
         } else {
+            $check = $conn->prepare("SELECT id FROM usuarios WHERE cpf = ?");
+            $check->bind_param('s', $cpfMascarado);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                $erro = 'CPF já cadastrado. Faça o login.';
+            } else {
             $stmt = $conn->prepare("INSERT INTO usuarios (nome, email, cpf, whatsapp, rg, nascimento, cep, cidade, endereco, avatar, google_id, afiliado_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param('ssssssssssss', $nome, $email, $cpfMascarado, $whatsapp, $rg, $nascimento, $cep, $cidade, $endereco, $pending['avatar'], $pending['google_id'], $pending['afiliado']);
             if ($stmt->execute()) {
@@ -63,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             } else {
                 $erro = 'Erro ao salvar o cadastro. Tente novamente.';
+            }
             }
         }
     }
@@ -125,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <button type="submit" class="w-full h-13 py-4 bg-[#b6f570] text-[#0f2000] font-extrabold rounded-xl hover:brightness-95 transition">CONCLUIR CADASTRO</button>
 </form>
-<p class="text-center mt-4 text-sm text-white/50">Já tem conta? <a href="login.php" class="text-white font-bold hover:underline">Entrar</a></p>
+<p class="text-center mt-4 text-sm text-white/50">Já tem conta? <a href="<?php echo ($origemAtual === 'web') ? 'web/login.php' : 'login.php'; ?>" class="text-white font-bold hover:underline">Entrar</a></p>
 </div>
 </main>
 <script>
