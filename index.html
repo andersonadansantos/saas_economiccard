@@ -101,53 +101,53 @@
             theme: {
                 extend: {
                     "colors": {
-                        "on-primary-fixed": "#350040",
-                        "on-background": "#1c1b1b",
-                        "surface-dim": "#dcd9d9",
+                        "on-primary-fixed": "#2c0633",
+                        "on-background": "#221a24",
+                        "surface-dim": "#ddd4db",
                         "on-tertiary": "#ffffff",
-                        "on-tertiary-fixed-variant": "#723600",
-                        "tertiary-fixed": "#ffdcc6",
-                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#5f2a6b",
+                        "tertiary-fixed": "#f2ddf6",
+                        "surface-bright": "#fcfafb",
                         "surface-container-lowest": "#ffffff",
                         "on-secondary-fixed-variant": "#344e00",
-                        "on-primary-fixed-variant": "#6f257e",
-                        "surface-container-low": "#f6f3f2",
+                        "on-primary-fixed-variant": "#5d1a6a",
+                        "surface-container-low": "#f7f3f6",
                         "error": "#ba1a1a",
-                        "surface-tint": "#8a3f98",
-                        "inverse-on-surface": "#f3f0ef",
-                        "on-tertiary-fixed": "#311300",
-                        "surface-container": "#f0eded",
-                        "surface-container-high": "#eae7e7",
+                        "surface-tint": "#7d338b",
+                        "inverse-on-surface": "#f5eef4",
+                        "on-tertiary-fixed": "#2a0733",
+                        "surface-container": "#f1ebef",
+                        "surface-container-high": "#eae2e8",
                         "on-primary": "#ffffff",
                         "error-container": "#ffdad6",
                         "on-error": "#ffffff",
-                        "on-primary-container": "#f7adff",
-                        "tertiary-container": "#844000",
-                        "background": "#fcf9f8",
+                        "on-primary-container": "#ffe6ff",
+                        "tertiary-container": "#ead9ef",
+                        "background": "#fcfafb",
                         "on-error-container": "#93000a",
-                        "secondary-fixed-dim": "#9fd840",
+                        "secondary-fixed-dim": "#a6db4f",
                         "primary": "#621872",
-                        "surface-container-highest": "#e5e2e1",
+                        "surface-container-highest": "#e3dae1",
                         "on-secondary-fixed": "#121f00",
                         "secondary-container": "#baf55b",
-                        "on-tertiary-container": "#ffb787",
-                        "tertiary-fixed-dim": "#ffb786",
-                        "tertiary": "#612d00",
-                        "primary-fixed-dim": "#f7adff",
-                        "surface": "#fcf9f8",
+                        "on-tertiary-container": "#3a1145",
+                        "tertiary-fixed-dim": "#d9b8e1",
+                        "tertiary": "#3a1145",
+                        "primary-fixed-dim": "#e9b6f0",
+                        "surface": "#fcfafb",
                         "on-secondary": "#ffffff",
-                        "secondary-fixed": "#baf55b",
-                        "on-secondary-container": "#4b6f00",
-                        "inverse-primary": "#f7adff",
-                        "surface-variant": "#e5e2e1",
-                        "on-surface": "#1c1b1b",
+                        "secondary-fixed": "#c9f878",
+                        "on-secondary-container": "#3f5f00",
+                        "inverse-primary": "#e9b6f0",
+                        "surface-variant": "#e7e1e7",
+                        "on-surface": "#221a24",
                         "secondary": "#466800",
-                        "outline": "#81737f",
-                        "inverse-surface": "#313030",
-                        "on-surface-variant": "#4f434f",
+                        "outline": "#7c6b7e",
+                        "inverse-surface": "#2e2330",
+                        "on-surface-variant": "#574a59",
                         "primary-container": "#7d338b",
-                        "outline-variant": "#d2c2d0",
-                        "primary-fixed": "#ffd6ff"
+                        "outline-variant": "#d8ced9",
+                        "primary-fixed": "#f7d4fb"
                     },
                     "borderRadius": {
                         "DEFAULT": "0.25rem",
@@ -227,57 +227,113 @@
 <main>
 
 <!-- Hero Section -->
-<section class="relative pt-20 pb-32 px-margin-mobile md:px-margin-desktop overflow-hidden">
+<section class="relative bg-[#7F3088] text-white pt-12 pb-0 px-margin-mobile md:px-margin-desktop overflow-hidden">
+<!-- Cubos decorativos 3D (fundo) -->
+<div class="hero-cubes" aria-hidden="true">
+<div class="hero-cube hero-cube--1">
+<div class="hero-cube__box">
+<span class="hero-cube__face hero-cube__face--front">%</span>
+<span class="hero-cube__face hero-cube__face--back">%</span>
+<span class="hero-cube__face hero-cube__face--right">%</span>
+<span class="hero-cube__face hero-cube__face--left">%</span>
+<span class="hero-cube__face hero-cube__face--top">%</span>
+<span class="hero-cube__face hero-cube__face--bottom">%</span>
+</div>
+</div>
+<div class="hero-cube hero-cube--3">
+<div class="hero-cube__box">
+<span class="hero-cube__face hero-cube__face--front">%</span>
+<span class="hero-cube__face hero-cube__face--back">%</span>
+<span class="hero-cube__face hero-cube__face--right">%</span>
+<span class="hero-cube__face hero-cube__face--left">%</span>
+<span class="hero-cube__face hero-cube__face--top">%</span>
+<span class="hero-cube__face hero-cube__face--bottom">%</span>
+</div>
+</div>
+<!-- Cubo 5: centro do banner, camada mais distante (desfocado) -->
+<div class="hero-cube hero-cube--5">
+<div class="hero-cube__box">
+<span class="hero-cube__face hero-cube__face--front">%</span>
+<span class="hero-cube__face hero-cube__face--back">%</span>
+<span class="hero-cube__face hero-cube__face--right">%</span>
+<span class="hero-cube__face hero-cube__face--left">%</span>
+<span class="hero-cube__face hero-cube__face--top">%</span>
+<span class="hero-cube__face hero-cube__face--bottom">%</span>
+</div>
+</div>
+</div>
 <div class="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 <!-- Text Content -->
-<div class="z-10 flex flex-col items-start space-y-6">
-<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary-container/30 border border-secondary-container text-secondary font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[16px]">verified</span>
+<div class="hero-content z-10 flex flex-col items-start space-y-5">
+<div class="hero-eyebrow inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/30 text-white font-label-sm text-label-sm backdrop-blur-sm">
+<span class="material-symbols-outlined text-[16px] text-[#c9f878]">verified</span>
 <span class="">Descontos Exclusivos</span>
 </div>
-<h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">
-                        <span id="typewriter-line-1" aria-label="Economize em tudo"></span><br class="hidden md:block"><span id="typewriter-line-2" aria-label="o que você precisa"></span><span id="typewriter-cursor" class="typewriter-cursor" aria-hidden="true"></span>
+<h1 class="hero-title font-display-lg text-display-lg text-white tracking-tight">
+                        <span id="typewriter-line-1" aria-label="Economize em tudo"></span><br class="hidden md:block"> <span id="typewriter-line-2" aria-label="o que você precisa"></span><span id="typewriter-cursor" class="typewriter-cursor" aria-hidden="true"></span>
                     </h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+<p class="hero-subtitle font-body-lg text-body-lg text-white max-w-lg">
                         O cartão de benefícios que abre portas para descontos exclusivos em centenas de estabelecimentos comerciais e serviços de saúde.
                     </p>
 <div class="flex justify-start w-full pt-4">
-<button class="bg-black text-white px-8 py-4 rounded-full font-label-md text-label-md hover:bg-neutral-900 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+<a href="https://play.google.com/store/apps/details?id=com.economiccard.mywebapp&amp;hl=pt_BR" target="_blank" rel="noopener noreferrer" class="bg-[#3a1145] text-white px-8 py-4 rounded-full font-label-md text-label-md border border-white/25 hover:bg-[#2c0633] transition-all inline-flex items-center justify-center gap-2 shadow-md shadow-black/20 hover:shadow-lg hover:shadow-black/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#7F3088]">
 <span class="material-symbols-outlined text-[18px]">smartphone</span>
 <span class="">Baixe nosso App</span>
-</button>
+</a>
 </div>
 <!-- Trust Indicators -->
-<div class="flex items-center gap-4 mt-8 pt-6 border-t border-outline-variant/30 w-full">
+<div class="flex items-center gap-4 mt-6 pt-5 border-t border-white/20 w-full">
 <div class="flex -space-x-3">
-<div class="w-10 h-10 rounded-full border-2 border-surface bg-surface-container-high flex items-center justify-center text-primary text-xs font-bold">10k+</div>
-<div class="w-10 h-10 rounded-full border-2 border-surface bg-surface-container-highest flex items-center justify-center text-on-surface-variant text-xs"><span class="material-symbols-outlined text-[16px]">star</span></div>
+<div class="w-10 h-10 rounded-full border-2 border-[#7F3088] bg-white/20 flex items-center justify-center text-white text-xs font-bold">10k+</div>
+<div class="w-10 h-10 rounded-full border-2 border-[#7F3088] bg-white/10 flex items-center justify-center text-white text-xs"><span class="material-symbols-outlined text-[16px]">star</span></div>
 </div>
-<p class="font-label-sm text-label-sm text-on-surface-variant">Usuários economizando<br>todos os dias.</p>
+<p class="hero-trust font-label-sm text-label-sm text-white">Usuários economizando<br>todos os dias.</p>
 </div>
 </div>
 <!-- Visual Content -->
-<div class="relative z-10 w-full flex justify-center lg:justify-end">
-<div class="relative w-full max-w-2xl">
+<div class="hero-visual relative z-10 w-full flex justify-center lg:justify-center">
+<div class="relative w-full max-w-[480px]">
 <!-- Decorative glow -->
-<div class="absolute -inset-4 bg-gradient-to-tr from-primary/20 to-secondary/20 rounded-3xl blur-2xl opacity-70"></div>
-<!-- Canvas 3D -->
-<div id="hero-card-3d" class="relative z-20 w-full h-[420px] md:h-[500px] cursor-grab active:cursor-grabbing" aria-label="Cartão Economic Card em 3D"></div>
+<div class="absolute -inset-6 rounded-full bg-gradient-to-tr from-white/10 via-transparent to-[#baf55b]/25 blur-3xl" aria-hidden="true"></div>
+<!-- Slideshow -->
+<div id="hero-slideshow" class="hero-slideshow relative z-20 w-full max-w-[340px] sm:max-w-[360px] md:max-w-[400px] lg:max-w-[420px] xl:max-w-[480px] mx-auto aspect-[2/3]" role="region" aria-roledescription="carrossel" aria-label="Apresentação do Economic Card">
+<!-- Cubo 4: camada de profundidade (centro direito, desfocado) -->
+<div class="hero-cube hero-cube--4" aria-hidden="true">
+<div class="hero-cube__box">
+<span class="hero-cube__face hero-cube__face--front">%</span>
+<span class="hero-cube__face hero-cube__face--back">%</span>
+<span class="hero-cube__face hero-cube__face--right">%</span>
+<span class="hero-cube__face hero-cube__face--left">%</span>
+<span class="hero-cube__face hero-cube__face--top">%</span>
+<span class="hero-cube__face hero-cube__face--bottom">%</span>
+</div>
+</div>
+<!-- Cubo decorativo 3D (atrás do slideshow) -->
+<div class="hero-cube hero-cube--2" aria-hidden="true">
+<div class="hero-cube__box">
+<span class="hero-cube__face hero-cube__face--front">%</span>
+<span class="hero-cube__face hero-cube__face--back">%</span>
+<span class="hero-cube__face hero-cube__face--right">%</span>
+<span class="hero-cube__face hero-cube__face--left">%</span>
+<span class="hero-cube__face hero-cube__face--top">%</span>
+<span class="hero-cube__face hero-cube__face--bottom">%</span>
+</div>
+</div>
+<img src="assets/images/hero-slider/01-mulher-cartao-digital.webp" alt="Mulher sorridente apresentando o cartão Economic Card no celular" class="hero-slide is-active" decoding="async" fetchpriority="high" draggable="false">
+</div>
 <!-- Floating Badge -->
-<div class="absolute -bottom-6 -left-6 bg-surface p-4 rounded-xl shadow-lg border border-outline-variant/30 flex items-center gap-3 z-30 animate-bounce" style="animation-duration: 3s;">
-<div class="bg-secondary-container text-secondary w-10 h-10 rounded-full flex items-center justify-center">
+<div class="absolute bottom-16 left-0 md:-left-6 bg-[#3a1145]/85 backdrop-blur-md p-4 rounded-xl shadow-lg border border-white/20 flex items-center gap-3 z-30 animate-bounce" style="animation-duration: 3s;">
+<div class="bg-secondary-container text-[#3a1145] w-10 h-10 rounded-full flex items-center justify-center">
 <span class="material-symbols-outlined">payments</span>
 </div>
 <div>
-<p class="font-label-sm text-label-sm text-on-surface-variant">Economia Média</p>
-<p class="font-headline-md text-headline-md text-primary font-bold">50% OFF</p>
+<p class="font-label-sm text-label-sm text-white">Economia Média</p>
+<p class="font-headline-md text-headline-md text-white font-bold">50% OFF</p>
 </div>
 </div>
 </div>
 </div>
 </div>
-<!-- Background Decoration -->
-<div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-b from-surface-container-low to-surface z-0 hidden lg:block rounded-bl-[100px]"></div>
 </section>
 
 <!-- Seção de Categorias em Grade 4x4 -->
@@ -472,156 +528,16 @@
             </div>
         </div>
 
-        <!-- Lado Direito: Mockup 3D Interativo -->
-        <div class="card-3d-container flex justify-center items-center relative w-full h-[580px] card-3d-perspective select-none">
+        <!-- Lado Direito: Mockup do Aplicativo -->
+        <div class="app-mockup flex justify-center items-center relative w-full h-[580px] select-none">
             <!-- Círculo de Fundo Brilhante atrás do celular -->
             <div class="absolute w-[400px] h-[400px] bg-[#8a3f98]/30 rounded-full blur-2xl z-0"></div>
 
-            <!-- Mockup do Celular -->
-            <div class="card-3d w-[270px] h-[540px] bg-neutral-900 rounded-[40px] p-3 shadow-2xl relative border-[6px] border-neutral-800 z-10 flex-shrink-0">
-                <!-- Câmera do Celular (Dynamic Island) -->
-                <div class="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-4 bg-black rounded-full z-30"></div>
-                
-                <!-- Tela do Celular -->
-                <div class="bg-[#f2f5f4] rounded-[30px] w-full h-full overflow-hidden flex flex-col justify-between pt-8 pb-3 px-3 font-sans text-neutral-800 relative z-20">
-                    <!-- Top Status Bar Simulada -->
-                    <div class="flex justify-between items-center text-[10px] font-bold px-2 mb-2 text-neutral-600">
-                        <span>15:33</span>
-                        <div class="flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[10px]">wifi</span>
-                            <span class="material-symbols-outlined text-[10px]">battery_full</span>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 flex flex-col justify-between">
-                        <!-- Perfil e Boas Vindas -->
-                        <div class="flex justify-between items-center bg-white p-2 rounded-xl shadow-sm border border-neutral-100">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-neutral-500 text-lg">person</span>
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-[10px] font-bold text-neutral-800 leading-none">Olá, Maria</p>
-                                    <span class="text-[8px] bg-secondary-container/45 text-secondary px-1 py-0.5 rounded-full font-semibold">Filiado</span>
-                                </div>
-                            </div>
-                            <span class="material-symbols-outlined text-neutral-400 text-sm">notifications</span>
-                        </div>
-
-                        <!-- Card de Saldo/Extrato -->
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-neutral-100 mt-2 text-left">
-                            <div class="flex justify-between items-center">
-                                <p class="text-[8px] text-neutral-400 font-semibold uppercase">Saldo Disponível</p>
-                                <span class="material-symbols-outlined text-neutral-400 text-xs cursor-pointer">visibility</span>
-                            </div>
-                            <div class="flex justify-between items-end mt-1">
-                                <p class="text-sm font-extrabold text-[#621872]">R$ 25,87</p>
-                                <button class="text-[8px] border border-[#621872] text-[#621872] px-2 py-0.5 rounded-full font-bold hover:bg-[#621872]/5 transition-all flex items-center gap-0.5">
-                                    <span class="material-symbols-outlined text-[8px]">receipt_long</span>Extrato
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Banner de Cashback -->
-                        <div class="bg-gradient-to-r from-[#00b377] to-[#008f5d] text-white p-2.5 rounded-xl shadow-sm mt-2 text-left relative overflow-hidden">
-                            <div class="relative z-10">
-                                <p class="text-[14px] font-extrabold leading-tight">20% OFF</p>
-                                <p class="text-[7px] opacity-90 mt-0.5">Em medicamentos e cosméticos nas redes credenciadas</p>
-                            </div>
-                            <div class="absolute -right-3 -bottom-3 opacity-20"><span class="material-symbols-outlined text-[48px]">local_pharmacy</span></div>
-                        </div>
-
-                        <!-- Grid de Atalhos de Serviços 3D -->
-                        <div class="flex flex-col gap-2 mt-2 flex-1 items-center">
-                            <!-- Serviço 1 - Saúde -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-kit-de-primeiros-socorros-3d-icon-png-download-3774405.png" alt="Saúde" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Saúde</span>
-                            </div>
-                            <!-- Serviço 2 - Alimentação -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-comida-rapida-3d-icon-png-download-3723115.png" alt="Alimentação" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Alimentação</span>
-                            </div>
-                            <!-- Serviço 3 - Auto Escolas -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-motorista-3d-icon-png-download-7525131.png" alt="Auto Escolas" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Auto Escolas</span>
-                            </div>
-                            <!-- Serviço 4 - Ótica -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-rosto-de-oculos-de-sol-3d-icon-png-download-13864247.png" alt="Ótica" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Ótica</span>
-                            </div>
-                            <!-- Serviço 5 - Pet Shop -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-rinoceronte-3d-icon-png-download-15184671.png" alt="Pet Shop" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Pet Shop</span>
-                            </div>
-                            <!-- Serviço 6 - Pizzarias -->
-                            <div class="bg-white rounded-xl border border-neutral-100 flex items-center gap-2 p-1.5 shadow-sm cursor-pointer hover:border-primary/20 transition-all w-full" style="height:100px;">
-                                <img src="https://cdn3d.iconscout.com/3d/free/thumb/free-fatia-de-pizza-3d-icon-png-download-3723119.png" alt="Pizzarias" style="width:48px; height:48px; object-fit:contain;" loading="lazy"/>
-                                <span class="text-[10px] font-bold text-neutral-700 leading-tight">Pizzarias</span>
-                            </div>
-                        </div>
-
-                        <!-- Barra Inferior de Navegação do App -->
-                        <div class="border-t border-neutral-200/60 pt-1.5 mt-2 flex justify-around text-neutral-400">
-                            <div class="flex flex-col items-center cursor-pointer text-[#621872]">
-                                <span class="material-symbols-outlined text-xs">home</span>
-                                <span class="text-[6px] font-bold">Início</span>
-                            </div>
-                            <div class="flex flex-col items-center cursor-pointer hover:text-neutral-600">
-                                <span class="material-symbols-outlined text-xs">payments</span>
-                                <span class="text-[6px] font-bold">Pagar</span>
-                            </div>
-                            <div class="flex flex-col items-center cursor-pointer hover:text-neutral-600">
-                                <span class="material-symbols-outlined text-xs">qr_code_scanner</span>
-                                <span class="text-[6px] font-bold">Ler notas</span>
-                            </div>
-                            <div class="flex flex-col items-center cursor-pointer hover:text-neutral-600">
-                                <span class="material-symbols-outlined text-xs">chat_bubble</span>
-                                <span class="text-[6px] font-bold">Ajuda</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cartão Verde Flutuante em 3D -->
-            <div class="floating-card-3d absolute right-2 md:right-10 top-1/4 w-[280px] h-[175px] bg-gradient-to-tr from-[#008f5d] to-[#00b377] rounded-[18px] p-5 text-white flex flex-col justify-between border border-white/20 select-none z-20 transform">
-                <!-- Topo do Cartão -->
-                <div class="flex justify-between items-start">
-                    <!-- Chip Simulado -->
-                    <div class="w-10 h-8 bg-gradient-to-br from-yellow-100 to-amber-300 rounded-md shadow-inner flex flex-col justify-between p-1 border border-amber-400/30">
-                        <div class="h-px bg-amber-800/20 w-full"></div>
-                        <div class="h-px bg-amber-800/20 w-full"></div>
-                        <div class="h-px bg-amber-800/20 w-full"></div>
-                    </div>
-                    <!-- Logo / Texto -->
-                    <div class="text-right">
-                        <p class="text-[9px] tracking-widest font-extrabold uppercase opacity-85 leading-none">Cartão de Benefícios</p>
-                        <p class="text-sm font-black tracking-tight leading-none mt-1">Economic Card</p>
-                    </div>
-                </div>
-                
-                <!-- Meio do Cartão (Número) -->
-                <div>
-                    <p class="text-sm font-mono tracking-widest opacity-95">1234 5678 9012 3456</p>
-                </div>
-
-                <!-- Rodapé do Cartão (Nome e Validade) -->
-                <div class="flex justify-between items-end">
-                    <div class="text-left">
-                        <p class="text-[8px] uppercase tracking-wider opacity-60">Titular</p>
-                        <p class="text-xs font-bold font-mono tracking-wide leading-none mt-0.5">Maria Aparecida</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[8px] uppercase tracking-wider opacity-60">Validade</p>
-                        <p class="text-xs font-bold font-mono leading-none mt-0.5">08/30</p>
-                    </div>
-                </div>
-            </div>
+            <!-- Mockup do Economic Card no iPhone -->
+            <img src="assets/images/app-mockup-economic-card.webp"
+                 alt="Aplicativo Economic Card exibido em um iPhone"
+                 class="app-mockup__img relative z-10 h-full w-auto max-w-full object-contain"
+                 width="781" height="1512" loading="lazy" decoding="async">
         </div>
     </div>
 </section>
@@ -875,5 +791,6 @@
         runLoop();
     })();
 </script>
-<script type="module" src="js/hero-card.js"></script>
+<script src="js/hero-slider.js"></script>
+<script type="module" src="js/hero-cubes.js"></script>
 </body></html>

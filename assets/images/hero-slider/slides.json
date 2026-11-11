@@ -1,0 +1,18 @@
+{
+    "intervalMs": 5000,
+    "transitionMs": 900,
+    "images": [
+        {
+            "file": "01-mulher-cartao-digital.webp",
+            "alt": "Mulher sorridente apresentando o cartão Economic Card no celular"
+        },
+        {
+            "file": "02-homem-app-economic-card.webp",
+            "alt": "Homem apresentando o aplicativo Economic Card no celular"
+        },
+        {
+            "file": "03-mulher-app-descontos.webp",
+            "alt": "Mulher sorridente apresentando o aplicativo de descontos Economic Card"
+        }
+    ]
+}

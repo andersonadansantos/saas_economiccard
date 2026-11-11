@@ -78,7 +78,7 @@ const rimLight = new THREE.DirectionalLight(0xbaf55b, 0.45);
 rimLight.position.set(-4, -2, -3);
 scene.add(rimLight);
 
-const warmLight = new THREE.PointLight(0xffdcc6, 0.6, 8);
+const warmLight = new THREE.PointLight(0xd9b8e1, 0.6, 8);
 warmLight.position.set(0, -1.5, 3.2);
 scene.add(warmLight);
 
@@ -143,7 +143,7 @@ const body = new THREE.Mesh(
         curveSegments: 48,
     }),
     new THREE.MeshPhysicalMaterial({
-        color: 0xdad5d0,
+        color: 0xd9cbe0,
         roughness: 0.22,
         metalness: 0.35,
         clearcoat: 0.6,
@@ -179,7 +179,7 @@ cardGroup.add(front);
 const back = new THREE.Mesh(
     new THREE.PlaneGeometry(cardWidth, cardHeight),
     new THREE.MeshPhysicalMaterial({
-        color: 0xf2ece7,
+        color: 0xf3e9f5,
         roughness: 0.5,
         metalness: 0.02,
         clearcoat: 0.4,
@@ -202,7 +202,7 @@ cardGroup.add(magStrip);
 // Faixa de assinatura (verso)
 const signBand = new THREE.Mesh(
     new THREE.PlaneGeometry(cardWidth * 0.82, 0.26),
-    new THREE.MeshStandardMaterial({ color: 0xd2cbc4, roughness: 0.6 })
+    new THREE.MeshStandardMaterial({ color: 0xd8ced9, roughness: 0.6 })
 );
 signBand.position.z = bb.min.z - 0.008;
 signBand.position.y = cardHeight * 0.12;
@@ -211,7 +211,7 @@ cardGroup.add(signBand);
 // CVC (verso)
 const cvcLine = new THREE.Mesh(
     new THREE.PlaneGeometry(0.4, 0.045),
-    new THREE.MeshStandardMaterial({ color: 0xa29a93, roughness: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0x8f7d93, roughness: 0.5 })
 );
 cvcLine.position.z = bb.min.z - 0.012;
 cvcLine.position.y = cardHeight * -0.1;
