@@ -1,5 +1,8 @@
 Options -Indexes
 
+# Garante UTF-8 como charset padrao em respostas HTML/texto (Apache).
+AddDefaultCharset UTF-8
+
 # Politica zero cache: nenhum navegador armazena o sistema do cartao
 <IfModule mod_headers.c>
     Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
