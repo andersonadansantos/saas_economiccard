@@ -242,6 +242,92 @@ $conn->query("CREATE TABLE IF NOT EXISTS creditos_parceiro (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 
+// ====== PLANO ÚNICO MENSAL: MENSALIDADES CONSECUTIVAS (ATIVAÇÃO 36 MESES) ======
+// Auto-migração idempotente, sem perda de dados:
+//  - planos_contratos: contrato financeiro de cada usuário (valores congelados
+//    no momento da contratação, status do ciclo, ativação e validade).
+//  - planos_cobrancas: as mensalidades do ciclo (padrão: 2), criadas de uma
+//    vez — a próxima é liberada só após o pagamento da anterior.
+//  - pagamentos_pix.cobranca_id: liga o pagamento real à cobrança do contrato,
+//    garantindo confirmação/estorno idempotentes.
+//  - Normalização do plano único ("Mensal"): executada apenas na primeira
+//    migração, para não sobrescrever a configuração feita no painel depois.
+$contratosJaExistiam = (bool)@$conn->query("SHOW TABLES LIKE 'planos_contratos'")->num_rows;
+$conn->query("CREATE TABLE IF NOT EXISTS planos_contratos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    plano_id INT NOT NULL DEFAULT 0,
+    valor_adesao DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    valor_mensal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    qtd_mensalidades INT NOT NULL DEFAULT 2,
+    validade_meses INT NOT NULL DEFAULT 36,
+    status ENUM('em_andamento','concluido','cancelado') NOT NULL DEFAULT 'em_andamento',
+    vigente TINYINT(1) NULL DEFAULT NULL,
+    ativado_em DATE NULL DEFAULT NULL,
+    validade_ate DATE NULL DEFAULT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_usuario_vigente (usuario_id, vigente),
+    KEY idx_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+$conn->query("CREATE TABLE IF NOT EXISTS planos_cobrancas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    contrato_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    sequencia TINYINT NOT NULL DEFAULT 1,
+    tipo VARCHAR(20) NOT NULL DEFAULT 'mensalidade',
+    valor DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    status ENUM('aguardando','pendente','pago','cancelado') NOT NULL DEFAULT 'aguardando',
+    vencimento DATE NULL DEFAULT NULL,
+    pagamento_id INT NULL DEFAULT NULL,
+    pago_em DATETIME NULL DEFAULT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_contrato_seq (contrato_id, sequencia),
+    KEY idx_usuario (usuario_id),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+$planMig = @$conn->query("SELECT
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pagamentos_pix' AND COLUMN_NAME = 'cobranca_id') AS tem_cobranca,
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'planos' AND COLUMN_NAME = 'valor_adesao') AS tem_adesao,
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'planos' AND COLUMN_NAME = 'valor_mensal') AS tem_mensal,
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'planos' AND COLUMN_NAME = 'qtd_mensalidades') AS tem_qtd")->fetch_assoc();
+if ($planMig && (int)$planMig['tem_cobranca'] === 0) {
+    @$conn->query("ALTER TABLE pagamentos_pix ADD COLUMN cobranca_id INT NULL DEFAULT NULL AFTER plano_id, ADD KEY idx_cobranca (cobranca_id)");
+}
+if ($planMig && (int)$planMig['tem_adesao'] === 0) {
+    @$conn->query("ALTER TABLE planos ADD COLUMN valor_adesao DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER valor");
+}
+if ($planMig && (int)$planMig['tem_mensal'] === 0) {
+    @$conn->query("ALTER TABLE planos ADD COLUMN valor_mensal DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER valor_adesao");
+}
+if ($planMig && (int)$planMig['tem_qtd'] === 0) {
+    @$conn->query("ALTER TABLE planos ADD COLUMN qtd_mensalidades INT NOT NULL DEFAULT 2 AFTER valor_mensal");
+}
+if (!$contratosJaExistiam) {
+    // Primeira execução do novo modelo: garante o plano único "Mensal" e
+    // preserva o valor de adesão efetivamente cobrado hoje.
+    $plMensal = @$conn->query("SELECT id FROM planos ORDER BY (LOWER(TRIM(nome)) = 'mensal') DESC, id ASC LIMIT 1")->fetch_assoc();
+    if (!$plMensal) {
+        @$conn->query("INSERT INTO planos (nome, dias, valor, valor_adesao, valor_mensal, qtd_mensalidades, descricao, ativo, ordem)
+            VALUES ('Mensal', 30, 0, 0, 0, 2, 'Mensalidades consecutivas. Ativação por 36 meses.', 1, 0)");
+        $plMensal = @$conn->query("SELECT id FROM planos ORDER BY id DESC LIMIT 1")->fetch_assoc();
+    }
+    if ($plMensal) {
+        $planoMigId = (int)$plMensal['id'];
+        $persMig = @$conn->query("SELECT valor_adesao FROM personalizacao WHERE id = 1")->fetch_assoc();
+        $adesaoMig = (float)($persMig['valor_adesao'] ?? 0);
+        if ($adesaoMig > 0) {
+            @$conn->query("UPDATE planos SET valor_adesao = " . number_format($adesaoMig, 2, '.', '') . " WHERE id = $planoMigId");
+        }
+        @$conn->query("UPDATE planos SET valor_mensal = valor WHERE id = $planoMigId AND valor_mensal <= 0");
+        @$conn->query("UPDATE planos SET valor = valor_mensal, dias = 30, ordem = 0 WHERE id = $planoMigId");
+        @$conn->query("UPDATE planos SET qtd_mensalidades = 2 WHERE id = $planoMigId AND qtd_mensalidades < 1");
+        @$conn->query("UPDATE planos SET nome = 'Mensal' WHERE id = $planoMigId AND LOWER(TRIM(nome)) <> 'mensal'");
+        @$conn->query("UPDATE planos SET ativo = IF(id = $planoMigId, 1, 0)");
+    }
+}
+
 // Sessão é de um dependente (login pelo CPF do dependente).
 function ehDependente() {
     return !empty($_SESSION['tipo_conta']) && $_SESSION['tipo_conta'] === 'dependente';
@@ -378,3 +464,6 @@ function app_log($canal, $mensagem) {
     $linha   = '[' . date('Y-m-d H:i:s') . '] ' . $mensagem . PHP_EOL;
     @file_put_contents($arquivo, $linha, FILE_APPEND | LOCK_EX);
 }
+
+// Motor do plano único mensal (contratos, cobranças, ativação e validade).
+require_once __DIR__ . '/plano_recorrente.php';

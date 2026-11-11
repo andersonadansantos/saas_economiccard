@@ -126,7 +126,7 @@ function asaas_obter_customer(array $cfg, array $u) {
 // Afiliados > Remuneração). O repasse automático via split ocorre quando o
 // afiliado está ativo e tem Wallet ID cadastrado; o crédito no extrato é
 // registrado independentemente (app/afiliado_creditos.php).
-function asaas_afiliado_split_usuario($conn, array $u) {
+function asaas_afiliado_split_usuario($conn, array $u, $parcelaForcada = null) {
     $r = ['wallet' => '', 'valor_fixo' => 0.0, 'parcela' => 0];
     if (empty($u['afiliado_token'])) return $r;
 
@@ -140,13 +140,18 @@ function asaas_afiliado_split_usuario($conn, array $u) {
     $af = $stmt->get_result()->fetch_assoc();
     if ($af) {
         $r['wallet'] = trim((string)($af['wallet_afiliado'] ?? ''));
-        // Próxima parcela do usuário: cobranças de plano já pagas + a atual.
-        $uid = (int)$u['id'];
-        $stmtP = $conn->prepare("SELECT COUNT(*) AS n FROM pagamentos_pix WHERE usuario_id = ? AND tipo = 'plano' AND status = 'approved'");
-        $stmtP->bind_param('i', $uid);
-        $stmtP->execute();
-        $rowP = $stmtP->get_result()->fetch_assoc();
-        $parcela = (int)(($rowP && isset($rowP['n'])) ? $rowP['n'] : 0) + 1;
+        if ($parcelaForcada !== null && (int)$parcelaForcada > 0) {
+            // Sequência real da cobrança no contrato do plano (1 = 1ª cobrança).
+            $parcela = (int)$parcelaForcada;
+        } else {
+            // Próxima parcela do usuário: cobranças de plano já pagas + a atual.
+            $uid = (int)$u['id'];
+            $stmtP = $conn->prepare("SELECT COUNT(*) AS n FROM pagamentos_pix WHERE usuario_id = ? AND tipo = 'plano' AND status = 'approved'");
+            $stmtP->bind_param('i', $uid);
+            $stmtP->execute();
+            $rowP = $stmtP->get_result()->fetch_assoc();
+            $parcela = (int)(($rowP && isset($rowP['n'])) ? $rowP['n'] : 0) + 1;
+        }
         $r['parcela'] = $parcela;
         // Valor da comissão desta parcela (0 a partir da 5ª — sem split).
         $r['valor_fixo'] = afiliado_valor_parcela($af, $parcela, $cfg);

@@ -41,45 +41,26 @@ if (($pixRow['tipo'] ?? 'plano') === 'cartao_fisico') {
     exit;
 }
 
+$extra = [];
 if ($status === 'approved') {
-    require_once 'email_sender.php';
-    $dias = 60;
-    $planoIdPix = $pixRow ? (int)($pixRow['plano_id'] ?? 0) : 0;
-    if ($planoIdPix) {
-        $pl = $conn->query("SELECT dias FROM planos WHERE id = " . $planoIdPix . " AND ativo = 1")->fetch_assoc();
-        if ($pl) { $dias = (int)$pl['dias']; }
-    }
-    $validade = date('Y-m-d', strtotime('+' . $dias . ' days'));
-    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ?, adesao_paga = 1 WHERE id = ?");
-    $stmt->bind_param('si', $validade, $uid);
-    $stmt->execute();
-
-    if ($pixRow) {
-        $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'approved' WHERE id = ? AND usuario_id = ? AND status <> 'approved'");
-        $stmt->bind_param('ii', $pixRow['id'], $uid);
-        $stmt->execute();
-
-        // Parcela efetivamente paga: gera o crédito do AFILIADO que indicou
-        // o usuário (comissão por parcela, quando elegível) e o crédito do
-        // PARCEIRO (valor fixo por transação, sempre). Idempotentes.
-        afiliado_registrar_credito_pagamento($conn, (int)$pixRow['id']);
-        parceiro_registrar_credito_pagamento($conn, (int)$pixRow['id']);
-    }
-
-    if ($conn->affected_rows > 0) {
-        $u = $conn->query("SELECT nome, email FROM usuarios WHERE id = $uid")->fetch_assoc();
-        if ($u && !empty($u['email'])) {
-            enviar_template_geral('cartao_ativado', ['nome' => $u['nome'], 'email' => $u['email']]);
-        }
-    }
-} elseif ($status === 'refunded' && $pixRow && in_array($pixRow['status'], ['pending', 'approved'], true)) {
-    // Reembolso/estorno: marca o pagamento como reembolsado e desfaz o
-    // crédito do afiliado e do parceiro (ajuste financeiro correto).
+    // Confirmação centralizada e idempotente: avança o contrato, libera a
+    // próxima cobrança e ativa o cartão somente após a última mensalidade paga.
+    $r = plano_marcar_pagamento_aprovado($conn, (int)$pixRow['id']);
+    $extra = [
+        'sequencia' => $r['sequencia'] ?? null,
+        'ativou' => (bool)($r['ativou'] ?? false),
+        'concluiu' => (bool)($r['concluiu'] ?? false),
+        'validade' => $r['validade'] ?? null,
+    ];
+} elseif ($status === 'refunded' && in_array($pixRow['status'], ['pending', 'approved'], true)) {
+    // Reembolso/estorno: marca o pagamento como reembolsado, reabre a mesma
+    // cobrança do contrato e desfaz os créditos de afiliado e parceiro.
     $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'refunded' WHERE id = ?");
     $stmt->bind_param('i', $pixRow['id']);
     $stmt->execute();
+    plano_registrar_estorno($conn, (int)$pixRow['id']);
     afiliado_estornar_credito_pagamento($conn, (int)$pixRow['id']);
     parceiro_estornar_credito_pagamento($conn, (int)$pixRow['id']);
 }
 
-echo json_encode(['status' => $status]);
+echo json_encode(array_merge(['status' => $status], $extra));

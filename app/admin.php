@@ -84,6 +84,13 @@ $statsAtivos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE c
 $statsInativos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE cartao_ativo = 0")->fetch_assoc()['total'];
 $statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao")->fetch_assoc()['total'];
 
+// Resumo do plano por usuário (contrato, mensalidades, ativação/validade).
+$resumosPlanos = [];
+
+function fmt_moeda_br($v) {
+    return 'R$ ' . number_format((float)$v, 2, ',', '.');
+}
+
 function fmt_cpf_br($cpf) {
     $d = preg_replace('/\D/', '', (string)$cpf);
     if (strlen($d) === 11) return preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $d);
@@ -235,6 +242,7 @@ function fmt_cpf_br($cpf) {
 <th class="px-4 py-3">CPF</th>
 <th class="px-4 py-3">Cidade</th>
 <th class="px-4 py-3">WhatsApp</th>
+<th class="px-4 py-3">Plano</th>
 <th class="px-4 py-3">Cartão</th>
 <th class="px-4 py-3">Cadastrado em</th>
 <th class="px-4 py-3">Dependentes</th>
@@ -242,7 +250,7 @@ function fmt_cpf_br($cpf) {
 </thead>
 <tbody>
 <?php if ($total === 0): ?>
-<tr><td colspan="9" class="px-4 py-10 text-center text-gray-500">Nenhum cadastro encontrado.</td></tr>
+<tr><td colspan="10" class="px-4 py-10 text-center text-gray-500">Nenhum cadastro encontrado.</td></tr>
 <?php endif; ?>
 <?php while ($u = $usuarios->fetch_assoc()): ?>
 <tr class="border-t border-gray-100 hover:bg-gray-50 <?php echo (($u['status'] ?? 'ativo') === 'desativado') ? 'opacity-70' : ''; ?>">
@@ -313,6 +321,50 @@ Facebook
 -
 <?php endif; ?>
 </td>
+<?php
+$resumoPlano = plano_resumo_usuario($conn, (int)$u['id']);
+$resumosPlanos[(int)$u['id']] = $resumoPlano;
+$qtdPagas = (int)$resumoPlano['pagas'];
+$qtdPlano = max(1, (int)($resumoPlano['total_cobrancas'] ?? ($resumoPlano['qtd_mensalidades'] ?? 1)));
+$qtdMensalidades = max(1, (int)($resumoPlano['qtd_mensalidades'] ?? 1));
+$situacaoPlano = (string)$resumoPlano['situacao'];
+$detalhePlano = 'Adesão ' . fmt_moeda_br($resumoPlano['valor_adesao']) . ' + ' . $qtdMensalidades . ' mensalidade' . ($qtdMensalidades === 1 ? '' : 's') . ' de ' . fmt_moeda_br($resumoPlano['valor_mensal']) . ' · Total ' . fmt_moeda_br($resumoPlano['valor_total']);
+if (!empty($resumoPlano['validade_ate'])) {
+    $detalhePlano .= ' · Válido até ' . date('d/m/Y', strtotime($resumoPlano['validade_ate']));
+} elseif (!empty($resumoPlano['cobranca_atual']['vencimento'])) {
+    $detalhePlano .= ' · Próxima ' . date('d/m/Y', strtotime($resumoPlano['cobranca_atual']['vencimento']));
+}
+?>
+<td class="px-4 py-3">
+<div class="flex flex-col gap-1 min-w-[130px]">
+<?php if ($situacaoPlano === 'concluido'): ?>
+<span class="inline-flex w-fit items-center gap-1 text-[10px] font-bold text-[#3e6a00] bg-[#b6f570]/40 rounded-lg px-2 py-1" title="<?php echo htmlspecialchars($detalhePlano); ?>">
+<span class="material-symbols-outlined text-[13px]">verified</span> <?php echo $qtdPlano; ?>/<?php echo $qtdPlano; ?> concluído
+</span>
+<?php elseif ($situacaoPlano === 'expirado'): ?>
+<span class="inline-flex w-fit items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 rounded-lg px-2 py-1" title="<?php echo htmlspecialchars($detalhePlano); ?>">
+<span class="material-symbols-outlined text-[13px]">error</span> <?php echo $qtdPlano; ?>/<?php echo $qtdPlano; ?> vencido
+</span>
+<?php elseif ($situacaoPlano === 'legado_ativo' || (int)$u['cartao_ativo'] === 1): ?>
+<span class="inline-flex w-fit items-center gap-1 text-[10px] font-bold text-[#3e6a00] bg-[#b6f570]/40 rounded-lg px-2 py-1" title="<?php echo htmlspecialchars($detalhePlano); ?>">
+<span class="material-symbols-outlined text-[13px]">credit_card</span> Ativo · <?php echo $qtdPagas; ?>/<?php echo $qtdPlano; ?> pagas
+</span>
+<?php else: ?>
+<span class="inline-flex w-fit items-center gap-1 text-[10px] font-bold text-[#51036d] bg-[#51036d]/10 rounded-lg px-2 py-1" title="<?php echo htmlspecialchars($detalhePlano); ?>">
+<span class="material-symbols-outlined text-[13px]">receipt_long</span> <?php echo $qtdPagas; ?>/<?php echo $qtdPlano; ?> cobranças
+</span>
+<?php endif; ?>
+<span class="text-[10px] text-gray-500">
+<?php if (!empty($resumoPlano['validade_ate']) && $resumoPlano['validade_ate'] >= date('Y-m-d')): ?>
+Vence <?php echo date('d/m/Y', strtotime($resumoPlano['validade_ate'])); ?>
+<?php elseif (!empty($resumoPlano['cobranca_atual']['vencimento']) && $resumoPlano['cobranca_atual']['vencimento'] > date('Y-m-d')): ?>
+Próx. <?php echo date('d/m/Y', strtotime($resumoPlano['cobranca_atual']['vencimento'])); ?>
+<?php else: ?>
+Total <?php echo fmt_moeda_br($resumoPlano['valor_total']); ?>
+<?php endif; ?>
+</span>
+</div>
+</td>
 <td class="px-4 py-3">
 <div class="flex items-center gap-2">
 <input type="checkbox" id="cartaoToggle<?php echo (int)$u['id']; ?>" class="cartaoToggle" <?php echo $u['cartao_ativo'] ? 'checked' : ''; ?> onchange="alternarCartao(<?php echo (int)$u['id']; ?>, this.checked ? 1 : 0, this)">
@@ -333,7 +385,7 @@ $depCount = $depRows ? (int)$depRows->num_rows : 0;
 </td>
 </tr>
 <tr id="deps-row-<?php echo (int)$u['id']; ?>" class="hidden">
-<td colspan="9" class="px-6 py-4 bg-gray-50/80">
+<td colspan="10" class="px-6 py-4 bg-gray-50/80">
 <?php if (!$depRows || $depRows->num_rows === 0): ?>
 <p class="text-sm text-gray-500">Nenhum dependente cadastrado para este usuário.</p>
 <?php else: ?>
@@ -420,6 +472,10 @@ $depCount = $depRows ? (int)$depRows->num_rows : 0;
 <div class="bg-gray-50 rounded-lg p-3 col-span-2">
 <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Cadastrado em</p>
 <p id="m-criado" class="text-sm font-semibold text-gray-800 mt-1"></p>
+</div>
+<div class="bg-gray-50 rounded-lg p-3 col-span-2">
+<p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Plano e cobranças</p>
+<div id="m-plano" class="text-sm text-gray-800 mt-1 space-y-1"></div>
 </div>
 </div>
 <div class="mt-4">
@@ -514,11 +570,59 @@ while ($linha = $r->fetch_assoc()) {
     } else {
         $linha['avatar_url'] = $linha['avatar'] ?? '';
     }
+    $linha['plano_resumo'] = $resumosPlanos[(int)$linha['id']] ?? plano_resumo_usuario($conn, (int)$linha['id']);
     $dados[] = $linha;
 }
 echo json_encode($dados, JSON_UNESCAPED_UNICODE);
 ?>;
 
+function moedaBR(v) {
+    return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+}
+function dataBR(v) {
+    if (!v) return '-';
+    const s = String(v).slice(0, 10);
+    const p = s.split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : s;
+}
+function renderPlano(r) {
+    const box = document.getElementById('m-plano');
+    if (!box) return;
+    if (!r) { box.innerHTML = '<span class="text-gray-500">Sem informações de plano.</span>'; return; }
+    const cobs = r.cobrancas || {};
+    const qtdCobrancas = Math.max(1, Number(r.total_cobrancas) || ((Number(r.qtd_mensalidades) || 1) + 1));
+    const qtdMensalidades = Math.max(1, Number(r.qtd_mensalidades) || 1);
+    const nomesStatus = { pago: 'Paga', pendente: 'Pendente', aguardando: 'Aguardando', cancelado: 'Cancelada' };
+    const coresStatus = { pago: 'text-[#3e6a00]', pendente: 'text-[#51036d]', aguardando: 'text-gray-500', cancelado: 'text-red-600' };
+    let linhas = '';
+    for (let i = 1; i <= qtdCobrancas; i++) {
+        const c = cobs[i] || cobs[String(i)] || null;
+        if (!c) continue;
+        const st = nomesStatus[c.status] || c.status;
+        const cor = coresStatus[c.status] || 'text-gray-700';
+        const pago = c.pago_em ? ' · ' + dataBR(c.pago_em) : '';
+        const label = (c.tipo === 'adesao') ? 'Adesão' : ((c.tipo === 'mensalidade' && i === 1) ? '1ª mensalidade' : ((i - 1) + 'ª mensalidade'));
+        linhas += '<div class="flex items-center justify-between gap-2 text-[12px]"><span class="font-semibold">' + label + ' — ' + moedaBR(c.valor) + '</span><span class="' + cor + ' font-bold whitespace-nowrap">' + st + pago + '</span></div>';
+    }
+    let situacao = 'Em andamento';
+    if (r.situacao === 'concluido') situacao = 'Concluído (' + qtdCobrancas + '/' + qtdCobrancas + ' pagas)';
+    else if (r.situacao === 'expirado') situacao = 'Concluído e vencido';
+    else if (r.situacao === 'legado_ativo') situacao = 'Cartão ativo (legado)';
+    else if (r.situacao === 'sem_contrato') situacao = 'Sem contrato';
+    const cartao = r.cartao_ativo ? 'Ativo' : 'Inativo';
+    const ativacao = r.ativado_em ? dataBR(r.ativado_em) : '-';
+    const vencimento = r.validade_ate ? dataBR(r.validade_ate) : '-';
+    const restante = (r.dias_restantes !== null && r.dias_restantes !== undefined) ? (r.dias_restantes + ' dias') : '-';
+    const pendentes = (Number(r.pendentes) || 0) + (Number(r.aguardando) || 0);
+    const badge = (Number(r.pagas) >= qtdCobrancas)
+        ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-[#3e6a00] bg-[#b6f570]/40 rounded-lg px-2 py-0.5"><span class="material-symbols-outlined text-[13px]">verified</span> plano quitado</span>'
+        : '';
+    box.innerHTML =
+        '<div class="flex items-center justify-between gap-2"><span class="font-bold">' + situacao + '</span>' + badge + '</div>' +
+        '<div class="text-[12px] text-gray-600">Adesão <b>' + moedaBR(r.valor_adesao) + '</b> + ' + qtdMensalidades + ' mensalidade' + (qtdMensalidades === 1 ? '' : 's') + ' de <b>' + moedaBR(r.valor_mensal) + '</b> · Total <b>' + moedaBR(r.valor_total) + '</b> · ' + (Number(r.pagas) || 0) + '/' + qtdCobrancas + ' pagas · ' + pendentes + ' em aberto</div>' +
+        '<div class="rounded-lg bg-white border border-gray-200 p-2 space-y-1 mt-1">' + (linhas || '<span class="text-gray-500 text-[12px]">Nenhuma cobrança registrada.</span>') + '</div>' +
+        '<div class="text-[12px] text-gray-600">Cartão: <b>' + cartao + '</b> · Ativação: <b>' + ativacao + '</b> · Vencimento: <b>' + vencimento + '</b> · Tempo restante: <b>' + restante + '</b></div>';
+}
 function abrirModal(id) {
     const u = dados.find(x => parseInt(x.id) === id);
     if (!u) return;
@@ -543,6 +647,7 @@ function abrirModal(id) {
     document.getElementById('m-cidade').textContent = u.cidade || '-';
     document.getElementById('m-cep').textContent = u.cep || '-';
     document.getElementById('m-criado').textContent = u.criado_em ? new Date(u.criado_em).toLocaleString('pt-BR') : '-';
+    renderPlano(u.plano_resumo);
 
     const p = new URLSearchParams({ preview: '1', download: '1', uid: u.id || '', nome: u.nome || '', cpf: u.cpf || '', email: u.email || '', whatsapp: u.whatsapp || '', endereco: u.endereco || '', cidade: u.cidade || '', cep: u.cep || '' });
     document.getElementById('m-contrato').href = 'gerar_contrato.php?' + p.toString();

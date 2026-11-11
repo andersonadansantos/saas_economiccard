@@ -19,10 +19,7 @@ if (!$u) {
     exit;
 }
 
-if ($u['cartao_ativo']) {
-    echo json_encode(['status' => 'approved', 'message' => 'Cartão já ativo']);
-    exit;
-}
+$hoje = date('Y-m-d');
 
 $cfg = asaas_config($conn);
 if (!$cfg) {
@@ -30,27 +27,42 @@ if (!$cfg) {
     exit;
 }
 
-$planoId = (int)($_POST['plano_id'] ?? 0);
-$plano = obter_plano_seguro($planoId);
-if (!$plano) {
-    echo json_encode(['status' => 'error', 'message' => 'Plano inválido']);
+$contrato = plano_garantir_contrato($conn, $uid, $u);
+if (!$contrato) {
+    $vals = plano_valores_atuais($conn);
+    $msg = empty($vals['ativo'])
+        ? 'Plano temporariamente indisponível para novas contratações. Fale com o suporte.'
+        : 'Não foi possível localizar seu contrato. Fale com o suporte.';
+    echo json_encode(['status' => 'error', 'message' => $msg]);
     exit;
 }
-$valor = valor_cobranca_plano_ativacao($conn, $plano, $u);
-$dias = (int)$plano['dias'];
-$nomePlano = $plano['nome'];
-$descricao = "Ativação Economic Card - $nomePlano - $dias dias";
+$disp = plano_cobranca_disponivel($conn, (int)$contrato['id']);
+$cobranca = $disp['cobranca'] ?? null;
+if (!$cobranca) {
+    echo json_encode(['status' => 'approved', 'message' => 'Todas as cobranças do seu plano já foram pagas.']);
+    exit;
+}
+if (!$disp['disponivel']) {
+    echo json_encode(['status' => 'waiting', 'message' => $disp['motivo'] ?: 'A próxima cobrança ainda não está disponível.']);
+    exit;
+}
+$valor = round((float)$cobranca['valor'], 2);
+$sequencia = (int)$cobranca['sequencia'];
+$cobrancaId = (int)$cobranca['id'];
+$planoId = (int)$contrato['plano_id'];
+$nomePlano = 'Mensal';
+$rotulo = plano_rotulo_cobranca($sequencia, (string)$cobranca['tipo']);
+$descricao = "Economic Card - Plano $nomePlano - $rotulo";
 
 if ($valor < ASAAS_VALOR_MINIMO) {
-    echo json_encode(['status' => 'error', 'message' => 'O valor deste plano (R$ ' . number_format($valor, 2, ',', '.') . ') está abaixo do mínimo aceito pelo gateway (R$ 5,00). Ajuste o preço do plano no painel administrativo.']);
+    echo json_encode(['status' => 'error', 'message' => 'O valor desta cobrança (R$ ' . number_format($valor, 2, ',', '.') . ') está abaixo do mínimo aceito pelo gateway (R$ 5,00). Ajuste o valor no painel administrativo.']);
     exit;
 }
 
 // Regra de split: o parceiro (único, exclusivo da empresa) recebe o valor fixo
 // por transação em TODA cobrança; o afiliado que indicou o usuário recebe a
-// comissão da PRÓXIMA PARCELA dele (adesão/2ª/3ª/4ª — wallet + valor obtidos
-// abaixo a partir da sequência real de cobranças pagas do usuário).
-$afiliadoSplit = asaas_afiliado_split_usuario($conn, $u);
+// comissão da parcela correspondente do contrato (1ª = 1ª cobrança).
+$afiliadoSplit = asaas_afiliado_split_usuario($conn, $u, $sequencia);
 
 $holderName = trim($_POST['holder_name'] ?? '');
 $numero = preg_replace('/\D/', '', $_POST['number'] ?? '');
@@ -122,31 +134,25 @@ if (!$cob['ok']) {
 $payId = (string)$cob['payment']['id'];
 $statusDb = asaas_status_local((string)($cob['payment']['status'] ?? ''));
 
-if ($statusDb === 'approved') {
-    $validade = date('Y-m-d', strtotime('+' . $dias . ' days'));
-    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ?, adesao_paga = 1 WHERE id = ?");
-    $stmt->bind_param('si', $validade, $uid);
-    $stmt->execute();
-    require_once 'email_sender.php';
-    if (!empty($u['email'])) {
-        enviar_template_geral('cartao_ativado', ['nome' => $u['nome'], 'email' => $u['email']]);
-    }
-}
-
-$stmt = $conn->prepare("INSERT INTO pagamentos_pix (usuario_id, plano_id, mp_payment_id, valor, descricao, status, pix_validade, criado_em, provedor, asaas_payment_id) VALUES (?, ?, 0, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW(), 'asaas', ?)");
-$stmt->bind_param('iidsss', $uid, $planoId, $valor, $descricao, $statusDb, $payId);
+$stmt = $conn->prepare("INSERT INTO pagamentos_pix (usuario_id, plano_id, cobranca_id, mp_payment_id, valor, descricao, status, pix_validade, criado_em, provedor, asaas_payment_id) VALUES (?, ?, ?, 0, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW(), 'asaas', ?)");
+$stmt->bind_param('iiidsss', $uid, $planoId, $cobrancaId, $valor, $descricao, $statusDb, $payId);
 $stmt->execute();
+$pagamentoId = (int)$conn->insert_id;
 
-// Cartão aprovado na hora: a parcela foi paga agora — gera o crédito do
-// AFILIADO que indicou o usuário (comissão por parcela, quando elegível)
-// e o crédito do PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
+$resultado = null;
 if ($statusDb === 'approved') {
-    afiliado_registrar_credito_pagamento($conn, (int)$conn->insert_id);
-    parceiro_registrar_credito_pagamento($conn, (int)$conn->insert_id);
+    // Confirmação centralizada: avança o contrato, libera a próxima cobrança
+    // e ativa o cartão somente após a última mensalidade paga (idempotente).
+    $resultado = plano_marcar_pagamento_aprovado($conn, $pagamentoId);
 }
 
 echo json_encode([
     'status' => $statusDb,
     'gateway_payment_id' => $payId,
-    'split_aplicado' => (bool)$cob['split_aplicado']
+    'split_aplicado' => (bool)$cob['split_aplicado'],
+    'sequencia' => $sequencia,
+    'rotulo' => $rotulo,
+    'ativou' => (bool)($resultado['ativou'] ?? false),
+    'concluiu' => (bool)($resultado['concluiu'] ?? false),
+    'validade' => $resultado['validade'] ?? null,
 ]);

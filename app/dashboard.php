@@ -33,6 +33,9 @@ if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
     if ($d2 < $d1) $diasRestantes = 0;
 }
 
+// Contrato do plano único (mensalidades consecutivas) - leitura.
+$resumoPlano = (!$ehDep) ? plano_resumo_usuario($conn, $uid) : null;
+
 $banners = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 $bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
@@ -461,7 +464,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <div class="flex justify-between items-end">
 <div class="space-y-1">
 <p class="font-label-bold text-white/70 tracking-widest">•••• •••• •••• <?php echo htmlspecialchars($final); ?></p>
-<p class="font-label-caps text-white/50">VALIDADE 08/25</p>
+<p class="font-label-caps text-white/50">VALIDADE <?php echo !empty($u['cartao_validade']) ? date('m/y', strtotime($u['cartao_validade'])) : '--/--'; ?></p>
 </div>
 <div class="flex flex-col items-end">
 <span class="font-display-lg text-white/20 text-[28px] font-extrabold italic">Economic</span>
@@ -489,6 +492,48 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </div>
 </div>
 </div>
+<?php endif; ?>
+<?php if ($resumoPlano && !empty($resumoPlano['contrato'])): ?>
+<!-- Plano Mensal: adesão + mensalidades -->
+<?php
+$totalCobrancasPlano = max(1, (int)($resumoPlano['total_cobrancas'] ?? 1));
+$qtdMensalidadesPlano = max(1, (int)($resumoPlano['qtd_mensalidades'] ?? 1));
+$planoQuitado = ((int)$resumoPlano['pagas'] >= $totalCobrancasPlano);
+?>
+<section class="mt-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm">
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1;">receipt_long</span>
+<p class="font-label-bold text-on-surface">PLANO MENSAL</p>
+</div>
+<?php if ($planoQuitado): ?>
+<span class="text-[10px] font-bold text-secondary bg-secondary-container/40 rounded-full px-2 py-0.5"><?php echo $totalCobrancasPlano; ?>/<?php echo $totalCobrancasPlano; ?> QUITADO</span>
+<?php else: ?>
+<span class="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5"><?php echo (int)$resumoPlano['pagas']; ?>/<?php echo $totalCobrancasPlano; ?> PAGAS</span>
+<?php endif; ?>
+</div>
+<div class="space-y-1.5">
+<?php foreach ($resumoPlano['cobrancas'] as $seq => $cob): $statusVisualCob = $cob['status_visual'] ?? plano_status_visual_cobranca($cob); ?>
+<div class="flex items-center justify-between gap-2 text-[12px]">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] <?php echo $cob['status'] === 'pago' ? 'text-secondary' : ($statusVisualCob === 'atrasada' ? 'text-error' : 'text-outline'); ?>" style="font-variation-settings:'FILL' 1;"><?php echo $cob['status'] === 'pago' ? 'check_circle' : 'schedule'; ?></span>
+<span class="text-on-surface"><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></span>
+</div>
+<div class="text-right">
+<span class="font-bold text-on-surface">R$ <?php echo number_format((float)$cob['valor'], 2, ',', '.'); ?></span>
+<span class="text-on-surface-variant"> · <?php echo htmlspecialchars(plano_rotulo_status_cobranca($statusVisualCob)); ?><?php echo !empty($cob['pago_em']) ? ' em ' . date('d/m/Y', strtotime($cob['pago_em'])) : ''; ?></span>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+<div class="mt-3 pt-3 border-t border-outline-variant/30 text-[11px] text-on-surface-variant flex flex-wrap gap-x-4 gap-y-1">
+<span>Ativação: <b class="text-on-surface"><?php echo !empty($resumoPlano['ativado_em']) ? date('d/m/Y', strtotime($resumoPlano['ativado_em'])) : '-'; ?></b></span>
+<span>Vencimento: <b class="text-on-surface"><?php echo !empty($resumoPlano['validade_ate']) ? date('d/m/Y', strtotime($resumoPlano['validade_ate'])) : '-'; ?></b></span>
+<span>Adesão: <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_adesao'], 2, ',', '.'); ?></b></span>
+<span>Mensalidade: <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_mensal'], 2, ',', '.'); ?></b></span>
+<span>Total (<?php echo $qtdMensalidadesPlano + 1; ?> cobranças): <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_total'], 2, ',', '.'); ?></b></span>
+</div>
+</section>
 <?php endif; ?>
 <!-- Quick Access Bento Grid -->
 <section class="space-y-sm">
@@ -654,33 +699,21 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </section>
 </main>
 <!-- BottomNavBar -->
-<nav class="fixed bottom-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-t border-outline-variant/30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
-<div class="flex justify-around items-center w-full py-2 px-2">
-<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1.5 active:scale-90 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
-<span class="font-label-bold mt-1">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="parceiros.php">
-<span class="material-symbols-outlined">storefront</span>
-<span class="font-label-bold mt-1">Parceiros</span>
-</a>
-<?php if ($ehDep): ?>
-<button type="button" onclick="abrirAtendimento()" class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200">
-<span class="material-symbols-outlined">support_agent</span>
-<span class="font-label-bold mt-1">Atendimento</span>
-</button>
-<?php else: ?>
-<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="ativar.php">
-<span class="material-symbols-outlined">credit_card</span>
-<span class="font-label-bold mt-1">Cartão</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="perfil.php">
-<span class="material-symbols-outlined">person</span>
-<span class="font-label-bold mt-1">Perfil</span>
-</a>
-<?php endif; ?>
-</div>
-</nav>
+<?php
+require_once __DIR__ . '/bottom_nav.php';
+$navInferior = [
+    ['href' => 'dashboard.php', 'icone' => 'home', 'label' => 'Home', 'ativo' => true],
+    ['href' => 'parceiros.php', 'icone' => 'storefront', 'label' => 'Parceiros'],
+];
+if ($ehDep) {
+    $navInferior[] = ['tipo' => 'button', 'onclick' => 'abrirAtendimento()', 'icone' => 'support_agent', 'label' => 'Atendimento'];
+} else {
+    $navInferior[] = ['href' => 'ativar.php', 'icone' => 'credit_card', 'label' => 'Cartão'];
+    $navInferior[] = ['href' => 'perfil.php', 'icone' => 'person', 'label' => 'Perfil'];
+}
+app_bottom_nav($navInferior);
+unset($navInferior);
+?>
 <!-- Fullscreen Card Overlay -->
 <div class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-md items-center justify-center p-6" id="fullscreenCard">
 <button class="absolute top-6 right-6 material-symbols-outlined text-white/80 text-3xl" onclick="fecharFullscreen()">close</button>
@@ -704,7 +737,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <div class="flex justify-between items-end">
 <div class="space-y-1">
 <p class="font-label-bold text-white/70 tracking-widest">•••• •••• •••• <?php echo htmlspecialchars($final); ?></p>
-<p class="font-label-caps text-white/50">VALIDADE 08/25</p>
+<p class="font-label-caps text-white/50">VALIDADE <?php echo !empty($u['cartao_validade']) ? date('m/y', strtotime($u['cartao_validade'])) : '--/--'; ?></p>
 </div>
 <div class="flex flex-col items-end">
 <span class="font-display-lg text-white/20 text-[40px] font-extrabold italic">Economic</span>

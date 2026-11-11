@@ -286,26 +286,15 @@ if (!function_exists('fmtWhats')) {
 </div>
 
 <!-- BottomNavBar -->
-<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md border-t border-outline-variant/30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-<div class="flex justify-around items-center w-full py-2 pb-safe px-2">
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined">home</span>
-<span class="font-label-bold text-label-bold mt-1">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="parceiros.php">
-<span class="material-symbols-outlined">storefront</span>
-<span class="font-label-bold text-label-bold mt-1">Parceiros</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="ativar.php">
-<span class="material-symbols-outlined">credit_card</span>
-<span class="font-label-bold text-label-bold mt-1">Cartão</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="perfil.php">
-<span class="material-symbols-outlined">person</span>
-<span class="font-label-bold text-label-bold mt-1">Perfil</span>
-</a>
-</div>
-</nav>
+<?php
+require_once __DIR__ . '/bottom_nav.php';
+app_bottom_nav([
+    ['href' => 'dashboard.php', 'icone' => 'home', 'label' => 'Home'],
+    ['href' => 'parceiros.php', 'icone' => 'storefront', 'label' => 'Parceiros'],
+    ['href' => 'ativar.php', 'icone' => 'credit_card', 'label' => 'Cartão'],
+    ['href' => 'perfil.php', 'icone' => 'person', 'label' => 'Perfil', 'ativo' => true],
+]);
+?>
 <script>
         const deps = <?php echo json_encode($depArr, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 

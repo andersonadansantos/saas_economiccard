@@ -163,24 +163,15 @@ if ($cat !== '' && $cat !== 'Tudo') { $qs .= '&cat=' . urlencode($cat); }
 <?php endif; ?>
 </main>
 <!-- Bottom Navigation Bar -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 pb-safe bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-xl shadow-md rounded-t-xl">
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all active:scale-90 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined mb-1">home</span>
-<span class="font-label-bold text-label-bold">Início</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-4 py-1 transition-all active:scale-90 duration-200" href="parceiros.php">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">storefront</span>
-<span class="font-label-bold text-label-bold">Lojas</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all active:scale-90 duration-200" href="ativar.php">
-<span class="material-symbols-outlined mb-1">credit_card</span>
-<span class="font-label-bold text-label-bold">Cartão</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all active:scale-90 duration-200" href="perfil.php">
-<span class="material-symbols-outlined mb-1">person</span>
-<span class="font-label-bold text-label-bold">Perfil</span>
-</a>
-</nav>
+<?php
+require_once __DIR__ . '/bottom_nav.php';
+app_bottom_nav([
+    ['href' => 'dashboard.php', 'icone' => 'home', 'label' => 'Início'],
+    ['href' => 'parceiros.php', 'icone' => 'storefront', 'label' => 'Lojas', 'ativo' => true],
+    ['href' => 'ativar.php', 'icone' => 'credit_card', 'label' => 'Cartão'],
+    ['href' => 'perfil.php', 'icone' => 'person', 'label' => 'Perfil'],
+]);
+?>
 <script>
         document.querySelectorAll('.partner-card-shadow').forEach(card => {
             card.addEventListener('mousedown', () => { card.style.transform = 'scale(0.98)'; });

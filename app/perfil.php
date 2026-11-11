@@ -69,6 +69,7 @@ $stmt->bind_param('i', $uid);
 $stmt->execute();
 $u = $stmt->get_result()->fetch_assoc();
 if (!$u) { header('Location: logout.php'); exit; }
+$resumoPlano = plano_resumo_usuario($conn, $uid);
 ?>
 <!DOCTYPE html><html class="light" lang="pt-BR"><head>
 <meta charset="utf-8">
@@ -141,6 +142,49 @@ if (!$u) { header('Location: logout.php'); exit; }
 <?php if (isset($avErro) && $avErro !== ''): ?>
 <div class="mb-md p-md rounded-xl bg-error-container/30 border border-error/30 text-on-error-container font-headline-sm text-center"><?php echo htmlspecialchars($avErro); ?></div>
 <?php endif; ?>
+<section class="mb-lg bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm">
+<?php
+$totalCobrancasPlano = max(1, (int)($resumoPlano['total_cobrancas'] ?? 1));
+$qtdMensalidadesPlano = max(1, (int)($resumoPlano['qtd_mensalidades'] ?? 1));
+$planoQuitado = ((int)$resumoPlano['pagas'] >= $totalCobrancasPlano);
+?>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1;">credit_score</span>
+<p class="font-label-bold text-on-surface">MEU PLANO</p>
+</div>
+<?php if ($planoQuitado): ?>
+<span class="text-[10px] font-bold text-secondary bg-secondary-container/40 rounded-full px-2 py-0.5"><?php echo $totalCobrancasPlano; ?>/<?php echo $totalCobrancasPlano; ?> QUITADO</span>
+<?php else: ?>
+<span class="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5"><?php echo (int)$resumoPlano['pagas']; ?>/<?php echo $totalCobrancasPlano; ?> PAGAS</span>
+<?php endif; ?>
+</div>
+<div class="text-[12px] text-on-surface-variant mb-2">
+Adesão <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_adesao'], 2, ',', '.'); ?></b>
+· <?php echo $qtdMensalidadesPlano; ?> mensalidade<?php echo $qtdMensalidadesPlano === 1 ? '' : 's'; ?> de <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_mensal'], 2, ',', '.'); ?></b>
+· Total <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_total'], 2, ',', '.'); ?></b>
+</div>
+<div class="space-y-1.5">
+<?php foreach ($resumoPlano['cobrancas'] as $seq => $cob): $statusVisualCob = $cob['status_visual'] ?? plano_status_visual_cobranca($cob); ?>
+<div class="flex items-center justify-between gap-2 text-[12px]">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] <?php echo $cob['status'] === 'pago' ? 'text-secondary' : ($statusVisualCob === 'atrasada' ? 'text-error' : 'text-outline'); ?>" style="font-variation-settings:'FILL' 1;"><?php echo $cob['status'] === 'pago' ? 'check_circle' : 'schedule'; ?></span>
+<span><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></span>
+</div>
+<div class="text-right">
+<span class="font-bold">R$ <?php echo number_format((float)$cob['valor'], 2, ',', '.'); ?></span>
+<span class="text-on-surface-variant"> · <?php echo htmlspecialchars(plano_rotulo_status_cobranca($statusVisualCob)); ?><?php echo !empty($cob['pago_em']) ? ' em ' . date('d/m/Y', strtotime($cob['pago_em'])) : ''; ?></span>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+<div class="mt-3 pt-3 border-t border-outline-variant/30 grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant">
+<div>Ativação<br><b class="text-on-surface"><?php echo !empty($resumoPlano['ativado_em']) ? date('d/m/Y', strtotime($resumoPlano['ativado_em'])) : '-'; ?></b></div>
+<div>Vencimento<br><b class="text-on-surface"><?php echo !empty($resumoPlano['validade_ate']) ? date('d/m/Y', strtotime($resumoPlano['validade_ate'])) : '-'; ?></b></div>
+<div>Status do cartão<br><b class="<?php echo $u['cartao_ativo'] ? 'text-secondary' : 'text-error'; ?>"><?php echo $u['cartao_ativo'] ? 'Ativo' : 'Inativo'; ?></b></div>
+<div>Tempo restante<br><b class="text-on-surface"><?php echo $resumoPlano['dias_restantes'] !== null ? (int)$resumoPlano['dias_restantes'] . ' dias' : '-'; ?></b></div>
+</div>
+</section>
 <form class="space-y-md" method="POST" action="perfil.php" enctype="multipart/form-data">
 <input type="hidden" name="avatar_atual" value="<?php echo htmlspecialchars($u['avatar'] ?? ''); ?>"/>
 <input type="file" id="avatarInput" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"/>
@@ -237,26 +281,15 @@ if (!$u) { header('Location: logout.php'); exit; }
 </form>
 </main>
 <!-- BottomNavBar -->
-<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md border-t border-outline-variant/30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-<div class="flex justify-around items-center w-full py-2 pb-safe px-2">
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined">home</span>
-<span class="font-label-bold text-label-bold mt-1">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="parceiros.php">
-<span class="material-symbols-outlined">storefront</span>
-<span class="font-label-bold text-label-bold mt-1">Parceiros</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-4 py-1.5 hover:opacity-80 transition-opacity active:scale-90 duration-200" href="ativar.php">
-<span class="material-symbols-outlined">credit_card</span>
-<span class="font-label-bold text-label-bold mt-1">Cartão</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-full px-4 py-1.5 active:scale-90 duration-200" href="perfil.php">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
-<span class="font-label-bold text-label-bold mt-1">Perfil</span>
-</a>
-</div>
-</nav>
+<?php
+require_once __DIR__ . '/bottom_nav.php';
+app_bottom_nav([
+    ['href' => 'dashboard.php', 'icone' => 'home', 'label' => 'Home'],
+    ['href' => 'parceiros.php', 'icone' => 'storefront', 'label' => 'Parceiros'],
+    ['href' => 'ativar.php', 'icone' => 'credit_card', 'label' => 'Cartão'],
+    ['href' => 'perfil.php', 'icone' => 'person', 'label' => 'Perfil', 'ativo' => true],
+]);
+?>
 <script>
         const cpfInput = document.getElementById('cpf');
         if (cpfInput) cpfInput.addEventListener('input', (e) => {

@@ -13,36 +13,11 @@ function responder($dados) {
     exit;
 }
 
-// Ativa o cartão do usuário e marca o pagamento como aprovado (compartilhado entre provedores).
+// Confirma o pagamento do plano pelo motor central: avança o contrato,
+// libera a próxima cobrança e ativa o cartão apenas após a última mensalidade.
+// Toda a operação é idempotente (notificações repetidas não duplicam nada).
 function aprovar_pagamento_local($conn, $pix) {
-    $uid = (int)$pix['usuario_id'];
-    require_once __DIR__ . '/app/email_sender.php';
-    $dias = 60;
-    if (!empty($pix['plano_id'])) {
-        $pl = $conn->query("SELECT dias FROM planos WHERE id = " . (int)$pix['plano_id'] . " AND ativo = 1")->fetch_assoc();
-        if ($pl) { $dias = (int)$pl['dias']; }
-    }
-    $validade = date('Y-m-d', strtotime('+' . $dias . ' days'));
-    $stmt = $conn->prepare("UPDATE usuarios SET cartao_ativo = 1, cartao_validade = ?, adesao_paga = 1 WHERE id = ?");
-    $stmt->bind_param('si', $validade, $uid);
-    $stmt->execute();
-
-    $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'approved' WHERE id = ?");
-    $stmt->bind_param('i', $pix['id']);
-    $stmt->execute();
-
-    // Parcela efetivamente paga: gera o crédito do AFILIADO que indicou
-    // o usuário (comissão por parcela, quando elegível) e o crédito do
-    // PARCEIRO (valor fixo por transação, sempre). Ambos idempotentes.
-    afiliado_registrar_credito_pagamento($conn, (int)$pix['id']);
-    parceiro_registrar_credito_pagamento($conn, (int)$pix['id']);
-
-    if ($conn->affected_rows > 0) {
-        $u = $conn->query("SELECT nome, email FROM usuarios WHERE id = $uid")->fetch_assoc();
-        if ($u && !empty($u['email'])) {
-            enviar_template_geral('cartao_ativado', ['nome' => $u['nome'], 'email' => $u['email']]);
-        }
-    }
+    return plano_marcar_pagamento_aprovado($conn, (int)$pix['id']);
 }
 
 $corpo = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -80,7 +55,7 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
         responder(['recebido' => true]);
     }
 
-    if ($status === 'approved' && $pix['status'] !== 'approved') {
+    if ($status === 'approved') {
         if (($pix['tipo'] ?? 'plano') === 'cartao_fisico') {
             // Taxa do cartão físico: registra o pedido + notifica o admin (na hora).
             $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'approved' WHERE id = ? AND status <> 'approved'");
@@ -98,10 +73,15 @@ if ($eventoAsaas !== '' && stripos($eventoAsaas, 'PAYMENT_') === 0 && !empty($co
         }
     } elseif ($status === 'refunded' && in_array($pix['status'], ['pending', 'approved'], true)) {
         // Reembolso/estorno: marca o pagamento como reembolsado e desfaz o
-        // crédito do afiliado e do parceiro (ajuste financeiro correto).
+        // crédito do afiliado e do parceiro (ajuste financeiro correto). Se o
+        // pagamento era de uma cobrança do plano, reabre a MESMA cobrança
+        // (não cria uma cobrança extra) e desfaz a ativação quando for a última.
         $stmt = $conn->prepare("UPDATE pagamentos_pix SET status = 'refunded' WHERE id = ?");
         $stmt->bind_param('i', $pix['id']);
         $stmt->execute();
+        if (($pix['tipo'] ?? 'plano') === 'plano') {
+            plano_registrar_estorno($conn, (int)$pix['id']);
+        }
         afiliado_estornar_credito_pagamento($conn, (int)$pix['id']);
         parceiro_estornar_credito_pagamento($conn, (int)$pix['id']);
     } elseif ($status === 'cancelled' && $pix['status'] === 'pending') {
