@@ -39,7 +39,7 @@ $sql = "SELECT c.*, u.nome, u.email, u.cartao_ativo, u.cartao_validade, u.adesao
         FROM planos_contratos c
         INNER JOIN usuarios u ON u.id = c.usuario_id
         WHERE c.status IN ('em_andamento','concluido')
-          AND (c.ativado_em IS NULL OR c.ativado_em = '' OR c.ativado_em = '0000-00-00')
+          AND c.ativado_em IS NULL
         ORDER BY c.id ASC";
 $res = $conn->query($sql);
 if (!$res) {
