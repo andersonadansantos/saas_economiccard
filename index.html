@@ -11,7 +11,12 @@
 <meta name="theme-color" content="#621872">
 <meta name="google-site-verification" content="">
 <link rel="canonical" href="https://economiccard.com.br/">
-<link rel="icon" type="image/png" href="screen.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/favicon/favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
+<link rel="manifest" href="assets/favicon/site.webmanifest">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -36,9 +41,6 @@
 <meta name="geo.region" content="BR">
 <meta name="geo.placename" content="Brasil">
 <meta name="ICBM" content="-14.235004, -51.92528">
-
-<!-- Favicon -->
-<link rel="apple-touch-icon" href="screen.png">
 
 <!-- Dados Estruturados (Schema.org) -->
 <script type="application/ld+json">
@@ -215,19 +217,40 @@
 <!-- Login Button -->
 <a href="web/" class="hidden md:inline-flex items-center gap-2 bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container px-5 py-2.5 rounded-full font-label-md text-label-md transition-all shadow-md hover:shadow-lg">
 <span class="material-symbols-outlined text-[18px]">login</span>
-<span>Login do Usuario</span>
+<span>Login</span>
+</a>
+<!-- Signup Button -->
+<a href="https://economiccard.com.br/app/cadastro.php" class="hidden md:inline-flex items-center gap-2 bg-[#ff8a1e] hover:bg-[#f07a0c] text-[#2c0633] px-5 py-2.5 rounded-full font-label-md text-label-md transition-all shadow-md hover:shadow-lg">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+<span>Cadastro</span>
 </a>
 <!-- Mobile Menu Toggle -->
-<button class="md:hidden text-on-surface p-2">
-<span class="material-symbols-outlined">menu</span>
+<button type="button" id="mobile-menu-toggle" class="md:hidden text-on-surface p-2 rounded-full cursor-pointer relative z-10" aria-label="Abrir menu de navegação" aria-controls="mobile-menu" aria-expanded="false">
+<span class="material-symbols-outlined" id="mobile-menu-icon" aria-hidden="true">menu</span>
 </button>
 </div>
+</div>
+<!-- Mobile Navigation Panel -->
+<div id="mobile-menu" class="mobile-menu-panel md:hidden" hidden>
+<nav class="mobile-menu-nav" aria-label="Navegação mobile">
+<a class="mobile-menu-link" href="#benefits">Benefícios</a>
+<a class="mobile-menu-link" href="#how-it-works">Como Funciona</a>
+<a class="mobile-menu-link" href="#app">Aplicativo</a>
+<a class="mobile-menu-link mobile-menu-link--login" href="web/">
+<span class="material-symbols-outlined text-[18px]" aria-hidden="true">login</span>
+<span>Login</span>
+</a>
+<a class="mobile-menu-link mobile-menu-link--signup" href="https://economiccard.com.br/app/cadastro.php">
+<span class="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
+<span>Cadastro</span>
+</a>
+</nav>
 </div>
 </header>
 <main>
 
 <!-- Hero Section -->
-<section class="relative bg-[#7F3088] text-white pt-12 pb-0 px-margin-mobile md:px-margin-desktop overflow-hidden">
+<section class="hero-section relative bg-[#7F3088] text-white pt-12 pb-0 px-margin-mobile md:px-margin-desktop overflow-hidden">
 <!-- Cubos decorativos 3D (fundo) -->
 <div class="hero-cubes" aria-hidden="true">
 <div class="hero-cube hero-cube--1">
@@ -521,10 +544,10 @@
             </div>
 
             <div class="pt-6 w-full text-left">
-                <button onclick="openModal()" class="bg-[#baf55b] hover:bg-[#a6db4f] text-[#121f00] px-8 py-4 rounded-full font-label-md text-label-md transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-bold max-w-xs">
+                <a href="https://play.google.com/store/apps/details?id=com.economiccard.mywebapp&amp;hl=pt_BR" target="_blank" rel="noopener noreferrer" class="bg-[#baf55b] hover:bg-[#a6db4f] text-[#121f00] px-8 py-4 rounded-full font-label-md text-label-md transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 font-bold max-w-xs">
                     <span class="material-symbols-outlined text-[20px]">smartphone</span>
                     <span>Baixe nosso App</span>
-                </button>
+                </a>
             </div>
         </div>
 
@@ -789,6 +812,53 @@
         }
 
         runLoop();
+    })();
+</script>
+<script>
+    // Menu hamburguer mobile: abre/fecha, fecha ao navegar, clicar fora ou Esc
+    (function () {
+        const toggle = document.getElementById('mobile-menu-toggle');
+        const menu = document.getElementById('mobile-menu');
+        const icon = document.getElementById('mobile-menu-icon');
+        if (!toggle || !menu) return;
+
+        function setOpen(open) {
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? 'Fechar menu de navegação' : 'Abrir menu de navegação');
+            menu.hidden = !open;
+            if (icon) icon.textContent = open ? 'close' : 'menu';
+        }
+
+        toggle.addEventListener('click', function (event) {
+            event.stopPropagation();
+            setOpen(menu.hidden);
+        });
+
+        menu.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                setOpen(false);
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (menu.hidden) return;
+            if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+                setOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !menu.hidden) {
+                setOpen(false);
+                toggle.focus();
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth >= 768 && !menu.hidden) {
+                setOpen(false);
+            }
+        });
     })();
 </script>
 <script src="js/hero-slider.js"></script>

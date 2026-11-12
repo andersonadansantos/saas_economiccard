@@ -439,3 +439,93 @@ body {
         transition: none !important;
     }
 }
+
+/* Hero: textura de grade sutil (linhas finas cruzadas, baixa opacidade) */
+.hero-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: clamp(28px, 4vw, 48px) clamp(28px, 4vw, 48px);
+    background-position: center top;
+}
+
+/* Menu de navegação mobile */
+.mobile-menu-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 49;
+    background-color: #fcfafb;
+    border-bottom: 1px solid rgba(216, 206, 217, 0.7);
+    box-shadow: 0 18px 30px -18px rgba(34, 26, 36, 0.35);
+    animation: mobile-menu-in 180ms ease-out;
+}
+.mobile-menu-panel[hidden] {
+    display: none;
+}
+.mobile-menu-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 20px 1rem;
+}
+.mobile-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 0;
+    color: #221a24;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    border-bottom: 1px solid rgba(216, 206, 217, 0.6);
+    transition: color 0.2s ease;
+}
+.mobile-menu-link:hover,
+.mobile-menu-link:focus-visible {
+    color: #621872;
+}
+.mobile-menu-link--login {
+    justify-content: center;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 0;
+    border-radius: 9999px;
+    background-color: #621872;
+    color: #ffffff;
+    font-weight: 600;
+}
+.mobile-menu-link--login:hover,
+.mobile-menu-link--login:focus-visible {
+    background-color: #7d338b;
+    color: #ffffff;
+}
+.mobile-menu-link--signup {
+    justify-content: center;
+    margin-top: 0.6rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 0;
+    border-radius: 9999px;
+    background-color: #ff8a1e;
+    color: #2c0633;
+    font-weight: 600;
+}
+.mobile-menu-link--signup:hover,
+.mobile-menu-link--signup:focus-visible {
+    background-color: #f07a0c;
+    color: #2c0633;
+}
+@keyframes mobile-menu-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mobile-menu-panel {
+        animation: none;
+    }
+}
