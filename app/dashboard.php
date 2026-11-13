@@ -196,7 +196,7 @@ foreach ($idsBroadcast as $mid) {
             border: 1px solid rgba(127, 115, 129, 0.4);
         }
     </style>
-<link rel="stylesheet" href="ui.css"/>
+<link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
 </head>
 <body class="font-body-md text-on-surface antialiased ec-body">
 <!-- Side Drawer Menu -->

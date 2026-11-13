@@ -75,7 +75,7 @@ $categorias = $conn->query("SELECT DISTINCT categoria FROM parceiros WHERE categ
         .partner-card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .glass-nav { backdrop-filter: blur(16px); }
     </style>
-<link rel="stylesheet" href="ui.css"/>
+<link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
 </head>
 <body class="bg-background text-on-background min-h-screen font-body-md ec-body">
 <!-- Top App Bar -->

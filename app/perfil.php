@@ -99,7 +99,7 @@ $resumoPlano = plano_resumo_usuario($conn, $uid);
 <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     </style>
-<link rel="stylesheet" href="ui.css"/>
+<link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
 </head>
 <body class="min-h-screen pb-32 ec-body">
 <!-- TopAppBar -->

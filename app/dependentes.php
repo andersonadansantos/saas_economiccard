@@ -120,7 +120,7 @@ if (!function_exists('fmtWhats')) {
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .fab-shadow { box-shadow: 0 8px 30px rgba(106, 37, 133, 0.15); }
     </style>
-<link rel="stylesheet" href="ui.css"/>
+<link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
 </head>
 <body class="min-h-screen pb-32 ec-body">
 <!-- TopAppBar -->

@@ -225,7 +225,7 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
         * { scroll-behavior: auto !important; }
     }
 </style>
-<link rel="stylesheet" href="ui.css"/>
+<link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
 </head>
 <body class="min-h-screen flex flex-col pb-24">
 
