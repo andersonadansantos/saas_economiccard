@@ -97,186 +97,203 @@ $resumoPlano = plano_resumo_usuario($conn, $uid);
         }
     </script>
 <style>
-        body { background-color: #f8f9fa; color: #191c1d; font-family: 'Inter', 'Manrope', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass-header { background: rgba(248, 249, 250, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .input-group:focus-within label { color: #51036d; }
-        .custom-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .fab-shadow { box-shadow: 0 8px 30px rgba(106, 37, 133, 0.15); }
     </style>
+<link rel="stylesheet" href="ui.css"/>
 </head>
-<body class="min-h-screen pb-32">
+<body class="min-h-screen pb-32 ec-body">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl shadow-sm h-16 flex items-center justify-between px-container-padding">
-<a class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high/50 transition-colors active:scale-95 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined text-primary">arrow_back</span>
+<header class="ec-appbar" id="appBar">
+<div class="ec-appbar__inner">
+<a class="ec-iconbtn" href="dashboard.php" aria-label="Voltar">
+<span class="material-symbols-outlined">arrow_back</span>
 </a>
-<h1 class="font-headline-md text-headline-md text-primary">Perfil</h1>
-<a class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high/50 transition-colors active:scale-95 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="text-[15px] font-extrabold text-on-surface tracking-tight">Perfil</span>
+<div class="ec-appbar__spacer"></div>
+<a class="ec-iconbtn ec-iconbtn--muted" href="dashboard.php" aria-label="Notificações">
+<span class="material-symbols-outlined">notifications</span>
 </a>
+</div>
 </header>
-<main class="pt-24 px-container-padding max-w-2xl mx-auto">
-<section class="flex flex-col items-center mb-lg">
-<div class="relative group">
-<div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white custom-shadow bg-surface-container-high flex items-center justify-center">
+<main class="ec-shell">
+<!-- Identificação -->
+<section class="ec-card ec-fade-in">
+<div class="ec-card__body" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:24px">
+<div class="relative">
+<div class="w-32 h-32 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center" style="box-shadow:0 0 0 3px #fff,0 0 0 6px rgba(182,245,112,.85)">
 <?php if ($u['avatar']): ?>
 <img class="w-full h-full object-cover" src="<?php echo htmlspecialchars(asset_url($u['avatar'])); ?>" alt="Foto de perfil" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
-<span class="material-symbols-outlined text-primary text-[48px] hidden" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="material-symbols-outlined text-primary text-[44px] hidden" style="font-variation-settings: 'FILL' 1;">person</span>
 <?php else: ?>
-<span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="material-symbols-outlined text-primary text-[44px]" style="font-variation-settings: 'FILL' 1;">person</span>
 <?php endif; ?>
 </div>
-<button type="button" class="absolute bottom-1 right-1 bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center fab-shadow border-2 border-white hover:scale-110 transition-transform active:scale-95" onclick="document.getElementById('avatarInput').click()">
-<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">edit</span>
+<button type="button" class="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center" style="border:2px solid #fff;box-shadow:0 10px 22px -12px rgba(81,3,109,.9)" onclick="document.getElementById('avatarInput').click()" aria-label="Alterar foto">
+<span class="material-symbols-outlined text-[19px]" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
 </button>
 </div>
-<div class="mt-sm text-center">
-<h2 class="font-headline-sm text-headline-sm text-on-surface"><?php echo htmlspecialchars($u['nome']); ?></h2>
-<p class="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase">Usuário do Cartão</p>
+<h2 class="ec-h2 mt-4"><?php echo htmlspecialchars($u['nome']); ?></h2>
+<span class="ec-chip ec-chip--primary mt-2">Usuário do cartão</span>
+<p class="ec-meta mt-2"><?php echo htmlspecialchars($u['email'] ?? ''); ?><?php echo !empty($u['cpf']) ? ' · CPF ' . htmlspecialchars($u['cpf']) : ''; ?></p>
 </div>
 </section>
 <?php if (isset($salvo) && $salvo): ?>
-<div class="mb-md p-md rounded-xl bg-secondary-container/30 border border-secondary/30 text-on-secondary-container font-headline-sm text-center">Dados salvos com sucesso!</div>
+<div class="ec-alert ec-alert--success"><span class="material-symbols-outlined text-[19px]">check_circle</span><span>Dados salvos com sucesso!</span></div>
 <?php endif; ?>
 <?php if (isset($avErro) && $avErro !== ''): ?>
-<div class="mb-md p-md rounded-xl bg-error-container/30 border border-error/30 text-on-error-container font-headline-sm text-center"><?php echo htmlspecialchars($avErro); ?></div>
+<div class="ec-alert ec-alert--error"><span class="material-symbols-outlined text-[19px]">error</span><span><?php echo htmlspecialchars($avErro); ?></span></div>
 <?php endif; ?>
-<section class="mb-lg bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm">
 <?php
 $totalCobrancasPlano = max(1, (int)($resumoPlano['total_cobrancas'] ?? 1));
 $qtdMensalidadesPlano = max(1, (int)($resumoPlano['qtd_mensalidades'] ?? 1));
 $planoQuitado = ((int)$resumoPlano['pagas'] >= $totalCobrancasPlano);
 ?>
-<div class="flex items-center justify-between gap-2 mb-3">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1;">credit_score</span>
-<p class="font-label-bold text-on-surface">MEU PLANO</p>
-</div>
+<section class="ec-section">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Meu plano</span>
 <?php if ($planoQuitado): ?>
-<span class="text-[10px] font-bold text-secondary bg-secondary-container/40 rounded-full px-2 py-0.5"><?php echo $totalCobrancasPlano; ?>/<?php echo $totalCobrancasPlano; ?> QUITADO</span>
+<span class="ec-chip ec-chip--success">Quitado</span>
 <?php else: ?>
-<span class="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5"><?php echo (int)$resumoPlano['pagas']; ?>/<?php echo $totalCobrancasPlano; ?> PAGAS</span>
+<span class="ec-chip ec-chip--primary"><?php echo (int)$resumoPlano['pagas']; ?>/<?php echo $totalCobrancasPlano; ?> pagas</span>
 <?php endif; ?>
 </div>
-<div class="text-[12px] text-on-surface-variant mb-2">
-Adesão <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_adesao'], 2, ',', '.'); ?></b>
-· <?php echo $qtdMensalidadesPlano; ?> mensalidade<?php echo $qtdMensalidadesPlano === 1 ? '' : 's'; ?> de <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_mensal'], 2, ',', '.'); ?></b>
-· Total <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_total'], 2, ',', '.'); ?></b>
+<div class="ec-card">
+<div class="ec-card__body">
+<div class="flex items-center gap-3">
+<span class="ec-tile ec-tile--soft"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">credit_score</span></span>
+<div class="min-w-0">
+<p class="text-[13px] font-extrabold text-on-surface leading-tight">Assinatura Economic Card</p>
+<p class="ec-meta mt-0.5">Adesão R$ <?php echo number_format((float)$resumoPlano['valor_adesao'], 2, ',', '.'); ?> · <?php echo $qtdMensalidadesPlano; ?>x R$ <?php echo number_format((float)$resumoPlano['valor_mensal'], 2, ',', '.'); ?></p>
 </div>
-<div class="space-y-1.5">
+</div>
+<div class="ec-progress mt-4">
+<div class="ec-progress__bar" style="width:<?php echo max(2, min(100, (int)round(((int)$resumoPlano['pagas'] / $totalCobrancasPlano) * 100))); ?>%"></div>
+</div>
+<div class="mt-2">
 <?php foreach ($resumoPlano['cobrancas'] as $seq => $cob): $statusVisualCob = $cob['status_visual'] ?? plano_status_visual_cobranca($cob); ?>
-<div class="flex items-center justify-between gap-2 text-[12px]">
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[15px] <?php echo $cob['status'] === 'pago' ? 'text-secondary' : ($statusVisualCob === 'atrasada' ? 'text-error' : 'text-outline'); ?>" style="font-variation-settings:'FILL' 1;"><?php echo $cob['status'] === 'pago' ? 'check_circle' : 'schedule'; ?></span>
-<span><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></span>
+<div class="flex items-center justify-between gap-3 py-2.5 border-b border-outline-variant/20 last:border-b-0">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[17px] <?php echo $cob['status'] === 'pago' ? 'text-secondary' : ($statusVisualCob === 'atrasada' ? 'text-error' : 'text-outline'); ?>" style="font-variation-settings:'FILL' 1;"><?php echo $cob['status'] === 'pago' ? 'check_circle' : 'schedule'; ?></span>
+<span class="text-[12.5px] text-on-surface truncate"><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></span>
 </div>
-<div class="text-right">
-<span class="font-bold">R$ <?php echo number_format((float)$cob['valor'], 2, ',', '.'); ?></span>
-<span class="text-on-surface-variant"> · <?php echo htmlspecialchars(plano_rotulo_status_cobranca($statusVisualCob)); ?><?php echo !empty($cob['pago_em']) ? ' em ' . date('d/m/Y', strtotime($cob['pago_em'])) : ''; ?></span>
+<div class="text-right shrink-0">
+<span class="text-[12.5px] font-bold text-on-surface">R$ <?php echo number_format((float)$cob['valor'], 2, ',', '.'); ?></span>
+<p class="text-[10.5px] text-on-surface-variant leading-tight"><?php echo htmlspecialchars(plano_rotulo_status_cobranca($statusVisualCob)); ?><?php echo !empty($cob['pago_em']) ? ' · ' . date('d/m/Y', strtotime($cob['pago_em'])) : ''; ?></p>
 </div>
 </div>
 <?php endforeach; ?>
 </div>
-<div class="mt-3 pt-3 border-t border-outline-variant/30 grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant">
-<div>Ativação<br><b class="text-on-surface"><?php echo !empty($resumoPlano['ativado_em']) ? date('d/m/Y', strtotime($resumoPlano['ativado_em'])) : '-'; ?></b></div>
-<div>Vencimento<br><b class="text-on-surface"><?php echo !empty($resumoPlano['validade_ate']) ? date('d/m/Y', strtotime($resumoPlano['validade_ate'])) : '-'; ?></b></div>
-<div>Status do cartão<br><b class="<?php echo $u['cartao_ativo'] ? 'text-secondary' : 'text-error'; ?>"><?php echo $u['cartao_ativo'] ? 'Ativo' : 'Inativo'; ?></b></div>
-<div>Tempo restante<br><b class="text-on-surface"><?php echo $resumoPlano['dias_restantes'] !== null ? (int)$resumoPlano['dias_restantes'] . ' dias' : '-'; ?></b></div>
+</div>
+<div class="ec-card__foot" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start">
+<div><p class="ec-meta">Ativação</p><p class="text-[12px] font-bold text-on-surface mt-0.5"><?php echo !empty($resumoPlano['ativado_em']) ? date('d/m/Y', strtotime($resumoPlano['ativado_em'])) : '-'; ?></p></div>
+<div><p class="ec-meta">Vencimento</p><p class="text-[12px] font-bold text-on-surface mt-0.5"><?php echo !empty($resumoPlano['validade_ate']) ? date('d/m/Y', strtotime($resumoPlano['validade_ate'])) : '-'; ?></p></div>
+<div><p class="ec-meta">Status do cartão</p><p class="text-[12px] font-bold mt-0.5 <?php echo $u['cartao_ativo'] ? 'text-secondary' : 'text-error'; ?>"><?php echo $u['cartao_ativo'] ? 'Ativo' : 'Inativo'; ?></p></div>
+<div><p class="ec-meta">Tempo restante</p><p class="text-[12px] font-bold text-on-surface mt-0.5"><?php echo $resumoPlano['dias_restantes'] !== null ? (int)$resumoPlano['dias_restantes'] . ' dias' : '-'; ?></p></div>
+<div class="col-span-2"><p class="ec-meta">Total (<?php echo $qtdMensalidadesPlano + 1; ?> cobranças)</p><p class="text-[12px] font-bold text-on-surface mt-0.5">R$ <?php echo number_format((float)$resumoPlano['valor_total'], 2, ',', '.'); ?></p></div>
+</div>
 </div>
 </section>
-<form class="space-y-md" method="POST" action="perfil.php" enctype="multipart/form-data">
+<form class="ec-section" method="POST" action="perfil.php" enctype="multipart/form-data">
 <input type="hidden" name="avatar_atual" value="<?php echo htmlspecialchars($u['avatar'] ?? ''); ?>"/>
 <input type="file" id="avatarInput" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"/>
+<div class="ec-section__head">
+<span class="ec-eyebrow">Dados pessoais</span>
+</div>
+<div class="ec-card">
+<div class="ec-card__body">
+<div class="flex flex-col gap-3.5">
 <?php if ($u['avatar']): ?>
-<label class="flex items-center gap-2 justify-center text-sm font-semibold text-error cursor-pointer mb-md">
+<label class="flex items-center gap-2 text-[12.5px] font-semibold text-error cursor-pointer">
 <input type="checkbox" name="remover_avatar" class="w-4 h-4 accent-error"> Remover foto de perfil
 </label>
 <?php endif; ?>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-card-gutter">
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">NOME COMPLETO</label>
+<div class="ec-field">
+<label class="ec-field__label" for="nome">Nome completo</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">person</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" name="nome" type="text" value="<?php echo htmlspecialchars($u['nome']); ?>" required/>
+<span class="material-symbols-outlined ec-field__icon">person</span>
+<input class="ec-input ec-input--icon" id="nome" name="nome" type="text" value="<?php echo htmlspecialchars($u['nome']); ?>" required/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">E-MAIL</label>
+<div class="ec-field">
+<label class="ec-field__label" for="email">E-mail</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">mail</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" name="email" type="email" value="<?php echo htmlspecialchars($u['email'] ?? ''); ?>"/>
+<span class="material-symbols-outlined ec-field__icon">mail</span>
+<input class="ec-input ec-input--icon" id="email" name="email" type="email" value="<?php echo htmlspecialchars($u['email'] ?? ''); ?>"/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">CPF</label>
+<div class="grid grid-cols-2 gap-3">
+<div class="ec-field">
+<label class="ec-field__label" for="cpf">CPF</label>
+<input class="ec-input" id="cpf" name="cpf" type="text" inputmode="numeric" value="<?php echo htmlspecialchars($u['cpf']); ?>" required/>
+</div>
+<div class="ec-field">
+<label class="ec-field__label" for="rg">RG</label>
+<input class="ec-input" id="rg" name="rg" type="text" value="<?php echo htmlspecialchars($u['rg'] ?? ''); ?>"/>
+</div>
+</div>
+<div class="ec-field">
+<label class="ec-field__label" for="nascimento">Data de nascimento</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">badge</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="cpf" name="cpf" type="text" value="<?php echo htmlspecialchars($u['cpf']); ?>" required/>
+<span class="material-symbols-outlined ec-field__icon">calendar_month</span>
+<input class="ec-input ec-input--icon" id="nascimento" name="nascimento" type="date" value="<?php echo htmlspecialchars($u['nascimento'] ?? ''); ?>"/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">RG</label>
+<div class="ec-field">
+<label class="ec-field__label" for="endereco">Endereço completo</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">fingerprint</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="rg" name="rg" type="text" value="<?php echo htmlspecialchars($u['rg'] ?? ''); ?>"/>
+<span class="material-symbols-outlined ec-field__icon">location_on</span>
+<input class="ec-input ec-input--icon" id="endereco" name="endereco" type="text" value="<?php echo htmlspecialchars($u['endereco'] ?? ''); ?>"/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">DATA DE NASC.</label>
+<div class="grid grid-cols-2 gap-3">
+<div class="ec-field">
+<label class="ec-field__label" for="cidade">Cidade</label>
+<input class="ec-input" id="cidade" name="cidade" type="text" value="<?php echo htmlspecialchars($u['cidade'] ?? ''); ?>"/>
+</div>
+<div class="ec-field">
+<label class="ec-field__label" for="cep">CEP</label>
+<input class="ec-input" id="cep" name="cep" type="text" inputmode="numeric" value="<?php echo htmlspecialchars($u['cep'] ?? ''); ?>"/>
+</div>
+</div>
+<div class="ec-field">
+<label class="ec-field__label" for="whatsapp">WhatsApp</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">calendar_month</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" name="nascimento" type="date" value="<?php echo htmlspecialchars($u['nascimento'] ?? ''); ?>"/>
+<span class="material-symbols-outlined ec-field__icon">call</span>
+<input class="ec-input ec-input--icon" id="whatsapp" name="whatsapp" type="tel" value="<?php echo htmlspecialchars($u['whatsapp'] ?? ''); ?>"/>
 </div>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">ENDEREÇO COMPLETO</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">location_on</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" name="endereco" type="text" value="<?php echo htmlspecialchars($u['endereco'] ?? ''); ?>"/>
 </div>
-</div>
-<div class="grid grid-cols-2 gap-card-gutter">
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">CIDADE</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">map</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" name="cidade" type="text" value="<?php echo htmlspecialchars($u['cidade'] ?? ''); ?>"/>
-</div>
-</div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">CEP</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">explore</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="cep" name="cep" type="text" value="<?php echo htmlspecialchars($u['cep'] ?? ''); ?>"/>
-</div>
-</div>
-</div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">WHATSAPP</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">call</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="whatsapp" name="whatsapp" type="tel" value="<?php echo htmlspecialchars($u['whatsapp'] ?? ''); ?>"/>
-</div>
-</div>
-<div class="pt-sm">
-<a class="w-full flex items-center justify-center gap-base font-label-bold text-label-bold text-primary py-2 hover:opacity-70 transition-opacity" href="gerar_contrato.php">
-<span class="material-symbols-outlined text-[18px]">download</span>
-                    BAIXAR CONTRATO DE USO DO CARTÃO
-                </a>
-</div>
-<div class="pt-md pb-lg">
-<button class="w-full bg-secondary hover:bg-on-secondary-container text-white rounded-full py-4 font-headline-sm text-headline-sm flex items-center justify-center gap-sm fab-shadow transition-all hover:scale-[1.02] active:scale-95" type="submit">
-                    SALVAR
-                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
+<div class="ec-card__foot" style="padding:14px 18px">
+<button class="ec-btn ec-btn--secondary ec-btn--block" type="submit">
+Salvar alterações
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
 </button>
 </div>
-<div class="border-t border-outline-variant/30 pt-md flex justify-center">
-<button class="flex items-center gap-xs font-label-bold text-label-bold text-error py-2 hover:bg-error-container/20 px-4 rounded-lg transition-colors" type="button" onclick="abrirEncerrar()">
-<span class="material-symbols-outlined text-[18px]">delete</span>
-                    EXCLUIR CONTA
-                </button>
+</div>
+<div class="ec-card ec-card--flush" style="margin-top:12px">
+<div style="padding:4px 10px">
+<a class="ec-row" href="gerar_contrato.php">
+<span class="ec-tile ec-tile--soft"><span class="material-symbols-outlined">description</span></span>
+<span class="ec-row__grow">
+<span class="block text-[13px] font-bold text-on-surface leading-tight">Contrato de uso do cartão</span>
+<span class="ec-meta">Baixar o documento em PDF</span>
+</span>
+<span class="material-symbols-outlined ec-row__chev">download</span>
+</a>
+</div>
+</div>
+<div class="ec-card ec-card--flush" style="margin-top:12px;border-color:rgba(186,26,26,.18)">
+<div style="padding:4px 10px">
+<button class="ec-row w-full text-left" type="button" onclick="abrirEncerrar()">
+<span class="ec-tile" style="background:rgba(186,26,26,.08);color:#93000a"><span class="material-symbols-outlined">delete</span></span>
+<span class="ec-row__grow">
+<span class="block text-[13px] font-bold text-error leading-tight">Excluir conta</span>
+<span class="ec-meta">Desativar o acesso ao cartão e benefícios</span>
+</span>
+<span class="material-symbols-outlined ec-row__chev">chevron_right</span>
+</button>
+</div>
 </div>
 </form>
 </main>
@@ -327,25 +344,25 @@ app_bottom_nav([
         }
     </script>
     <!-- Encerrar conta modal -->
-    <div class="hidden fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm items-center justify-center p-6" id="encerrarModal">
-    <div class="w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden border border-outline-variant/30">
-    <div class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-    <span class="material-symbols-outlined text-error text-[22px]" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
-    <span class="font-label-bold text-label-bold text-on-surface uppercase">Encerrar conta</span>
+    <div class="hidden fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm items-center justify-center p-5" id="encerrarModal">
+    <div class="ec-sheet">
+    <div class="ec-sheet__head">
+    <div class="flex items-center gap-2 min-w-0">
+    <span class="ec-tile" style="width:34px;height:34px;border-radius:11px;background:rgba(186,26,26,.08);color:#93000a"><span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1;">delete_forever</span></span>
+    <span class="text-[12.5px] font-extrabold text-on-surface uppercase tracking-wide truncate">Encerrar conta</span>
     </div>
-    <button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant/50 p-1.5 rounded-full" onclick="fecharEncerrar()">close</button>
+    <button class="ec-iconbtn ec-iconbtn--muted" style="width:34px;height:34px" onclick="fecharEncerrar()" aria-label="Fechar"><span class="material-symbols-outlined" style="font-size:20px">close</span></button>
     </div>
-    <div class="px-5 py-5">
-    <p class="font-body-md text-body-md text-on-surface-variant">Tem certeza que deseja <b class="text-error">encerrar sua conta</b> no Economic Card?</p>
-    <p class="font-body-md text-body-md text-on-surface-variant mt-2">Seu acesso ao cartão e aos benefícios será <b>desativado</b>. Esta ação pode ser revertida pela administração.</p>
+    <div class="ec-sheet__body">
+    <p class="text-[13.5px] leading-relaxed text-on-surface-variant">Tem certeza que deseja <b class="text-error">encerrar sua conta</b> no Economic Card?</p>
+    <p class="text-[13.5px] leading-relaxed text-on-surface-variant mt-2">Seu acesso ao cartão e aos benefícios será <b>desativado</b>. Esta ação pode ser revertida pela administração.</p>
     </div>
-    <div class="px-5 py-4 border-t border-outline-variant/30 flex items-center justify-end gap-3">
-    <button class="font-label-bold text-label-bold text-on-surface-variant hover:opacity-70 px-4 py-2" onclick="fecharEncerrar()">Cancelar</button>
-    <form method="POST" action="perfil.php">
+    <div class="ec-sheet__foot" style="justify-content:flex-end;gap:10px">
+    <button class="ec-btn ec-btn--ghost ec-btn--sm" type="button" onclick="fecharEncerrar()">Cancelar</button>
+    <form method="POST" action="perfil.php" style="margin:0">
     <input type="hidden" name="acao" value="encerrar_conta"/>
-    <button class="inline-flex items-center gap-2 font-label-bold text-label-bold text-on-error bg-error hover:bg-error-container px-5 py-2.5 rounded-full transition" type="submit">
-    <span class="material-symbols-outlined text-[18px]">logout</span> Sim, encerrar
+    <button class="ec-btn ec-btn--sm" type="submit" style="background:#93000a;color:#fff">
+    <span class="material-symbols-outlined" style="font-size:18px">logout</span> Sim, encerrar
     </button>
     </form>
     </div>

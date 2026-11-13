@@ -33,10 +33,6 @@ if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
     if ($d2 < $d1) $diasRestantes = 0;
 }
 
-// Contrato do plano único (mensalidades consecutivas) - leitura.
-$resumoPlano = (!$ehDep) ? plano_resumo_usuario($conn, $uid) : null;
-
-$banners = $conn->query("SELECT * FROM banners WHERE ativo = 1 ORDER BY id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 $bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
 $msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
@@ -200,64 +196,65 @@ foreach ($idsBroadcast as $mid) {
             border: 1px solid rgba(127, 115, 129, 0.4);
         }
     </style>
+<link rel="stylesheet" href="ui.css"/>
 </head>
-<body class="font-body-md text-on-surface antialiased">
+<body class="font-body-md text-on-surface antialiased ec-body">
 <!-- Side Drawer Menu -->
 <div class="hidden fixed inset-0 z-[90]" id="drawerMenu">
 <div class="absolute inset-0 bg-black/40" onclick="fecharMenu()"></div>
-<div class="absolute inset-y-0 left-0 w-72 bg-surface-container-lowest shadow-2xl flex flex-col">
-<div class="px-5 py-6 flex items-center justify-between border-b border-outline-variant/30">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-xl premium-gradient flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[22px]">credit_card</span>
+<div class="absolute inset-y-0 left-0 w-[300px] max-w-[86vw] bg-white rounded-r-[26px] flex flex-col" style="box-shadow:0 30px 70px -24px rgba(25,28,29,.5)">
+<div class="px-4 pt-5 pb-4 flex items-center justify-between gap-2 border-b border-outline-variant/20">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl premium-gradient flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white text-[19px]">credit_card</span>
 </div>
-<div>
-<h2 class="font-headline-sm text-headline-sm text-primary leading-tight">Economic Card</h2>
-<p class="font-label-caps text-label-caps text-on-surface-variant">Menu principal</p>
+<div class="min-w-0">
+<h2 class="text-[14px] font-extrabold text-on-surface leading-tight truncate">Economic Card</h2>
+<p class="ec-meta">Menu principal</p>
 </div>
 </div>
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded-full" onclick="fecharMenu()">close</button>
+<button class="ec-iconbtn ec-iconbtn--muted" onclick="fecharMenu()" aria-label="Fechar menu"><span class="material-symbols-outlined">close</span></button>
 </div>
-<div class="px-3 py-5 border-b border-outline-variant/30">
-<div class="flex items-center gap-3 px-3">
-<div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary border-2 border-secondary-container">
+<div class="px-4 py-4 border-b border-outline-variant/20">
+<div class="flex items-center gap-3 px-1">
+<div class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary shrink-0">
 <?php if ($avatarExib): ?>
 <img class="w-full h-full object-cover av-fallback-img" data-fallback="sidebar" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-sidebar').style.display='flex';"/>
-<span id="av-fallback-sidebar" class="material-symbols-outlined text-[26px] hidden" style="font-variation-settings:'FILL' 1;">person</span>
+<span id="av-fallback-sidebar" class="material-symbols-outlined text-[24px] hidden" style="font-variation-settings:'FILL' 1;">person</span>
 <?php else: ?>
-<span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">person</span>
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1;">person</span>
 <?php endif; ?>
 </div>
-<div>
-<p class="font-headline-sm text-[15px] text-on-surface"><?php echo htmlspecialchars($nomeExib); ?><?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/40 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></p>
-<p class="font-label-caps text-label-caps text-on-surface-variant"><?php echo $ehDep ? 'Dependente' : 'Usuário do Cartão'; ?></p>
+<div class="min-w-0">
+<p class="text-[14px] font-extrabold text-on-surface truncate"><?php echo htmlspecialchars($nomeExib); ?><?php if ($ehDep): ?> <span class="ec-chip ec-chip--primary" style="font-size:9px;padding:3px 7px;">Dependente</span><?php endif; ?></p>
+<p class="ec-meta mt-0.5"><?php echo $ehDep ? 'Dependente' : 'Usuário do Cartão'; ?></p>
 </div>
 </div>
 </div>
-<nav class="flex-1 px-3 py-4 space-y-1">
+<nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
 <?php if (!$ehDep): ?>
-<a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
-<span class="material-symbols-outlined text-primary">account_circle</span>
+<a href="perfil.php" class="ec-navitem">
+<span class="material-symbols-outlined">account_circle</span>
                         Perfil
                     </a>
-<a href="ativar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
-<span class="material-symbols-outlined text-secondary">credit_score</span>
+<a href="ativar.php" class="ec-navitem">
+<span class="material-symbols-outlined" style="color:#3e6a00">credit_score</span>
                         Ativar Cartão
                     </a>
-<a href="dependentes.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
-<span class="material-symbols-outlined text-primary">groups</span>
+<a href="dependentes.php" class="ec-navitem">
+<span class="material-symbols-outlined">groups</span>
                         Dependentes
                     </a>
 <?php endif; ?>
 <?php if (!empty($atendimento['whatsapp']) || !empty($atendimento['email'])): ?>
-<button type="button" onclick="fecharMenu(); abrirAtendimento();" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-on-surface hover:bg-surface-container-high/60 transition-colors">
-<span class="material-symbols-outlined text-primary">support_agent</span>
+<button type="button" onclick="fecharMenu(); abrirAtendimento();" class="ec-navitem w-full text-left">
+<span class="material-symbols-outlined">support_agent</span>
                         Central de atendimento
                     </button>
 <?php endif; ?>
 </nav>
-<div class="p-3 border-t border-outline-variant/30">
-<a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-xl font-body-md text-error hover:bg-error-container/30 transition-colors">
+<div class="p-3 border-t border-outline-variant/20">
+<a href="logout.php" class="ec-navitem ec-navitem--danger">
 <span class="material-symbols-outlined">logout</span>
                         Sair
                     </a>
@@ -265,43 +262,46 @@ foreach ($idsBroadcast as $mid) {
 </div>
 </div>
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-sm flex items-center justify-between px-container-padding h-20">
-<div class="flex items-center gap-4">
-<button class="material-symbols-outlined text-primary hover:bg-surface-container-high/50 transition-colors p-2 rounded-full active:scale-95 duration-200" onclick="abrirMenu()">
-            menu
-        </button>
+<header class="ec-appbar" id="appBar">
+<div class="ec-appbar__inner">
+<button class="ec-iconbtn" onclick="abrirMenu()" aria-label="Abrir menu">
+<span class="material-symbols-outlined">menu</span>
+</button>
 <?php if ($logoApp): ?>
-<img class="w-[100px] h-auto object-contain" src="<?php echo htmlspecialchars(asset_url($logoApp)); ?>" alt="Logo Economic Card"/>
+<a href="dashboard.php" class="ec-brand" aria-label="Início">
+<img src="<?php echo htmlspecialchars(asset_url($logoApp)); ?>" alt="Economic Card"/>
+</a>
 <?php else: ?>
-<div class="w-12 h-12 rounded-lg premium-gradient flex items-center justify-center">
-<span class="material-symbols-outlined text-white text-[24px]">credit_card</span>
-</div>
+<a href="dashboard.php" class="ec-brand" aria-label="Início">
+<span class="ec-brand__mark"><span class="material-symbols-outlined text-[20px]">credit_card</span></span>
+<span class="text-[14px] font-extrabold text-on-surface tracking-tight">Economic Card</span>
+</a>
 <?php endif; ?>
-<p class="text-[11px] text-on-surface-variant text-left leading-tight"><span class="block whitespace-nowrap">Não precisa estar doente para</span><span class="block whitespace-nowrap">usar o seu Economic card.</span></p>
-</div>
-<div class="flex items-center gap-2">
+<div class="ec-appbar__spacer"></div>
 <div class="relative" id="notifWrap">
-<button class="material-symbols-outlined text-primary hover:bg-surface-container-high/50 transition-colors p-2 rounded-full active:scale-95 duration-200" id="notifBtn">
-            notifications
-        </button>
+<button class="ec-iconbtn" id="notifBtn" aria-label="Mensagens e avisos">
+<span class="material-symbols-outlined">notifications</span>
+</button>
 <?php if ($naoLidas > 0): ?>
-<span class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-error text-on-error text-[9px] font-bold rounded-full flex items-center justify-center" id="notifBadge"><?php echo $naoLidas; ?></span>
+<span class="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 bg-error text-on-error text-[9px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-[#f8f9fa]" id="notifBadge"><?php echo $naoLidas; ?></span>
 <?php endif; ?>
-<div class="hidden absolute right-0 top-12 w-80 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/30 overflow-hidden z-50" id="notifPanel">
-<div class="px-4 py-3 border-b border-outline-variant/30">
-<span class="font-label-bold text-label-bold text-on-surface uppercase">MENSAGENS</span>
+<div class="hidden absolute right-0 top-[52px] w-[320px] max-w-[88vw] bg-white rounded-[20px] border border-outline-variant/40 z-50 overflow-hidden" style="box-shadow:0 24px 60px -28px rgba(25,28,29,.45)" id="notifPanel">
+<div class="px-4 py-3 border-b border-outline-variant/25 flex items-center justify-between">
+<span class="ec-eyebrow">Mensagens</span>
+<span class="material-symbols-outlined text-outline text-[18px]">mark_email_unread</span>
 </div>
-<div class="max-h-80 overflow-y-auto">
+<div class="max-h-[min(60vh,360px)] overflow-y-auto">
 <?php if ($mensagens->num_rows === 0): ?>
-<div class="px-4 py-8 text-center">
-<p class="font-body-md text-on-surface-variant">Nenhuma mensagem no momento.</p>
+<div class="px-4 py-10 text-center">
+<span class="material-symbols-outlined text-outline/60 text-[28px]">inbox</span>
+<p class="ec-meta mt-2">Nenhuma mensagem no momento.</p>
 </div>
 <?php endif; ?>
 <?php while ($m = $mensagens->fetch_assoc()): ?>
-<button type="button" class="w-full text-left px-4 py-3 border-b border-outline-variant/20 hover:bg-surface-container-high/40 transition-colors" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
-<p class="font-headline-sm text-[14px] text-on-surface"><?php echo htmlspecialchars($m['titulo']); ?></p>
-<p class="font-body-md text-[13px] text-on-surface-variant truncate"><?php echo htmlspecialchars($m['mensagem']); ?></p>
-<p class="font-label-caps text-[10px] text-outline mt-1"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
+<button type="button" class="w-full text-left px-4 py-3 border-b border-outline-variant/15 hover:bg-surface-container-high/40 transition-colors" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
+<p class="text-[13px] font-bold text-on-surface leading-snug"><?php echo htmlspecialchars($m['titulo']); ?></p>
+<p class="text-[12px] text-on-surface-variant truncate mt-0.5"><?php echo htmlspecialchars($m['mensagem']); ?></p>
+<p class="text-[10px] text-outline mt-1"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
 </button>
 <?php endwhile; ?>
 </div>
@@ -309,104 +309,35 @@ foreach ($idsBroadcast as $mid) {
 </div>
 </div>
 </header>
-<main class="pt-24 pb-28 px-container-padding space-y-md">
-<!-- Slide Topo Banners -->
-<?php if (!empty($bannersTopo)): ?>
-<div class="rounded-xl overflow-hidden" style="max-width:400px; margin:0 auto;">
-<div id="topoTrackApp" style="display:flex; flex-wrap:nowrap; will-change:transform;">
-<?php foreach ($bannersTopo as $bt): ?>
-<div style="flex:0 0 100%; min-width:100%;">
-<?php if (!empty($bt['link_externo'])): ?>
-<a href="<?php echo htmlspecialchars($bt['link_externo']); ?>" target="_blank" rel="noopener">
-<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[100px] object-cover rounded-xl"/>
-</a>
-<?php else: ?>
-<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[100px] object-cover rounded-xl"/>
-<?php endif; ?>
-</div>
-<?php endforeach; ?>
-</div>
-<?php if (count($bannersTopo) > 1): ?>
-<div class="flex justify-center gap-1 mt-2" id="topoDotsApp" style="pointer-events:auto;">
-<?php foreach ($bannersTopo as $i => $bt): ?><span class="w-1.5 h-1.5 rounded-full bg-gray-300/70 transition-all duration-300 cursor-pointer <?php echo $i === 0 ? '!w-4 !bg-primary' : ''; ?>" data-index="<?php echo $i; ?>" onclick="topoGoTo(<?php echo $i; ?>)"></span><?php endforeach; ?>
-</div>
-<?php endif; ?>
-</div>
-<script>
-(function(){
-var track=document.getElementById('topoTrackApp');
-if(!track)return;
-var items=Array.prototype.slice.call(track.children);
-if(items.length<2)return;
-var idx=0,total=items.length,auto;
-window.topoGoTo=function(i){goTo(i);};
-function goTo(i){idx=i;track.style.transition='transform .4s ease';track.style.transform='translateX('+(idx*-100)+'%)';updDots();}
-function next(){goTo((idx+1)%total);}
-function updDots(){var dots=document.querySelectorAll('#topoDotsApp span');dots.forEach(function(d,i){d.classList.toggle('!w-4',i===idx);d.classList.toggle('!bg-primary',i===idx);d.classList.toggle('!bg-gray-300',i!==idx);});}
-function startAuto(){auto=setInterval(next,4000);}
-startAuto();
-var x0=null;
-track.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;clearInterval(auto);},{passive:true});
-track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(dx<-40)goTo((idx+1)%total);else if(dx>40)goTo((idx-1+total)%total);startAuto();x0=null;});
-})();
-</script>
-<?php endif; ?>
-<!-- Quick Icons Row (3D IconScout) -->
-<div class="flex justify-center gap-4 py-2" style="max-width:400px; margin:0 auto;">
-<a href="parceiros.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-[48px] h-[48px] flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="Parceiros" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
-</div>
-<span class="text-[11px] font-semibold text-on-surface-variant">Parceiros</span>
-</a>
-<?php if (!$ehDep): ?>
-<a href="ativar.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-[48px] h-[48px] flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="Cartão" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
-</div>
-<span class="text-[11px] font-semibold text-on-surface-variant">Cartão</span>
-</a>
-<a href="perfil.php" class="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-<div class="w-[48px] h-[48px] flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="Perfil" class="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" loading="lazy"/>
-</div>
-<span class="text-[11px] font-semibold text-on-surface-variant">Perfil</span>
-</a>
-<?php endif; ?>
-<div class="flex flex-col items-center gap-1 relative">
-<div class="w-[48px] h-[48px] flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupon.png')); ?>" alt="Cupons" class="w-full h-full object-contain drop-shadow-lg"/>
-</div>
-<span class="text-[11px] font-semibold text-on-surface-variant">Cupons</span>
-<span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
-</div>
-<div class="flex flex-col items-center gap-1 relative">
-<div class="w-[48px] h-[48px] flex items-center justify-center">
-<img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt="Cursos" class="w-full h-full object-contain drop-shadow-lg"/>
-</div>
-<span class="text-[11px] font-semibold text-on-surface-variant">Cursos</span>
-<span class="absolute -top-1 -right-1 bg-primary text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">Em Breve</span>
-</div>
-</div>
-<!-- User Greeting -->
-<section class="flex items-center gap-3">
-<div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-secondary-container bg-surface-container-high flex items-center justify-center">
+<main class="ec-shell">
+<!-- Greeting -->
+<section class="ec-hero ec-fade-in">
+<div class="ec-hero__avatar">
 <?php if ($avatarExib): ?>
-<img class="w-full h-full object-cover av-fallback-img" data-fallback="greeting" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-greeting').style.display='flex';"/>
-<span id="av-fallback-greeting" class="material-symbols-outlined text-primary text-[24px] hidden">person</span>
+<img class="av-fallback-img" data-fallback="greeting" src="<?php echo htmlspecialchars($avatarExib); ?>" alt="Foto de perfil" onerror="this.style.display='none';document.getElementById('av-fallback-greeting').style.display='flex';"/>
+<span id="av-fallback-greeting" class="material-symbols-outlined hidden" style="font-variation-settings:'FILL' 1;">person</span>
 <?php else: ?>
-<span class="material-symbols-outlined text-primary text-[24px]">person</span>
+<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">person</span>
 <?php endif; ?>
 </div>
-<div class="space-y-xs min-w-0">
-<h2 class="font-headline-md text-headline-md text-on-surface truncate">Olá, <?php echo htmlspecialchars($primeiroNome); ?><?php if ($ehDep): ?> <span class="inline-flex items-center align-middle bg-secondary-container/40 text-secondary text-[11px] font-bold px-2 py-0.5 rounded-full">Dependente</span><?php endif; ?></h2>
-<p class="font-body-md text-on-surface-variant">Confira o status do seu benefício hoje.</p>
+<div class="min-w-0 flex-1">
+<p class="ec-eyebrow">Bem-vindo de volta</p>
+<h1 class="ec-h1 truncate mt-0.5">Olá, <?php echo htmlspecialchars($primeiroNome); ?></h1>
+<div class="flex items-center gap-2 mt-0.5">
+<p class="ec-sub truncate">Confira o status do seu benefício hoje.</p>
+<?php if ($ehDep): ?><span class="ec-chip ec-chip--primary shrink-0">Dependente</span><?php endif; ?>
+</div>
 </div>
 </section>
 <!-- Digital Card (The Centerpiece) -->
-<section class="relative group active:scale-[0.98] transition-transform duration-300" onclick="abrirFullscreen()">
+<section class="ec-section" style="margin-top:20px">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Seu cartão</span>
+<span class="ec-hint"><span class="material-symbols-outlined">touch_app</span> Toque para ampliar</span>
+</div>
+<div class="relative group active:scale-[0.99] transition-transform duration-300" onclick="abrirFullscreen()">
 <?php if ($cartaoImg): ?>
-<div class="relative rounded-xl shadow-[0_8px_30px_rgba(106,37,133,0.15)] overflow-hidden aspect-[1.58/1] cursor-pointer">
+<div class="relative rounded-[20px] overflow-hidden aspect-[1.58/1] cursor-pointer" style="box-shadow:0 18px 42px -26px rgba(81,3,109,.55)">
 <img class="absolute inset-0 w-full h-full object-contain" src="<?php echo htmlspecialchars(asset_url($cartaoImg)); ?>" alt="Cartão Economic Card"/>
 <div class="absolute inset-0 flex flex-col items-start justify-center gap-1.5 p-6 translate-y-[50px]">
 <p class="font-display-lg text-white text-[16px] truncate max-w-full text-left" style="text-shadow: 0 1px 4px rgba(0,0,0,0.6);"><?php echo htmlspecialchars($u['nome']); ?></p>
@@ -424,7 +355,7 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </div>
 </div>
 <?php else: ?>
-<div class="premium-gradient rounded-xl p-6 shadow-[0_8px_30px_rgba(106,37,133,0.15)] relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between cursor-pointer">
+<div class="premium-gradient rounded-[20px] p-6 relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between cursor-pointer" style="box-shadow:0 18px 42px -26px rgba(81,3,109,.55)">
 <!-- Decorative Shapes -->
 <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
 <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -473,230 +404,122 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 </div>
 </div>
 <?php endif; ?>
-</section>
-<!-- Interactive Hint -->
-<div class="mt-4 bg-secondary-container/20 py-3 rounded-lg flex items-center justify-center gap-2 border border-secondary-container/30">
-<span class="material-symbols-outlined text-secondary text-[18px]">touch_app</span>
-<span class="font-label-bold text-secondary">Clique no seu cartão para ampliar</span>
 </div>
+</section>
 <?php if ($u['cartao_ativo'] && $diasRestantes !== null): ?>
-<!-- Dias restantes -->
-<div class="mt-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 flex items-center justify-between shadow-sm">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1;">schedule</span>
-</div>
-<div>
-<p class="font-label-bold text-on-surface"><?php echo $diasRestantes > 0 ? ($diasRestantes === 1 ? '1 dia restante' : $diasRestantes . ' dias restantes') : 'Cartão expirado'; ?></p>
-<p class="font-label-caps text-on-surface-variant">Validade: <?php echo date('d/m/Y', strtotime($u['cartao_validade'])); ?></p>
-</div>
+<div class="ec-inline-stats">
+<span class="ec-inline-stats__icon"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">schedule</span></span>
+<div class="min-w-0">
+<p class="text-[12.5px] font-extrabold text-on-surface leading-tight"><?php echo $diasRestantes > 0 ? ($diasRestantes === 1 ? '1 dia restante' : $diasRestantes . ' dias restantes') : 'Cartão expirado'; ?></p>
+<p class="ec-meta mt-0.5">Validade em <?php echo date('d/m/Y', strtotime($u['cartao_validade'])); ?></p>
 </div>
 </div>
 <?php endif; ?>
-<?php if ($resumoPlano && !empty($resumoPlano['contrato'])): ?>
-<!-- Plano Mensal: adesão + mensalidades -->
-<?php
-$totalCobrancasPlano = max(1, (int)($resumoPlano['total_cobrancas'] ?? 1));
-$qtdMensalidadesPlano = max(1, (int)($resumoPlano['qtd_mensalidades'] ?? 1));
-$planoQuitado = ((int)$resumoPlano['pagas'] >= $totalCobrancasPlano);
-?>
-<section class="mt-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm">
-<div class="flex items-center justify-between gap-2 mb-3">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1;">receipt_long</span>
-<p class="font-label-bold text-on-surface">PLANO MENSAL</p>
+<!-- Atalhos -->
+<section class="ec-section">
+<div class="ec-card ec-card--flush">
+<div class="ec-shortcuts">
+<a href="parceiros.php" class="ec-shortcut">
+<span class="ec-shortcut__icon"><img src="<?php echo htmlspecialchars(asset_url('../img/icons/parceiros.png')); ?>" alt="" loading="lazy"/></span>
+<span class="ec-shortcut__label">Parceiros</span>
+</a>
+<?php if (!$ehDep): ?>
+<a href="ativar.php" class="ec-shortcut">
+<span class="ec-shortcut__icon"><img src="<?php echo htmlspecialchars(asset_url('../img/icons/cartao.png')); ?>" alt="" loading="lazy"/></span>
+<span class="ec-shortcut__label">Cartão</span>
+</a>
+<a href="perfil.php" class="ec-shortcut">
+<span class="ec-shortcut__icon"><img src="<?php echo htmlspecialchars(asset_url('../img/icons/perfil.png')); ?>" alt="" loading="lazy"/></span>
+<span class="ec-shortcut__label">Perfil</span>
+</a>
+<?php endif; ?>
+<div class="ec-shortcut" aria-label="Cupons — em breve">
+<span class="ec-shortcut__icon"><img src="<?php echo htmlspecialchars(asset_url('../img/icons/cupon.png')); ?>" alt=""/><span class="ec-shortcut__flag">Breve</span></span>
+<span class="ec-shortcut__label">Cupons</span>
 </div>
-<?php if ($planoQuitado): ?>
-<span class="text-[10px] font-bold text-secondary bg-secondary-container/40 rounded-full px-2 py-0.5"><?php echo $totalCobrancasPlano; ?>/<?php echo $totalCobrancasPlano; ?> QUITADO</span>
+<div class="ec-shortcut" aria-label="Cursos — em breve">
+<span class="ec-shortcut__icon"><img src="<?php echo htmlspecialchars(asset_url('../img/icons/cursos.png')); ?>" alt=""/><span class="ec-shortcut__flag">Breve</span></span>
+<span class="ec-shortcut__label">Cursos</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Access -->
+<section class="ec-section">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Acesso rápido</span>
+</div>
+<div class="ec-actions">
+<?php if (!$ehDep): ?>
+<a href="perfil.php" class="ec-action">
+<span class="ec-tile"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">account_circle</span></span>
+<span class="ec-action__label">Perfil</span>
+<span class="material-symbols-outlined ec-action__chev">chevron_right</span>
+</a>
+<a href="ativar.php" class="ec-action">
+<span class="ec-tile ec-tile--lime"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">credit_score</span></span>
+<span class="ec-action__label">Ativar cartão</span>
+<span class="material-symbols-outlined ec-action__chev">chevron_right</span>
+</a>
+<?php endif; ?>
+<a href="parceiros.php" class="ec-action">
+<span class="ec-tile"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">storefront</span></span>
+<span class="ec-action__label">Parceiros</span>
+<span class="material-symbols-outlined ec-action__chev">chevron_right</span>
+</a>
+<div class="ec-action ec-action--off" aria-label="Telemedicina — em breve">
+<span class="ec-tile"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">stethoscope</span></span>
+<span class="ec-action__label">Telemedicina</span>
+<span class="ec-chip ec-chip--neutral" style="font-size:8.5px;padding:4px 7px;">Breve</span>
+</div>
+</div>
+</section>
+<?php if (!empty($bannersTopo)): ?>
+<!-- Destaques -->
+<section class="ec-section">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Destaques</span>
+</div>
+<div class="relative overflow-hidden rounded-[20px]" style="box-shadow:0 16px 38px -28px rgba(25,28,29,.55)">
+<div id="topoTrackApp" style="display:flex; flex-wrap:nowrap; will-change:transform;">
+<?php foreach ($bannersTopo as $bt): ?>
+<div style="flex:0 0 100%; min-width:100%;">
+<?php if (!empty($bt['link_externo'])): ?>
+<a href="<?php echo htmlspecialchars($bt['link_externo']); ?>" target="_blank" rel="noopener">
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[136px] object-cover block"/>
+</a>
 <?php else: ?>
-<span class="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5"><?php echo (int)$resumoPlano['pagas']; ?>/<?php echo $totalCobrancasPlano; ?> PAGAS</span>
-<?php endif; ?>
-</div>
-<div class="space-y-1.5">
-<?php foreach ($resumoPlano['cobrancas'] as $seq => $cob): $statusVisualCob = $cob['status_visual'] ?? plano_status_visual_cobranca($cob); ?>
-<div class="flex items-center justify-between gap-2 text-[12px]">
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[15px] <?php echo $cob['status'] === 'pago' ? 'text-secondary' : ($statusVisualCob === 'atrasada' ? 'text-error' : 'text-outline'); ?>" style="font-variation-settings:'FILL' 1;"><?php echo $cob['status'] === 'pago' ? 'check_circle' : 'schedule'; ?></span>
-<span class="text-on-surface"><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></span>
-</div>
-<div class="text-right">
-<span class="font-bold text-on-surface">R$ <?php echo number_format((float)$cob['valor'], 2, ',', '.'); ?></span>
-<span class="text-on-surface-variant"> · <?php echo htmlspecialchars(plano_rotulo_status_cobranca($statusVisualCob)); ?><?php echo !empty($cob['pago_em']) ? ' em ' . date('d/m/Y', strtotime($cob['pago_em'])) : ''; ?></span>
-</div>
-</div>
-<?php endforeach; ?>
-</div>
-<div class="mt-3 pt-3 border-t border-outline-variant/30 text-[11px] text-on-surface-variant flex flex-wrap gap-x-4 gap-y-1">
-<span>Ativação: <b class="text-on-surface"><?php echo !empty($resumoPlano['ativado_em']) ? date('d/m/Y', strtotime($resumoPlano['ativado_em'])) : '-'; ?></b></span>
-<span>Vencimento: <b class="text-on-surface"><?php echo !empty($resumoPlano['validade_ate']) ? date('d/m/Y', strtotime($resumoPlano['validade_ate'])) : '-'; ?></b></span>
-<span>Adesão: <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_adesao'], 2, ',', '.'); ?></b></span>
-<span>Mensalidade: <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_mensal'], 2, ',', '.'); ?></b></span>
-<span>Total (<?php echo $qtdMensalidadesPlano + 1; ?> cobranças): <b class="text-on-surface">R$ <?php echo number_format((float)$resumoPlano['valor_total'], 2, ',', '.'); ?></b></span>
-</div>
-</section>
-<?php endif; ?>
-<!-- Quick Access Bento Grid -->
-<section class="space-y-sm">
-<h3 class="font-label-bold text-on-surface-variant uppercase tracking-wider">ACESSO RÁPIDO</h3>
-<div class="grid grid-cols-2 gap-card-gutter">
-<!-- Perfil -->
-<?php if (!$ehDep): ?>
-<a href="perfil.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
-<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[28px]">account_circle</span>
-</div>
-<span class="font-label-bold text-on-surface">PERFIL</span>
-</a>
-<?php endif; ?>
-<!-- Ativar Cartão -->
-<?php if (!$ehDep): ?>
-<a href="ativar.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
-<div class="w-12 h-12 rounded-full bg-secondary-container/40 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[28px]">credit_score</span>
-</div>
-<span class="font-label-bold text-on-surface">ATIVAR CARTÃO</span>
-</a>
-<?php endif; ?>
-<!-- Parceiros -->
-<a href="parceiros.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200">
-<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[28px]">storefront</span>
-</div>
-<span class="font-label-bold text-on-surface">PARCEIROS</span>
-</a>
-<!-- Cartão Físico -->
-<?php if (!$ehDep): ?>
-<a href="cartao_fisico.php" class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200 relative overflow-hidden">
-<div class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">OPCIONAL</div>
-<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[28px]">contactless</span>
-</div>
-<span class="font-label-bold text-on-surface">CARTÃO FÍSICO</span>
-</a>
-<?php endif; ?>
-<!-- Telemedicina -->
-<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center gap-3 relative overflow-hidden opacity-70 cursor-not-allowed">
-<div class="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary-container text-secondary text-[8px] font-bold rounded">EM BREVE</div>
-<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[28px]">stethoscope</span>
-</div>
-<span class="font-label-bold text-on-surface">TELEMEDICINA</span>
-</div>
-</div>
-</section>
-<!-- Promotional Banner -->
-<section class="space-y-sm">
-<h3 class="font-label-bold text-on-surface-variant uppercase tracking-wider">OFERTA ESPECIAL</h3>
-<?php if (!empty($banners)): ?>
-<div class="relative overflow-hidden rounded-xl shadow-lg">
-<div style="position:absolute; top:0; left:0; right:0; z-index:10; height:3px; background:rgba(0,0,0,.15); pointer-events:none;"><div id="bannerProgressApp" style="height:100%; width:0%;"></div></div>
-<div id="bannerTrackApp" style="display:flex; flex-wrap:nowrap; will-change:transform; gap:16px;">
-<?php foreach ($banners as $b): ?>
-<div class="relative group rounded-xl overflow-hidden shadow-sm" style="flex:0 0 85%; min-width:85%; position:relative;">
-<?php if (!empty($b['imagem'])): ?>
-<img class="w-full h-auto block object-contain" src="<?php echo htmlspecialchars(asset_url($b['imagem'] ?? '')); ?>" alt="Oferta especial"/>
-<?php endif; ?>
-<?php if (!empty($b['titulo']) || !empty($b['desconto']) || !empty($b['botao_texto'])): ?>
-<div class="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/40 to-transparent p-6 flex flex-col justify-center">
-<h4 class="text-white font-headline-sm max-w-[160px]"><?php echo htmlspecialchars($b['titulo'] ?? ''); ?></h4>
-<p class="text-secondary-container font-label-bold text-[16px] mt-1"><?php echo htmlspecialchars($b['desconto'] ?? ''); ?></p>
-<a class="mt-4 bg-secondary-container text-on-secondary-container px-6 py-2 rounded-full font-label-bold w-fit active:scale-95 duration-200 transition-all hover:brightness-110" href="<?php echo htmlspecialchars(!empty($b['link_externo']) ? $b['link_externo'] : asset_url($b['imagem'] ?? '')); ?>" target="_blank" rel="noopener">
-<?php echo htmlspecialchars($b['botao_texto'] ?? 'EU QUERO!'); ?>
-</a>
-</div>
+<img src="<?php echo htmlspecialchars(asset_url($bt['imagem'])); ?>" alt="" class="w-full h-[136px] object-cover block"/>
 <?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>
-<?php if (count($banners) > 1): ?>
-<div class="absolute bottom-3 left-0 right-0 z-10 flex items-center justify-center gap-1.5" style="pointer-events:none;">
-<?php foreach ($banners as $i => $b): ?><button type="button" class="ec-dot<?php echo $i === 0 ? ' ec-dot-ativo' : ''; ?>" data-dot="<?php echo $i; ?>" style="pointer-events:auto;" aria-label="Slide <?php echo $i + 1; ?>"></button><?php endforeach; ?>
+<?php if (count($bannersTopo) > 1): ?>
+<div class="absolute bottom-2.5 left-0 right-0 z-10 flex items-center justify-center gap-1.5" id="topoDotsApp" style="pointer-events:none;">
+<?php foreach ($bannersTopo as $i => $bt): ?><span class="rounded-full transition-all duration-300 cursor-pointer" data-index="<?php echo $i; ?>" onclick="topoGoTo(<?php echo $i; ?>)" style="pointer-events:auto;width:6px;height:6px;background:rgba(255,255,255,.5);box-shadow:0 1px 4px rgba(0,0,0,.3);<?php echo $i === 0 ? 'width:20px;background:#b6f570;' : ''; ?>"></span><?php endforeach; ?>
 </div>
-<style>
-    .ec-dot { width:6px; height:6px; border-radius:9999px; background:rgba(255,255,255,.45); transition:all .35s cubic-bezier(.22,1,.36,1); cursor:pointer; padding:0; border:none; box-shadow:0 1px 4px rgba(0,0,0,.3); }
-    .ec-dot-ativo { width:22px; background:#b6f570; }
-    #bannerProgressApp { background:#b6f570; }
-    @keyframes ec-progress { from { width:0%; } to { width:100%; } }
-</style>
+<?php endif; ?>
+</div>
 <script>
 (function(){
-    var track = document.getElementById('bannerTrackApp');
-    if (!track) return;
-    var feeds = Array.prototype.slice.call(track.children);
-    if (feeds.length < 2) return;
-    var realCount = feeds.length;
-    track.appendChild(feeds[0].cloneNode(true));
-    track.insertBefore(feeds[realCount - 1].cloneNode(true), track.firstChild);
-    var idx = 1;
-    var gap = 0;
-    var bar = document.getElementById('bannerProgressApp');
-    var dots = document.querySelectorAll('.ec-dot');
-    var container = track.parentElement;
-    var INTERVALO = 5000;
-    var hover = false;
-    function passo() { return track.children[1].offsetWidth + gap; }
-    function moverComTransicao() {
-        track.style.transition = 'transform 650ms cubic-bezier(0.22,1,0.36,1)';
-        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
-    }
-    function moverImediato() {
-        track.style.transition = 'none';
-        track.style.transform = 'translateX(' + (-(idx * passo())) + 'px)';
-        void track.offsetWidth;
-    }
-    function realAtual() { return (idx - 1 + realCount) % realCount; }
-    function atualizarDots() {
-        var r = realAtual();
-        dots.forEach(function(d, i) { d.classList.toggle('ec-dot-ativo', i === r); });
-    }
-    function reiniciarBarra() {
-        if (!bar) return;
-        bar.style.animation = 'none';
-        void bar.offsetWidth;
-        bar.style.animation = 'ec-progress ' + (INTERVALO / 1000) + 's linear forwards';
-        if (hover) bar.style.animationPlayState = 'paused';
-    }
-    function estabilizar() {
-        var mudou = false;
-        if (idx <= 0) { idx = realCount; mudou = true; }
-        else if (idx >= realCount + 1) { idx = 1; mudou = true; }
-        if (mudou) moverImediato();
-        atualizarDots();
-        reiniciarBarra();
-    }
-    function proximo() { idx++; moverComTransicao(); }
-    function anterior() { idx--; moverComTransicao(); }
-    function goPara(n) { idx = n + 1; moverComTransicao(); }
-    track.addEventListener('transitionend', estabilizar);
-    if (bar) bar.addEventListener('animationend', proximo);
-    container.addEventListener('mouseenter', function(){ hover = true; if (bar) bar.style.animationPlayState = 'paused'; });
-    container.addEventListener('mouseleave', function(){ hover = false; if (bar) bar.style.animationPlayState = 'running'; });
-    var x0 = null;
-    container.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; if (bar) bar.style.animationPlayState = 'paused'; }, {passive:true});
-    container.addEventListener('touchend', function(e){
-        if (x0 === null) { if (bar) bar.style.animationPlayState = 'running'; return; }
-        var dx = e.changedTouches[0].clientX - x0;
-        if (dx <= -40) proximo();
-        else if (dx >= 40) anterior();
-        else if (bar && !hover) bar.style.animationPlayState = 'running';
-        x0 = null;
-    });
-    dots.forEach(function(d, i) { d.addEventListener('click', function(){ goPara(i); }); });
-    function medir() {
-        gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-        moverImediato();
-    }
-    window.addEventListener('resize', medir);
-    medir();
-    atualizarDots();
-    reiniciarBarra();
+var track=document.getElementById('topoTrackApp');
+if(!track)return;
+var items=Array.prototype.slice.call(track.children);
+if(items.length<2)return;
+var idx=0,total=items.length,auto;
+window.topoGoTo=function(i){goTo(i);};
+function goTo(i){idx=i;track.style.transition='transform .4s cubic-bezier(.22,1,.36,1)';track.style.transform='translateX('+(idx*-100)+'%)';updDots();}
+function next(){goTo((idx+1)%total);}
+function updDots(){var dots=document.querySelectorAll('#topoDotsApp span');dots.forEach(function(d,i){d.style.width=i===idx?'20px':'6px';d.style.background=i===idx?'#b6f570':'rgba(255,255,255,.5)';});}
+function startAuto(){auto=setInterval(next,4000);}
+startAuto();
+var x0=null;
+track.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;clearInterval(auto);},{passive:true});
+track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;if(dx<-40)goTo((idx+1)%total);else if(dx>40)goTo((idx-1+total)%total);startAuto();x0=null;});
 })();
 </script>
-<?php endif; ?>
-<?php else: ?>
-<p class="text-sm text-on-surface-variant">Nenhuma oferta no momento.</p>
-<?php endif; ?>
 </section>
+<?php endif; ?>
 </main>
 <!-- BottomNavBar -->
 <?php
@@ -715,9 +538,9 @@ app_bottom_nav($navInferior);
 unset($navInferior);
 ?>
 <!-- Fullscreen Card Overlay -->
-<div class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-md items-center justify-center p-6" id="fullscreenCard">
-<button class="absolute top-6 right-6 material-symbols-outlined text-white/80 text-3xl" onclick="fecharFullscreen()">close</button>
-<div class="w-full max-w-md premium-gradient rounded-2xl p-8 shadow-2xl relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between">
+<div class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-md items-center justify-center p-5" id="fullscreenCard">
+<button class="ec-iconbtn" style="position:absolute;top:18px;right:18px;color:rgba(255,255,255,.85);background:rgba(255,255,255,.12)" onclick="fecharFullscreen()" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+<div class="w-full max-w-md premium-gradient rounded-[22px] p-8 shadow-2xl relative overflow-hidden aspect-[1.58/1] flex flex-col justify-between">
 <?php if ($cartaoImg): ?>
 <img class="w-full h-full object-contain rounded-2xl" src="<?php echo htmlspecialchars(asset_url($cartaoImg)); ?>" alt="Cartão Economic Card"/>
 <?php else: ?>
@@ -748,48 +571,48 @@ unset($navInferior);
 </div>
 </div>
 <!-- Mensagem Modal -->
-<div class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm items-center justify-center p-6" id="mensagemModal">
-<div class="w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 overflow-hidden">
-<div class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between gap-3">
+<div class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm items-center justify-center p-5" id="mensagemModal">
+<div class="ec-sheet">
+<div class="ec-sheet__head">
 <div class="flex items-center gap-2 min-w-0">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0" style="font-variation-settings: 'FILL' 1;">notifications</span>
-<span class="font-label-bold text-label-bold text-on-surface uppercase truncate" id="msgModalTitulo">MENSAGEM</span>
+<span class="ec-tile" style="width:34px;height:34px;border-radius:11px;"><span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1;">notifications</span></span>
+<span class="text-[12.5px] font-extrabold text-on-surface uppercase tracking-wide truncate" id="msgModalTitulo">MENSAGEM</span>
 </div>
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high/50 transition-colors p-1.5 rounded-full shrink-0" onclick="fecharMensagem()">close</button>
+<button class="ec-iconbtn ec-iconbtn--muted" style="width:34px;height:34px" onclick="fecharMensagem()" aria-label="Fechar"><span class="material-symbols-outlined" style="font-size:20px">close</span></button>
 </div>
-<div class="px-5 py-5 max-h-[60vh] overflow-y-auto">
-<p class="font-body-md text-on-surface-variant whitespace-pre-line" id="msgModalTexto"></p>
+<div class="ec-sheet__body max-h-[58vh] overflow-y-auto">
+<p class="text-[13.5px] leading-relaxed text-on-surface-variant whitespace-pre-line" id="msgModalTexto"></p>
 </div>
-<div class="px-5 py-4 border-t border-outline-variant/30 flex items-center justify-between">
-<span class="font-label-caps text-[11px] text-outline" id="msgModalData"></span>
-<button class="font-label-bold text-label-bold text-primary hover:opacity-80 transition-opacity active:scale-95" onclick="fecharMensagem()">Fechar</button>
+<div class="ec-sheet__foot">
+<span class="ec-meta" id="msgModalData"></span>
+<button class="ec-btn ec-btn--ghost ec-btn--sm" onclick="fecharMensagem()">Fechar</button>
 </div>
 </div>
 </div>
 <!-- Atendimento Modal -->
-<div class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-6" id="atendimentoModal">
-<div class="w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 overflow-hidden">
-<div class="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between gap-3">
+<div class="hidden fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm items-center justify-center p-5" id="atendimentoModal">
+<div class="ec-sheet">
+<div class="ec-sheet__head">
 <div class="flex items-center gap-2 min-w-0">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0" style="font-variation-settings: 'FILL' 1;">support_agent</span>
-<span class="font-label-bold text-label-bold text-on-surface uppercase truncate">Central de atendimento</span>
+<span class="ec-tile" style="width:34px;height:34px;border-radius:11px;"><span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1;">support_agent</span></span>
+<span class="text-[12.5px] font-extrabold text-on-surface uppercase tracking-wide truncate">Central de atendimento</span>
 </div>
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high/50 transition-colors p-1.5 rounded-full shrink-0" onclick="fecharAtendimento()">close</button>
+<button class="ec-iconbtn ec-iconbtn--muted" style="width:34px;height:34px" onclick="fecharAtendimento()" aria-label="Fechar"><span class="material-symbols-outlined" style="font-size:20px">close</span></button>
 </div>
-<div class="px-5 py-6 flex flex-col gap-3">
+<div class="ec-sheet__body flex flex-col gap-2.5">
 <?php if (!empty($atendimento['whatsapp'])): ?>
-<a href="https://wa.me/<?php echo htmlspecialchars(preg_replace('/\D/', '', $atendimento['whatsapp'])); ?>" target="_blank" class="flex items-center justify-center gap-3 px-4 py-4 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#128C7E] font-label-bold text-label-bold transition-colors active:scale-95 duration-200">
-<span class="material-symbols-outlined text-[22px]">chat</span> Falar pelo WhatsApp
+<a href="https://wa.me/<?php echo htmlspecialchars(preg_replace('/\D/', '', $atendimento['whatsapp'])); ?>" target="_blank" class="ec-btn ec-btn--outline ec-btn--block" style="justify-content:flex-start;color:#128C7E;border-color:rgba(37,211,102,.35);background:rgba(37,211,102,.08)">
+<span class="material-symbols-outlined">chat</span> Falar pelo WhatsApp
 </a>
 <?php endif; ?>
 <?php if (!empty($atendimento['email'])): ?>
-<a href="mailto:<?php echo htmlspecialchars($atendimento['email']); ?>" class="flex items-center justify-center gap-3 px-4 py-4 rounded-xl bg-primary/10 border border-primary/30 text-primary font-label-bold text-label-bold transition-colors active:scale-95 duration-200">
-<span class="material-symbols-outlined text-[22px]">mail</span> Enviar e-mail
+<a href="mailto:<?php echo htmlspecialchars($atendimento['email']); ?>" class="ec-btn ec-btn--outline ec-btn--block" style="justify-content:flex-start;color:var(--ec-primary);border-color:rgba(81,3,109,.25);background:rgba(81,3,109,.06)">
+<span class="material-symbols-outlined">mail</span> Enviar e-mail
 </a>
 <?php endif; ?>
 </div>
-<div class="px-5 py-4 border-t border-outline-variant/30 flex items-center justify-end">
-<button class="font-label-bold text-label-bold text-primary hover:opacity-80 transition-opacity active:scale-95" onclick="fecharAtendimento()">Fechar</button>
+<div class="ec-sheet__foot" style="justify-content:flex-end">
+<button class="ec-btn ec-btn--ghost ec-btn--sm" onclick="fecharAtendimento()">Fechar</button>
 </div>
 </div>
 </div>
@@ -875,5 +698,14 @@ unset($navInferior);
             el.classList.add('hidden');
             el.classList.remove('flex');
         }
+
+        // Estado de rolagem da barra superior (apenas apresentação)
+        (function () {
+            const barra = document.getElementById('appBar');
+            if (!barra) return;
+            const aoRolar = () => barra.classList.toggle('is-scrolled', window.scrollY > 8);
+            window.addEventListener('scroll', aoRolar, { passive: true });
+            aoRolar();
+        })();
     </script>
 </body></html>

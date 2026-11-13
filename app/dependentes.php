@@ -120,121 +120,146 @@ if (!function_exists('fmtWhats')) {
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .fab-shadow { box-shadow: 0 8px 30px rgba(106, 37, 133, 0.15); }
     </style>
+<link rel="stylesheet" href="ui.css"/>
 </head>
-<body class="min-h-screen pb-32">
+<body class="min-h-screen pb-32 ec-body">
 <!-- TopAppBar -->
-<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl shadow-sm h-16 flex items-center justify-between px-container-padding">
-<a class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high/50 transition-colors active:scale-95 duration-200" href="dashboard.php">
-<span class="material-symbols-outlined text-primary">arrow_back</span>
+<header class="ec-appbar" id="appBar">
+<div class="ec-appbar__inner">
+<a class="ec-iconbtn" href="dashboard.php" aria-label="Voltar">
+<span class="material-symbols-outlined">arrow_back</span>
 </a>
-<h1 class="font-headline-md text-headline-md text-primary">Dependentes</h1>
-<span class="w-10 h-10 flex items-center justify-center rounded-full text-primary">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">family_restroom</span>
-</span>
+<span class="text-[15px] font-extrabold text-on-surface tracking-tight">Dependentes</span>
+<div class="ec-appbar__spacer"></div>
+<span class="ec-chip ec-chip--neutral"><?php echo $qtdDep; ?>/5</span>
+</div>
 </header>
-<main class="pt-24 px-container-padding max-w-2xl mx-auto">
+<main class="ec-shell">
 
 <?php if ($salvo): ?>
-<div class="mb-md p-md rounded-xl bg-secondary-container/30 border border-secondary/30 text-on-secondary-container font-headline-sm text-center">Dependente cadastrado com sucesso!</div>
+<div class="ec-alert ec-alert--success"><span class="material-symbols-outlined text-[19px]">check_circle</span><span>Dependente cadastrado com sucesso!</span></div>
 <?php endif; ?>
 <?php if ($removido): ?>
-<div class="mb-md p-md rounded-xl bg-error-container/30 border border-error/30 text-on-error-container font-headline-sm text-center">Dependente removido.</div>
+<div class="ec-alert ec-alert--info"><span class="material-symbols-outlined text-[19px]">person_remove</span><span>Dependente removido.</span></div>
 <?php endif; ?>
 <?php if ($erro !== ''): ?>
-<div class="mb-md p-md rounded-xl bg-error-container/30 border border-error/30 text-on-error-container font-headline-sm text-center"><?php echo htmlspecialchars($erro); ?></div>
+<div class="ec-alert ec-alert--error"><span class="material-symbols-outlined text-[19px]">error</span><span><?php echo htmlspecialchars($erro); ?></span></div>
 <?php endif; ?>
 
 <!-- Status do limite -->
-<div class="mb-lg bg-white rounded-2xl border border-outline-variant/30 p-md card-shadow" style="box-shadow:0 4px 20px rgba(0,0,0,0.05);">
-<div class="flex items-center justify-between mb-sm">
-<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Dependentes cadastrados</p>
-<p class="font-headline-sm text-headline-sm text-primary"><?php echo $qtdDep; ?><span class="text-on-surface-variant text-[13px] font-normal">/5</span></p>
+<section>
+<div class="ec-card">
+<div class="ec-card__body" style="padding:16px 18px">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="ec-tile ec-tile--soft"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">groups</span></span>
+<div class="min-w-0">
+<p class="text-[13px] font-extrabold text-on-surface leading-tight">Dependentes cadastrados</p>
+<p class="ec-meta mt-0.5">Limite de 5 por cartão</p>
 </div>
-<div class="h-2 bg-surface-variant rounded-full overflow-hidden">
-<div class="h-2 bg-secondary rounded-full transition-all duration-500" style="width:<?php echo max(4, min(100, round($qtdDep / 5 * 100))); ?>%"></div>
+</div>
+<p class="text-[19px] font-extrabold text-primary leading-none ec-num"><?php echo $qtdDep; ?><span class="text-[12px] font-bold text-on-surface-variant">/5</span></p>
+</div>
+<div class="ec-progress mt-3.5">
+<div class="ec-progress__bar" style="width:<?php echo max(4, min(100, (int)round($qtdDep / 5 * 100))); ?>%"></div>
 </div>
 </div>
+</div>
+</section>
 
 <!-- Cadastro -->
-<section class="mb-lg bg-white rounded-2xl border border-outline-variant/30 p-lg" style="box-shadow:0 4px 20px rgba(0,0,0,0.05);">
-<h2 class="font-headline-md text-headline-md text-on-surface mb-sm">Cadastrar dependente</h2>
-<div class="flex items-center gap-base mb-md bg-primary/5 border border-primary/20 rounded-xl px-md py-sm">
-<span class="material-symbols-outlined text-primary text-[20px]">info</span>
-<p class="font-label-bold text-label-bold text-primary">Você pode cadastrar até 5 dependentes no seu cartão.</p>
+<section class="ec-section">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Cadastrar dependente</span>
 </div>
+<div class="ec-card">
+<div class="ec-card__body">
 <?php if ($qtdDep >= 5): ?>
-<div class="py-md text-center">
-<span class="material-symbols-outlined text-on-surface-variant text-[40px]">block</span>
-<p class="font-body-md text-on-surface-variant mt-sm">Limite de dependentes atingido. Nenhum novo cadastro é permitido.</p>
+<div class="text-center" style="padding:10px 4px">
+<span class="ec-tile" style="margin:0 auto;width:52px;height:52px;border-radius:16px"><span class="material-symbols-outlined">block</span></span>
+<p class="text-[13.5px] font-bold text-on-surface mt-3">Limite atingido</p>
+<p class="ec-meta mt-1">Você já possui 5 dependentes. Remova um para cadastrar outro.</p>
 </div>
 <?php else: ?>
-<form class="space-y-md" method="POST" action="dependentes.php">
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">NOME *</label>
+<div class="flex items-start gap-2" style="background:rgba(81,3,109,.05);border:1px solid rgba(81,3,109,.14);border-radius:14px;padding:11px 13px;margin-bottom:16px">
+<span class="material-symbols-outlined" style="font-size:18px;color:var(--ec-primary);flex:0 0 auto">info</span>
+<p class="text-[12px] leading-snug" style="color:var(--ec-primary)">Você pode cadastrar até 5 dependentes no seu cartão.</p>
+</div>
+<form method="POST" action="dependentes.php">
+<div class="flex flex-col gap-3.5">
+<div class="ec-field">
+<label class="ec-field__label" for="nome">Nome *</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">badge</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="nome" name="nome" type="text" maxlength="255" placeholder="Nome do dependente" required/>
+<span class="material-symbols-outlined ec-field__icon">badge</span>
+<input class="ec-input ec-input--icon" id="nome" name="nome" type="text" maxlength="255" placeholder="Nome do dependente" required/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">WHATSAPP</label>
+<div class="ec-field">
+<label class="ec-field__label" for="whatsapp">WhatsApp</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">call</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="whatsapp" name="whatsapp" type="tel" placeholder="(00) 00000-0000"/>
+<span class="material-symbols-outlined ec-field__icon">call</span>
+<input class="ec-input ec-input--icon" id="whatsapp" name="whatsapp" type="tel" placeholder="(00) 00000-0000"/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">CPF</label>
+<div class="ec-field">
+<label class="ec-field__label" for="cpf">CPF</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">credit_score</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="cpf" name="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"/>
+<span class="material-symbols-outlined ec-field__icon">credit_score</span>
+<input class="ec-input ec-input--icon" id="cpf" name="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"/>
 </div>
 </div>
-<div class="input-group relative">
-<label class="font-label-bold text-label-bold text-on-surface-variant ml-1 mb-base block">ENDEREÇO COMPLETO</label>
+<div class="ec-field">
+<label class="ec-field__label" for="endereco">Endereço completo</label>
 <div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">home_pin</span>
-<input class="w-full bg-[#F1F3F5] border-transparent border-b-2 border-b-transparent focus:border-b-primary focus:ring-0 rounded-xl py-3.5 pl-12 pr-4 font-body-md text-on-surface transition-all" id="endereco" name="endereco" type="text" maxlength="500" placeholder="Rua, número, bairro, cidade, estado e CEP"/>
+<span class="material-symbols-outlined ec-field__icon">home_pin</span>
+<input class="ec-input ec-input--icon" id="endereco" name="endereco" type="text" maxlength="500" placeholder="Rua, número, bairro, cidade, estado e CEP"/>
 </div>
 </div>
-<div class="pt-md pb-md">
-<button class="w-full bg-primary hover:bg-primary-container active:scale-95 text-on-primary rounded-full py-4 font-headline-sm text-headline-sm flex items-center justify-center gap-sm transition-all select-none" type="submit">
+<button class="ec-btn ec-btn--primary ec-btn--block" type="submit">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person_add</span>
-                    CADASTRAR DEPENDENTE
-                </button>
+Cadastrar dependente
+</button>
 </div>
 </form>
 <?php endif; ?>
+</div>
+</div>
 </section>
 
 <!-- Lista de dependentes -->
-<section>
-<h2 class="font-headline-md text-headline-md text-on-surface mb-sm">Seus dependentes</h2>
+<section class="ec-section">
+<div class="ec-section__head">
+<span class="ec-eyebrow">Seus dependentes</span>
+<span class="ec-meta ec-num"><?php echo $qtdDep; ?> cadastrado<?php echo $qtdDep === 1 ? '' : 's'; ?></span>
+</div>
 <?php if ($qtdDep === 0): ?>
-<div class="bg-white rounded-2xl border border-outline-variant/30 p-lg text-center" style="box-shadow:0 4px 20px rgba(0,0,0,0.05);">
-<span class="material-symbols-outlined text-on-surface-variant text-[44px]">groups</span>
-<p class="font-body-md text-on-surface-variant mt-sm">Nenhum dependente cadastrado ainda.</p>
+<div class="ec-card">
+<div class="ec-card__body" style="text-align:center;padding:34px 20px">
+<span class="ec-tile" style="margin:0 auto;width:52px;height:52px;border-radius:16px"><span class="material-symbols-outlined">groups</span></span>
+<p class="text-[13.5px] font-bold text-on-surface mt-3">Nenhum dependente cadastrado</p>
+<p class="ec-meta mt-1">Preencha o formulário acima para adicionar.</p>
+</div>
 </div>
 <?php else: ?>
-<div class="space-y-sm">
+<div class="ec-stack ec-stack--sm">
 <?php while ($dd = $dependentes->fetch_assoc()): ?>
-<div class="flex items-center gap-md bg-white rounded-2xl border border-outline-variant/30 p-2 pl-md" style="box-shadow:0 4px 20px rgba(0,0,0,0.05);">
-<button type="button" class="flex-1 flex items-center gap-md min-w-0 text-left" onclick="abrirDetalhe(<?php echo (int)$dd['id']; ?>)">
-<div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
-</div>
-<div class="flex-1 min-w-0">
-<p class="font-headline-sm text-headline-sm text-on-surface truncate"><?php echo htmlspecialchars($dd['nome']); ?></p>
-<p class="font-label-caps text-label-caps text-on-surface-variant mt-0.5"><?php echo htmlspecialchars(fmtCpf($dd['cpf']) ?: 'CPF não informado'); ?></p>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant shrink-0">chevron_right</span>
+<div class="ec-card">
+<div class="flex items-center gap-1" style="padding:8px 8px 8px 12px">
+<button type="button" class="flex-1 flex items-center gap-3 min-w-0 text-left" style="background:none;border:0;padding:0;cursor:pointer" onclick="abrirDetalhe(<?php echo (int)$dd['id']; ?>)">
+<span class="ec-avatar-sm" style="width:42px;height:42px"><span class="material-symbols-outlined" style="font-size:22px;font-variation-settings:'FILL' 1;">person</span></span>
+<span class="flex-1 min-w-0">
+<span class="block text-[13.5px] font-extrabold text-on-surface truncate"><?php echo htmlspecialchars($dd['nome']); ?></span>
+<span class="ec-meta block mt-0.5 ec-num"><?php echo htmlspecialchars(fmtCpf($dd['cpf']) ?: 'CPF não informado'); ?></span>
+</span>
+<span class="material-symbols-outlined" style="color:#b3aab8;font-size:20px;flex:0 0 auto">chevron_right</span>
 </button>
-<form method="POST" action="dependentes.php" class="shrink-0 pr-1" data-nome="<?php echo htmlspecialchars($dd['nome'], ENT_QUOTES); ?>" onsubmit="return confirmarExclusaoDep(event, this)">
+<form method="POST" action="dependentes.php" class="shrink-0" data-nome="<?php echo htmlspecialchars($dd['nome'], ENT_QUOTES); ?>" onsubmit="return confirmarExclusaoDep(event, this)">
 <input type="hidden" name="excluir_id" value="<?php echo (int)$dd['id']; ?>"/>
-<button type="submit" class="w-11 h-11 flex items-center justify-center rounded-full text-error hover:bg-error-container/40 transition active:scale-95 duration-200" title="Excluir dependente" aria-label="Excluir dependente">
-<span class="material-symbols-outlined">delete</span>
+<button type="submit" class="ec-iconbtn" style="width:38px;height:38px;color:#93000a;background:rgba(186,26,26,.06)" title="Excluir dependente" aria-label="Excluir dependente">
+<span class="material-symbols-outlined" style="font-size:19px">delete</span>
 </button>
 </form>
+</div>
 </div>
 <?php endwhile; ?>
 </div>
@@ -243,43 +268,42 @@ if (!function_exists('fmtWhats')) {
 </main>
 
 <!-- Modal de detalhes -->
-<div id="detalheModal" class="hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm items-center justify-center p-6">
-<div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-outline-variant overflow-hidden">
-<div class="px-5 py-4 border-b border-outline-variant flex items-center justify-between gap-3">
+<div id="detalheModal" class="hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm items-center justify-center p-5">
+<div class="ec-sheet">
+<div class="ec-sheet__head">
 <div class="flex items-center gap-2 min-w-0">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0" style="font-variation-settings: 'FILL' 1;">family_restroom</span>
-<span class="font-bold text-sm text-on-surface uppercase truncate">DADOS DO DEPENDENTE</span>
+<span class="ec-tile" style="width:34px;height:34px;border-radius:11px"><span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1;">family_restroom</span></span>
+<span class="text-[12.5px] font-extrabold text-on-surface uppercase tracking-wide truncate">Dados do dependente</span>
 </div>
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant/50 p-1.5 rounded-full shrink-0" onclick="fecharDetalhe()">close</button>
+<button class="ec-iconbtn ec-iconbtn--muted" style="width:34px;height:34px" onclick="fecharDetalhe()" aria-label="Fechar"><span class="material-symbols-outlined" style="font-size:20px">close</span></button>
 </div>
-<div class="px-5 py-5">
+<div class="ec-sheet__body">
 <div class="flex items-center gap-3 mb-4">
-<div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
-</div>
+<span class="ec-avatar-sm" style="width:48px;height:48px"><span class="material-symbols-outlined" style="font-size:24px;font-variation-settings:'FILL' 1;">person</span></span>
 <div class="min-w-0">
-<p class="font-headline-sm text-headline-sm text-on-surface truncate" id="det-nome"></p>
-<p class="text-[11px] text-on-surface-variant" id="det-criado"></p>
+<p class="text-[14px] font-extrabold text-on-surface truncate" id="det-nome"></p>
+<p class="ec-meta" id="det-criado"></p>
 </div>
 </div>
-<div class="space-y-2">
-<div class="flex items-start gap-3 bg-surface-container-low rounded-xl px-4 py-3">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0">credit_score</span>
-<div><p class="text-[11px] font-bold uppercase text-on-surface-variant">CPF</p><p class="text-sm font-semibold text-on-surface mt-0.5" id="det-cpf"></p></div>
+<div class="flex flex-col gap-2">
+<div class="flex items-start gap-3" style="background:#f4f5f6;border-radius:14px;padding:12px 14px">
+<span class="material-symbols-outlined" style="font-size:19px;color:var(--ec-primary);flex:0 0 auto">credit_score</span>
+<div class="min-w-0"><p class="ec-field__label">CPF</p><p class="text-[13px] font-bold text-on-surface mt-0.5 ec-num" id="det-cpf"></p></div>
 </div>
-<div class="flex items-start gap-3 bg-surface-container-low rounded-xl px-4 py-3">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0">call</span>
-<div><p class="text-[11px] font-bold uppercase text-on-surface-variant">WhatsApp</p><p class="text-sm font-semibold text-on-surface mt-0.5" id="det-whats"></p></div>
+<div class="flex items-start gap-3" style="background:#f4f5f6;border-radius:14px;padding:12px 14px">
+<span class="material-symbols-outlined" style="font-size:19px;color:var(--ec-primary);flex:0 0 auto">call</span>
+<div class="min-w-0"><p class="ec-field__label">WhatsApp</p><p class="text-[13px] font-bold text-on-surface mt-0.5" id="det-whats"></p></div>
 </div>
-<div class="flex items-start gap-3 bg-surface-container-low rounded-xl px-4 py-3">
-<span class="material-symbols-outlined text-primary text-[20px] shrink-0">home_pin</span>
-<div><p class="text-[11px] font-bold uppercase text-on-surface-variant">Endereço</p><p class="text-sm font-semibold text-on-surface mt-0.5" id="det-end"></p></div>
+<div class="flex items-start gap-3" style="background:#f4f5f6;border-radius:14px;padding:12px 14px">
+<span class="material-symbols-outlined" style="font-size:19px;color:var(--ec-primary);flex:0 0 auto">home_pin</span>
+<div class="min-w-0"><p class="ec-field__label">Endereço</p><p class="text-[13px] font-bold text-on-surface mt-0.5" id="det-end"></p></div>
 </div>
 </div>
 </div>
-<div class="px-5 py-4 border-t border-outline-variant flex items-center justify-end">
-<a class="inline-flex items-center gap-2 text-sm font-bold text-[#128C7E] hover:opacity-80 transition" id="det-whats-link" target="_blank" rel="noopener">
-<span class="material-symbols-outlined text-[18px]">chat</span> Falar no WhatsApp
+<div class="ec-sheet__foot" style="justify-content:space-between">
+<button class="ec-btn ec-btn--ghost ec-btn--sm" onclick="fecharDetalhe()">Fechar</button>
+<a class="ec-btn ec-btn--sm" style="background:rgba(37,211,102,.12);color:#128C7E;border:1px solid rgba(37,211,102,.35)" id="det-whats-link" target="_blank" rel="noopener">
+<span class="material-symbols-outlined">chat</span> WhatsApp
 </a>
 </div>
 </div>

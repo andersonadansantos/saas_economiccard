@@ -41,7 +41,6 @@
 <a href="parceiros.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold <?php echo $paginaAtiva === 'parceiros' ? 'bg-white/15' : 'hover:bg-white/10'; ?>"><span class="material-symbols-outlined">storefront</span> Parceiros</a>
 <?php if (!$ehDep): ?>
 <a href="ativar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold <?php echo $paginaAtiva === 'ativar' ? 'bg-white/15' : 'hover:bg-white/10'; ?>"><span class="material-symbols-outlined">credit_score</span> Ativar Cartão</a>
-<a href="cartao_fisico.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold <?php echo $paginaAtiva === 'cartao_fisico' ? 'bg-white/15' : 'hover:bg-white/10'; ?>"><span class="material-symbols-outlined">contactless</span> Cartão Físico</a>
 <a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold <?php echo $paginaAtiva === 'perfil' ? 'bg-white/15' : 'hover:bg-white/10'; ?>"><span class="material-symbols-outlined">person</span> Perfil</a>
 <a href="dependentes.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold <?php echo $paginaAtiva === 'dependentes' ? 'bg-white/15' : 'hover:bg-white/10'; ?>"><span class="material-symbols-outlined">groups</span> Dependentes</a>
 <?php endif; ?>

@@ -33,7 +33,7 @@ if (!$u['cartao_ativo']) {
         exit;
     }
 }
-if ($ehDep && in_array($paginaAtiva, ['perfil', 'ativar', 'cartao_fisico', 'dependentes'], true)) {
+if ($ehDep && in_array($paginaAtiva, ['perfil', 'ativar', 'dependentes'], true)) {
     header('Location: dashboard.php');
     exit;
 }
@@ -128,7 +128,6 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <?php else: ?>
 <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center"><span class="material-symbols-outlined text-white">credit_card</span></div>
 <?php endif; ?>
-<p class="text-[11px] text-white/80 text-left leading-tight"><span class="block whitespace-nowrap">Não precisa estar doente para</span><span class="block whitespace-nowrap">usar o seu Economic card.</span></p>
 </div>
 <nav class="flex-1 px-4 py-6 space-y-1">
 <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'dashboard' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
@@ -140,9 +139,6 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <?php if (!$ehDep): ?>
 <a href="ativar.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'ativar' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">credit_score</span> Ativar Cartão
-</a>
-<a href="cartao_fisico.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'cartao_fisico' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
-<span class="material-symbols-outlined">contactless</span> Cartão Físico
 </a>
 <a href="perfil.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $paginaAtiva === 'perfil' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">person</span> Perfil
@@ -186,7 +182,6 @@ $tituloPagina = $tituloPagina ?? 'Painel';
 <?php else: ?>
 <span class="material-symbols-outlined">credit_card</span>
 <?php endif; ?>
-<span class="text-[11px] text-white/90 leading-tight text-left"><span class="block whitespace-nowrap">Não precisa estar doente para</span><span class="block whitespace-nowrap">usar o seu Economic card.</span></span>
 </div>
 <div class="relative">
 <button class="p-2 rounded-lg hover:bg-white/10 relative" onclick="toggleNotif()"><span class="material-symbols-outlined">notifications</span></button>

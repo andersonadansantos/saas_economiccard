@@ -171,6 +171,7 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
         font-family: 'Inter', sans-serif;
         color: #191c1d;
         -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
     }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .premium-gradient { background: linear-gradient(135deg, #3c0352 0%, #51036d 45%, #7a2b9c 100%); }
@@ -224,6 +225,7 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
         * { scroll-behavior: auto !important; }
     }
 </style>
+<link rel="stylesheet" href="ui.css"/>
 </head>
 <body class="min-h-screen flex flex-col pb-24">
 
@@ -281,7 +283,7 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
 
 <div class="mt-1 mb-2 flex items-center gap-1.5 px-1">
 <span class="material-symbols-outlined text-[15px] text-primary">contactless</span>
-<span class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary/70">Seu cartão físico</span>
+<span class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary/70">Seu cartão</span>
 </div>
 
 <div class="relative">
@@ -383,7 +385,7 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
 <span class="material-symbols-outlined text-[20px] shrink-0 <?php echo $corIcone; ?>" style="font-variation-settings:'FILL' 1;"><?php echo $icone; ?></span>
 <div class="min-w-0">
 <p class="text-[13px] font-bold text-on-surface truncate"><?php echo htmlspecialchars(plano_rotulo_cobranca($seq, $cob['tipo'] ?? '')); ?></p>
-<p class="text-[10.5px] text-on-surface-variant truncate"><?php echo htmlspecialchars($descricao); ?><?php echo (!$cobPaga && !$cobAtual && !empty($cob['vencimento'])) ? ' · ' . date('d/m/Y', strtotime($cob['vencimento'])) : ''; ?></p>
+<p class="text-[10.5px] text-on-surface-variant leading-snug"><?php echo htmlspecialchars($descricao); ?><?php echo (!$cobPaga && !$cobAtual && !empty($cob['vencimento'])) ? ' · ' . date('d/m/Y', strtotime($cob['vencimento'])) : ''; ?></p>
 </div>
 </div>
 <div class="text-right shrink-0">
