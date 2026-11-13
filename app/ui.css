@@ -313,6 +313,16 @@ body.ec-body img, body.ec-body svg, body.ec-body video { max-width: 100%; }
 }
 .ec-action__chev { color: #b3aab8; font-size: 19px; flex: 0 0 auto; }
 .ec-action--off { opacity: 0.68; cursor: not-allowed; }
+.ec-action--flag { position: relative; }
+.ec-action__flag {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 3px 7px;
+    font-size: 8.5px;
+    z-index: 1;
+    pointer-events: none;
+}
 
 /* ------------------------------------------------------- atalhos (ícones 3D) */
 .ec-shortcuts {

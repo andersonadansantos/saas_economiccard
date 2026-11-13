@@ -467,10 +467,10 @@ foreach ($idsBroadcast as $mid) {
 <span class="ec-action__label">Parceiros</span>
 <span class="material-symbols-outlined ec-action__chev">chevron_right</span>
 </a>
-<div class="ec-action ec-action--off" aria-label="Telemedicina — em breve">
+<div class="ec-action ec-action--off ec-action--flag" aria-label="Telemedicina — em breve">
 <span class="ec-tile"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">stethoscope</span></span>
 <span class="ec-action__label">Telemedicina</span>
-<span class="ec-chip ec-chip--neutral" style="font-size:8.5px;padding:4px 7px;">Breve</span>
+<span class="ec-chip ec-chip--neutral ec-action__flag">Breve</span>
 </div>
 </div>
 </section>
