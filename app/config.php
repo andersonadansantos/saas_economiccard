@@ -127,6 +127,45 @@ function push_link_seguro($link) {
     return '';
 }
 
+// Normaliza um número de WhatsApp brasileiro para uso em links wa.me.
+// Aceita "(11) 99999-9999", "5511999999999", "+55 11 99999-9999" etc.
+// Retorna apenas DDD + número (10 ou 11 dígitos) ou '' quando inválido.
+function whatsapp_numero($valor) {
+    $digitos = preg_replace('/\D/', '', (string)$valor);
+    if ($digitos === '') return '';
+    // Remove zero de discagem antes do DDD (ex.: 011 99999-9999).
+    $digitos = ltrim($digitos, '0');
+    // Remove o DDI 55 quando o número vier completo (12 ou 13 dígitos).
+    if (strlen($digitos) > 11 && strpos($digitos, '55') === 0) {
+        $digitos = substr($digitos, 2);
+    }
+    if (strlen($digitos) < 10 || strlen($digitos) > 11) return '';
+    return $digitos;
+}
+
+// Monta o link de conversa no formato https://wa.me/55DDDNUMERO.
+function whatsapp_link($valor) {
+    $numero = whatsapp_numero($valor);
+    return $numero === '' ? '' : 'https://wa.me/55' . $numero;
+}
+
+// Extrai o número de um link wa.me já salvo (usado pelo painel administrativo).
+function whatsapp_numero_do_link($link) {
+    $link = trim((string)$link);
+    if (preg_match('#^https?://(?:www\.)?wa\.me/(\d+)#i', $link, $m)) {
+        return whatsapp_numero($m[1]);
+    }
+    return '';
+}
+
+// Formata o número para exibição no painel: (11) 99999-9999.
+function whatsapp_formatado($valor) {
+    $numero = whatsapp_numero($valor);
+    if (strlen($numero) === 11) return preg_replace('/(\d{2})(\d{5})(\d{4})/', '($1) $2-$3', $numero);
+    if (strlen($numero) === 10) return preg_replace('/(\d{2})(\d{4})(\d{4})/', '($1) $2-$3', $numero);
+    return $numero;
+}
+
 // Cloudflare Turnstile (proteção das páginas de login) — helpers centralizados em turnstile.php
 require_once __DIR__ . '/turnstile.php';
 
@@ -154,7 +193,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS banners_topo (
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Tabela de dependentes (até 5 por usuário).
+// Tabela de dependentes (até 4 por usuário).
 $conn->query("CREATE TABLE IF NOT EXISTS dependentes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,

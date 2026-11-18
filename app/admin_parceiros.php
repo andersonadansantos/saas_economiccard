@@ -69,7 +69,12 @@ $parceiros = $conn->query("SELECT * FROM parceiros ORDER BY id DESC");
 $categoriasLista = $conn->query("SELECT DISTINCT categoria FROM parceiros WHERE categoria <> '' ORDER BY categoria");
 $categoriasExtra = $conn->query("SELECT nome FROM categorias ORDER BY nome");
 
-$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/card/';
+// Link público do cadastro de parceiros. Fora do ambiente local usamos sempre
+// HTTPS, independentemente de proxy/terminador TLS na frente da aplicação.
+$hostAtual = $_SERVER['HTTP_HOST'] ?? 'economiccard.com.br';
+$hostLocal = (strpos($hostAtual, 'localhost') !== false || strpos($hostAtual, '127.0.0.1') !== false);
+$esquema = (!$hostLocal || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')) ? 'https' : 'http';
+$linkCadastroParceiro = $esquema . '://' . $hostAtual . site_base() . '/cadastro_parceiro.php';
 
 $editando = null;
 if (isset($_GET['editar'])) {
@@ -120,13 +125,13 @@ if (isset($_GET['editar'])) {
 <h2 class="text-lg font-extrabold text-gray-800">Cadastro de parceiros</h2>
 <p class="text-sm text-gray-500 mt-1">Compartilhe este link para que empresas façam o próprio cadastro (Nome, Categoria, Endereço, WhatsApp, Porcentagem, redes sociais, Site e Logo).</p>
 </div>
-<a href="cadastro_parceiro.php" target="_blank" class="shrink-0 inline-flex items-center gap-2 text-sm font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-4 py-2.5 transition">
+<a href="<?php echo htmlspecialchars($linkCadastroParceiro); ?>" target="_blank" rel="noopener" class="shrink-0 inline-flex items-center gap-2 text-sm font-bold text-[#51036d] hover:text-[#3a024d] bg-[#51036d]/10 hover:bg-[#51036d]/20 rounded-lg px-4 py-2.5 transition">
 <span class="material-symbols-outlined text-[18px]">open_in_new</span> Abrir página
 </a>
 </div>
 <div class="mt-4 flex flex-col sm:flex-row gap-2">
-<input id="linkCadastroParceiro" type="text" readonly value="<?php echo htmlspecialchars($baseUrl . 'cadastro_parceiro.php'); ?>" class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#51036d]">
-<button type="button" onclick="copiarLink('<?php echo htmlspecialchars($baseUrl . 'cadastro_parceiro.php'); ?>', this)" class="shrink-0 bg-[#51036d] hover:bg-[#3a024d] text-white font-bold px-5 py-2.5 rounded-lg transition text-sm">Copiar link</button>
+<input id="linkCadastroParceiro" type="text" readonly value="<?php echo htmlspecialchars($linkCadastroParceiro); ?>" class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<button type="button" onclick="copiarLink('<?php echo htmlspecialchars($linkCadastroParceiro); ?>', this)" class="shrink-0 bg-[#51036d] hover:bg-[#3a024d] text-white font-bold px-5 py-2.5 rounded-lg transition text-sm">Copiar link</button>
 </div>
 </div>
 

@@ -45,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $q->bind_param('i', $uid);
         $q->execute();
         $totalDep = (int)$q->get_result()->fetch_assoc()['total'];
-        if ($totalDep >= 5) {
-            $erro = 'Limite de 5 dependentes atingido. Remova um dependente para cadastrar outro.';
+        if ($totalDep >= 4) {
+            $erro = 'Você atingiu o limite máximo de 4 dependentes.';
         } else {
             $ins = $conn->prepare("INSERT INTO dependentes (usuario_id, nome, whatsapp, cpf, endereco) VALUES (?, ?, ?, ?, ?)");
             $ins->bind_param('issss', $uid, $nome, $whats, $cpf, $end);
@@ -131,7 +131,7 @@ if (!function_exists('fmtWhats')) {
 </a>
 <span class="text-[15px] font-extrabold text-on-surface tracking-tight">Dependentes</span>
 <div class="ec-appbar__spacer"></div>
-<span class="ec-chip ec-chip--neutral"><?php echo $qtdDep; ?>/5</span>
+<span class="ec-chip ec-chip--neutral"><?php echo $qtdDep; ?>/4</span>
 </div>
 </header>
 <main class="ec-shell">
@@ -155,13 +155,13 @@ if (!function_exists('fmtWhats')) {
 <span class="ec-tile ec-tile--soft"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">groups</span></span>
 <div class="min-w-0">
 <p class="text-[13px] font-extrabold text-on-surface leading-tight">Dependentes cadastrados</p>
-<p class="ec-meta mt-0.5">Limite de 5 por cartão</p>
+<p class="ec-meta mt-0.5">Limite de 4 por cartão</p>
 </div>
 </div>
-<p class="text-[19px] font-extrabold text-primary leading-none ec-num"><?php echo $qtdDep; ?><span class="text-[12px] font-bold text-on-surface-variant">/5</span></p>
+<p class="text-[19px] font-extrabold text-primary leading-none ec-num"><?php echo $qtdDep; ?><span class="text-[12px] font-bold text-on-surface-variant">/4</span></p>
 </div>
 <div class="ec-progress mt-3.5">
-<div class="ec-progress__bar" style="width:<?php echo max(4, min(100, (int)round($qtdDep / 5 * 100))); ?>%"></div>
+<div class="ec-progress__bar" style="width:<?php echo max(4, min(100, (int)round($qtdDep / 4 * 100))); ?>%"></div>
 </div>
 </div>
 </div>
@@ -174,16 +174,16 @@ if (!function_exists('fmtWhats')) {
 </div>
 <div class="ec-card">
 <div class="ec-card__body">
-<?php if ($qtdDep >= 5): ?>
+<?php if ($qtdDep >= 4): ?>
 <div class="text-center" style="padding:10px 4px">
 <span class="ec-tile" style="margin:0 auto;width:52px;height:52px;border-radius:16px"><span class="material-symbols-outlined">block</span></span>
 <p class="text-[13.5px] font-bold text-on-surface mt-3">Limite atingido</p>
-<p class="ec-meta mt-1">Você já possui 5 dependentes. Remova um para cadastrar outro.</p>
+<p class="ec-meta mt-1">Você atingiu o limite máximo de 4 dependentes.</p>
 </div>
 <?php else: ?>
 <div class="flex items-start gap-2" style="background:rgba(81,3,109,.05);border:1px solid rgba(81,3,109,.14);border-radius:14px;padding:11px 13px;margin-bottom:16px">
 <span class="material-symbols-outlined" style="font-size:18px;color:var(--ec-primary);flex:0 0 auto">info</span>
-<p class="text-[12px] leading-snug" style="color:var(--ec-primary)">Você pode cadastrar até 5 dependentes no seu cartão.</p>
+<p class="text-[12px] leading-snug" style="color:var(--ec-primary)">Você pode cadastrar até 4 dependentes no seu cartão.</p>
 </div>
 <form method="POST" action="dependentes.php">
 <div class="flex flex-col gap-3.5">

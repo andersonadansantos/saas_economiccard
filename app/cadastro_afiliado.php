@@ -69,7 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <style>
     body { font-family: 'Manrope', sans-serif; }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .premium-gradient { background: linear-gradient(135deg, #51036d 0%, #6a2585 55%, #8e3fae 100%); }
+    .premium-gradient {
+        background:
+            radial-gradient(120% 130% at 50% 45%, rgba(81,3,109,.84) 0%, rgba(88,18,120,.74) 55%, rgba(142,63,174,.62) 100%),
+            url('<?php echo htmlspecialchars(asset_url('../img/header-cadastro.png')); ?>') center/cover no-repeat;
+    }
 </style>
 </head>
 <body class="min-h-screen bg-gray-100 flex items-center justify-center p-4">

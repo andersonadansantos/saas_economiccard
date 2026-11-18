@@ -44,10 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'cadastrar_topo') {
         $titulo = trim($_POST['titulo'] ?? '');
         $imagem = processa_imagem_banner('topo');
-        $linkExterno = trim($_POST['link_externo'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $linkExterno = whatsapp_link($whatsapp);
         $ativo = isset($_POST['ativo']) ? 1 : 0;
         if ($titulo === '') {
             $erro = 'Informe o título do banner.';
+        } elseif ($whatsapp !== '' && $linkExterno === '') {
+            $erro = 'WhatsApp inválido. Informe DDD + número (10 ou 11 dígitos).';
+        } elseif ($ativo && $linkExterno === '') {
+            $erro = 'Informe o WhatsApp de destino para publicar o banner.';
         } elseif ($ativo && count_topo_ativos($conn) >= 5) {
             $erro = 'Limite de 5 banners ativos no Slide Topo atingido. Desative um banner antes de ativar outro.';
         } else {
@@ -61,12 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         $titulo = trim($_POST['titulo'] ?? '');
         $imagem = processa_imagem_banner('topo');
-        $linkExterno = trim($_POST['link_externo'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $linkExterno = whatsapp_link($whatsapp);
         $ativo = isset($_POST['ativo']) ? 1 : 0;
         if ($titulo === '') {
             $erro = 'Informe o título do banner.';
         } elseif ($id <= 0) {
             $erro = 'Banner inválido.';
+        } elseif ($whatsapp !== '' && $linkExterno === '') {
+            $erro = 'WhatsApp inválido. Informe DDD + número (10 ou 11 dígitos).';
+        } elseif ($ativo && $linkExterno === '') {
+            $erro = 'Informe o WhatsApp de destino para manter o banner publicado.';
         } else {
             if ($ativo) {
                 $st = $conn->prepare("SELECT COUNT(*) FROM banners_topo WHERE ativo = 1 AND id <> ?");
@@ -96,8 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sucesso = 'Banner do Slide Topo excluído.';
     } elseif ($acao === 'alternar_topo') {
         $id = (int)($_POST['id'] ?? 0);
-        $linha = $conn->query("SELECT ativo FROM banners_topo WHERE id = " . (int)$id)->fetch_assoc();
-        if ($linha && !$linha['ativo'] && count_topo_ativos($conn) >= 5) {
+        $linha = $conn->query("SELECT ativo, link_externo FROM banners_topo WHERE id = " . (int)$id)->fetch_assoc();
+        if ($linha && !$linha['ativo'] && trim((string)$linha['link_externo']) === '') {
+            $erro = 'Informe o WhatsApp de destino antes de ativar este banner.';
+        } elseif ($linha && !$linha['ativo'] && count_topo_ativos($conn) >= 5) {
             $erro = 'Limite de 5 banners ativos no Slide Topo atingido. Desative um banner antes de ativar outro.';
         } else {
             $stmt = $conn->prepare("UPDATE banners_topo SET ativo = 1 - ativo WHERE id = ?");
@@ -169,8 +181,9 @@ $qtdTopoAtivos = count_topo_ativos($conn);
 <input name="titulo" required placeholder="Título do banner" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
 </div>
 <div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Link externo (ao clicar no banner)</label>
-<input name="link_externo" placeholder="ex: https://site.com" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">WhatsApp (número de destino)</label>
+<input name="whatsapp" id="topo_whatsapp" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<p class="mt-1 text-xs text-gray-500">O clique no banner abre a conversa em <strong class="text-gray-700">wa.me/55DDDNUMERO</strong>. Obrigatório para banners ativos.</p>
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">URL da imagem</label>
@@ -219,7 +232,12 @@ $qtdTopoAtivos = count_topo_ativos($conn);
 </td>
 <td class="px-4 py-3">
 <p class="font-semibold text-gray-800"><?php echo htmlspecialchars($b['titulo']); ?></p>
-<?php if ($b['link_externo']): ?><p class="text-xs text-gray-500 truncate max-w-xs"><?php echo htmlspecialchars($b['link_externo']); ?></p><?php endif; ?>
+<?php $waNum = whatsapp_numero_do_link($b['link_externo']); ?>
+<?php if ($waNum !== ''): ?>
+<p class="text-xs text-gray-500 truncate max-w-xs"><span class="font-semibold text-[#3e6a00]">WhatsApp:</span> <?php echo htmlspecialchars(whatsapp_formatado($waNum)); ?></p>
+<?php elseif ($b['link_externo']): ?>
+<p class="text-xs text-gray-500 truncate max-w-xs"><?php echo htmlspecialchars($b['link_externo']); ?></p>
+<?php endif; ?>
 </td>
 <td class="px-4 py-3">
 <span class="px-2 py-1 rounded-full <?php echo $b['ativo'] ? 'bg-[#b6f570]/40 text-[#3e6a00]' : 'bg-gray-200 text-gray-600'; ?> text-[10px] font-bold uppercase"><?php echo $b['ativo'] ? 'Ativo' : 'Inativo'; ?></span>
@@ -231,7 +249,7 @@ data-id="<?php echo (int)$b['id']; ?>"
 data-titulo="<?php echo htmlspecialchars($b['titulo'], ENT_QUOTES); ?>"
 data-imagem="<?php echo htmlspecialchars($b['imagem'] ?? '', ENT_QUOTES); ?>"
 data-imagem-url="<?php echo htmlspecialchars(asset_url($b['imagem'] ?? ''), ENT_QUOTES); ?>"
-data-link="<?php echo htmlspecialchars($b['link_externo'] ?? '', ENT_QUOTES); ?>"
+data-whatsapp="<?php echo htmlspecialchars(whatsapp_formatado(whatsapp_numero_do_link($b['link_externo'] ?? '')), ENT_QUOTES); ?>"
 data-ativo="<?php echo $b['ativo'] ? 1 : 0; ?>"
 onclick="abrirEditarTopo(this)"
 class="text-[#51036d] hover:text-[#3a024d] font-semibold flex items-center gap-1 hover:underline text-xs" title="Editar">
@@ -298,8 +316,9 @@ class="text-[#51036d] hover:text-[#3a024d] font-semibold flex items-center gap-1
 <img id="edit_topo_preview" class="mt-2 w-40 h-auto rounded-lg border border-gray-200 hidden" alt="Prévia"/>
 </div>
 <div>
-<label class="block text-xs font-bold text-gray-600 uppercase mb-1">Link externo</label>
-<input id="edit_topo_link" name="link_externo" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<label class="block text-xs font-bold text-gray-600 uppercase mb-1">WhatsApp (número de destino)</label>
+<input id="edit_topo_whatsapp" name="whatsapp" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#51036d]">
+<p class="mt-1 text-xs text-gray-500">O clique no banner abre a conversa no WhatsApp. Obrigatório para manter o banner ativo.</p>
 </div>
 <div>
 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Enviar nova imagem</label>
@@ -323,13 +342,24 @@ function abrirEditarTopo(btn) {
     document.getElementById('edit_topo_id').value = btn.dataset.id;
     document.getElementById('edit_topo_titulo').value = btn.dataset.titulo || '';
     document.getElementById('edit_topo_imagem').value = '';
-    document.getElementById('edit_topo_link').value = btn.dataset.link || '';
+    document.getElementById('edit_topo_whatsapp').value = btn.dataset.whatsapp || '';
     document.getElementById('edit_topo_ativo').checked = btn.dataset.ativo === '1';
     var prev = document.getElementById('edit_topo_preview');
     if (btn.dataset.imagemUrl) { prev.src = btn.dataset.imagemUrl; prev.classList.remove('hidden'); } else { prev.classList.add('hidden'); }
     var m = document.getElementById('modalEdicaoTopo'); m.classList.remove('hidden'); m.classList.add('flex');
 }
 function fecharModalEdicaoTopo() { var m = document.getElementById('modalEdicaoTopo'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function mascaraWhatsapp(el) {
+    if (!el) return;
+    el.addEventListener('blur', function () {
+        var d = this.value.replace(/\D/g, '');
+        if (d.length > 11 && d.indexOf('55') === 0) d = d.slice(2);
+        if (d.length === 11) this.value = '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+        else if (d.length === 10) this.value = '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+    });
+}
+mascaraWhatsapp(document.getElementById('topo_whatsapp'));
+mascaraWhatsapp(document.getElementById('edit_topo_whatsapp'));
 </script>
 <script>
 var formPendente = null;
