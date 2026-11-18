@@ -409,7 +409,9 @@ body.ec-body img, body.ec-body svg, body.ec-body video { max-width: 100%; }
     border-color: rgba(81, 3, 109, 0.45);
     box-shadow: 0 0 0 4px rgba(81, 3, 109, 0.08);
 }
-.ec-input--icon { padding-left: 44px; }
+/* Especificidade dupla para vencer o reset de padding do plugin forms do
+   Tailwind (que injeta [type='text'] { padding: ... } depois deste arquivo). */
+.ec-input.ec-input--icon { padding-left: 44px; }
 .ec-field__icon {
     position: absolute;
     left: 14px;

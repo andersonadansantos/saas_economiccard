@@ -35,16 +35,6 @@ if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
 
 $bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
-// Marca d'água personalizada aplicada sobre o cartão em destaque. É apenas uma
-// camada visual dissuasória: não impede capturas de tela.
-$wmNome = trim(preg_replace('/\s+/', ' ', (string)$u['nome']));
-$wmNome = function_exists('mb_substr') ? mb_substr($wmNome, 0, 22) : substr($wmNome, 0, 22);
-$wmSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="190" height="92">'
-    . '<text x="6" y="40" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="700" fill="#ffffff" fill-opacity="0.75" transform="rotate(-22 95 46)">ECONOMIC CARD</text>'
-    . '<text x="6" y="56" font-family="Arial,Helvetica,sans-serif" font-size="8.5" fill="#ffffff" fill-opacity="0.6" transform="rotate(-22 95 46)">' . htmlspecialchars($wmNome, ENT_QUOTES, 'UTF-8') . '</text>'
-    . '</svg>';
-$wmCartao = 'data:image/svg+xml;charset=utf-8,' . rawurlencode($wmSvg);
-
 $msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
 $msg->bind_param('is', $uid, $u['criado_em']);
 $msg->execute();
@@ -207,45 +197,35 @@ foreach ($idsBroadcast as $mid) {
             color: #4e434f;
             border: 1px solid rgba(127, 115, 129, 0.4);
         }
-        /* Proteção visual do cartão: marca d'água + indicador dinâmico discreto.
-           Nenhum destes elementos bloqueia capturas de tela. */
-        .ec-card-watermark {
-            position: absolute;
-            inset: 0;
-            z-index: 5;
-            pointer-events: none;
-            opacity: .13;
-            background-repeat: repeat;
-            background-size: 190px 92px;
-        }
+        /* Indicador visual sobre o cartão em destaque. Não bloqueia capturas. */
         .ec-card-guard {
             position: absolute;
-            right: 10px;
-            bottom: 10px;
+            right: 14px;
+            bottom: 14px;
             z-index: 20;
             pointer-events: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 36px;
+            height: 36px;
             border-radius: 9999px;
-            background: rgba(0, 0, 0, 0.20);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+            background: rgba(15, 10, 20, 0.32);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
         }
         .ec-card-guard__spin {
-            width: 11px;
-            height: 11px;
+            width: 20px;
+            height: 20px;
             border-radius: 9999px;
-            border: 1.5px solid rgba(255, 255, 255, 0.32);
-            border-top-color: rgba(255, 255, 255, 0.95);
-            animation: ecCardSpin 1.15s linear infinite;
+            border: 2.5px solid rgba(182, 245, 112, 0.30);
+            border-top-color: #b6f570;
+            animation: ecCardSpin 1s linear infinite;
         }
         @keyframes ecCardSpin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) {
-            .ec-card-guard__spin { animation-duration: 3.5s; }
+            .ec-card-guard__spin { animation-duration: 3s; }
         }
     </style>
 <link rel="stylesheet" href="ui.css?v=<?php echo (int)@filemtime(__DIR__ . '/ui.css'); ?>"/>
@@ -405,7 +385,6 @@ foreach ($idsBroadcast as $mid) {
                 </div>
 <?php endif; ?>
 </div>
-<div class="ec-card-watermark" aria-hidden="true" style="background-image:url('<?php echo $wmCartao; ?>')"></div>
 <div class="ec-card-guard" aria-hidden="true"><span class="ec-card-guard__spin"></span></div>
 </div>
 <?php else: ?>
@@ -456,7 +435,6 @@ foreach ($idsBroadcast as $mid) {
 </div>
 </div>
 </div>
-<div class="ec-card-watermark" aria-hidden="true" style="background-image:url('<?php echo $wmCartao; ?>')"></div>
 <div class="ec-card-guard" aria-hidden="true"><span class="ec-card-guard__spin"></span></div>
 </div>
 <?php endif; ?>
@@ -624,7 +602,6 @@ unset($navInferior);
 </div>
 </div>
 <?php endif; ?>
-<div class="ec-card-watermark" aria-hidden="true" style="background-image:url('<?php echo $wmCartao; ?>')"></div>
 <div class="ec-card-guard" aria-hidden="true"><span class="ec-card-guard__spin"></span></div>
 </div>
 </div>

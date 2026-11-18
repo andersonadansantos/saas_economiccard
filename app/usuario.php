@@ -14,14 +14,6 @@ if (!$u) { header('Location: logout.php'); exit; }
 
 $primeiroNome = explode(' ', trim($u['nome']))[0];
 $final = $u['final_cartao'] ?: '4582';
-// Marca d'água personalizada do cartão (camada visual; não bloqueia capturas).
-$wmNome = trim(preg_replace('/\s+/', ' ', (string)$u['nome']));
-$wmNome = function_exists('mb_substr') ? mb_substr($wmNome, 0, 22) : substr($wmNome, 0, 22);
-$wmSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="190" height="92">'
-    . '<text x="6" y="40" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="700" fill="#ffffff" fill-opacity="0.75" transform="rotate(-22 95 46)">ECONOMIC CARD</text>'
-    . '<text x="6" y="56" font-family="Arial,Helvetica,sans-serif" font-size="8.5" fill="#ffffff" fill-opacity="0.6" transform="rotate(-22 95 46)">' . htmlspecialchars($wmNome, ENT_QUOTES, 'UTF-8') . '</text>'
-    . '</svg>';
-$wmCartao = 'data:image/svg+xml;charset=utf-8,' . rawurlencode($wmSvg);
 $avatar = $u['avatar'] ?: '';
 $pers = $conn->query("SELECT * FROM personalizacao WHERE id = 1")->fetch_assoc();
 $logoApp = $pers['logo_app'] ?? '';
@@ -76,13 +68,11 @@ $totalParceiros = $conn->query("SELECT COUNT(*) AS total FROM parceiros WHERE at
     .card-shadow { box-shadow: 0 8px 30px rgba(81, 3, 109, 0.12); }
     .hover-lift { transition: transform .2s ease, box-shadow .2s ease; }
     .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(81, 3, 109, 0.18); }
-    /* Proteção visual do cartão: marca d'água + indicador dinâmico discreto.
-       Nenhum destes elementos bloqueia capturas de tela. */
-    .ec-card-watermark { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: .13; background-repeat: repeat; background-size: 190px 92px; }
-    .ec-card-guard { position: absolute; right: 10px; bottom: 10px; z-index: 20; pointer-events: none; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 9999px; background: rgba(0,0,0,.20); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-shadow: 0 1px 6px rgba(0,0,0,.18); }
-    .ec-card-guard__spin { width: 11px; height: 11px; border-radius: 9999px; border: 1.5px solid rgba(255,255,255,.32); border-top-color: rgba(255,255,255,.95); animation: ecCardSpin 1.15s linear infinite; }
+    /* Indicador visual sobre o cartão. Não bloqueia capturas de tela. */
+    .ec-card-guard { position: absolute; right: 14px; bottom: 14px; z-index: 20; pointer-events: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 9999px; background: rgba(15,10,20,.32); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: 0 2px 12px rgba(0,0,0,.28); }
+    .ec-card-guard__spin { width: 20px; height: 20px; border-radius: 9999px; border: 2.5px solid rgba(182,245,112,.30); border-top-color: #b6f570; animation: ecCardSpin 1s linear infinite; }
     @keyframes ecCardSpin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .ec-card-guard__spin { animation-duration: 3.5s; } }
+    @media (prefers-reduced-motion: reduce) { .ec-card-guard__spin { animation-duration: 3s; } }
 </style>
 </head>
 <body>
@@ -301,7 +291,6 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <p class="text-white/20 text-4xl font-extrabold italic">Economic</p>
 </div>
 </div>
-<div class="ec-card-watermark" aria-hidden="true" style="background-image:url('<?php echo $wmCartao; ?>')"></div>
 <div class="ec-card-guard" aria-hidden="true"><span class="ec-card-guard__spin"></span></div>
 </div>
 </div>
@@ -393,7 +382,6 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <p class="text-white/20 text-4xl font-extrabold italic">Economic</p>
 </div>
 </div>
-<div class="ec-card-watermark" aria-hidden="true" style="background-image:url('<?php echo $wmCartao; ?>')"></div>
 <div class="ec-card-guard" aria-hidden="true"><span class="ec-card-guard__spin"></span></div>
 </div>
 </div>
