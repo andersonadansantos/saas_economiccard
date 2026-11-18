@@ -19,9 +19,6 @@ $abaAtual = basename($_SERVER['PHP_SELF']);
 <a href="admin.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">dashboard</span> Dashboard
 </a>
-<a href="admin_pedidos.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_pedidos.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
-<span class="material-symbols-outlined">credit_card</span> Pedidos/Cartão
-</a>
 <a href="admin_parceiros.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_parceiros.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">storefront</span> Parceiros
 </a>
