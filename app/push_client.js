@@ -31,6 +31,34 @@
         return meta ? (meta.getAttribute('content') || '') : '';
     }
 
+    /**
+     * Aviso discreto quando o usuário nega a permissão de notificações no
+     * Android 13+. O app nativo chama EconomicCardPush.permissao(false) e o
+     * aviso aparece uma vez por sessão, sem depender de CSS da página.
+     */
+    function avisoNotificacoes() {
+        if (document.getElementById('ec-push-aviso')) return;
+        var box = document.createElement('div');
+        box.id = 'ec-push-aviso';
+        box.setAttribute('role', 'status');
+        box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:84px;z-index:2147483647;'
+            + 'background:#2b0b3a;color:#fff;font:600 13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;'
+            + 'padding:14px 44px 14px 16px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)';
+        box.textContent = 'Notificações desativadas. Ative as notificações do Economic Card '
+            + 'nas configurações do Android para receber os avisos.';
+        var fechar = document.createElement('button');
+        fechar.type = 'button';
+        fechar.setAttribute('aria-label', 'Fechar aviso');
+        fechar.textContent = '\u00d7';
+        fechar.style.cssText = 'position:absolute;top:6px;right:8px;background:transparent;border:0;'
+            + 'color:#fff;font-size:22px;line-height:1;padding:6px;cursor:pointer';
+        fechar.onclick = function () {
+            if (box.parentNode) box.parentNode.removeChild(box);
+        };
+        box.appendChild(fechar);
+        (document.body || document.documentElement).appendChild(box);
+    }
+
     function enviar(payload) {
         var url = baseUrl() + 'push_register.php';
         return fetch(url, {
@@ -70,6 +98,26 @@
                 return Promise.reject(new Error('Token FCM vazio.'));
             }
             return enviar({ acao: 'remover', token: String(token) });
+        },
+
+        /**
+         * Chamado pelo app nativo quando a permissão de notificações muda.
+         * Em caso de negação mostra um aviso orientando a ativar nas
+         * configurações do Android (uma vez por sessão).
+         */
+        permissao: function (habilitada) {
+            var ok = habilitada === true || String(habilitada) === 'true';
+            if (ok) return true;
+            try {
+                if (sessionStorage.getItem('ec_push_aviso') === '1') return false;
+                sessionStorage.setItem('ec_push_aviso', '1');
+            } catch (e) { /* modo privado: mostra mesmo assim */ }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', avisoNotificacoes);
+            } else {
+                avisoNotificacoes();
+            }
+            return false;
         }
     };
 })();

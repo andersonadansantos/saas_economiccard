@@ -252,6 +252,10 @@ class FcmSender
 
         // Sem "icon": o Android usa o ícone do próprio app. Se o app definir um
         // recurso monocromático (ex.: ic_stat_economiccard), basta informá-lo aqui.
+        //
+        // Sem "channel_id": o componente FCM do app cria/gerencia o canal padrão.
+        // Informar um canal inexistente faria o Android cair no canal de fallback
+        // do SDK (ou descartar a notificação, dependendo da versão).
         $mensagem = [
             'message' => [
                 'token' => $token,
@@ -263,7 +267,6 @@ class FcmSender
                 'android' => [
                     'priority' => 'HIGH',
                     'notification' => [
-                        'channel_id'                => 'economiccard_default',
                         'color'                     => '#51036D',
                         'sound'                     => 'default',
                         'default_vibrate_timings'   => true,
