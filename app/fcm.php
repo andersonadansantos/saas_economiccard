@@ -250,6 +250,8 @@ class FcmSender
             if (is_scalar($v)) $data[(string)$k] = (string)$v;
         }
 
+        // Sem "icon": o Android usa o ícone do próprio app. Se o app definir um
+        // recurso monocromático (ex.: ic_stat_economiccard), basta informá-lo aqui.
         $mensagem = [
             'message' => [
                 'token' => $token,
@@ -262,7 +264,6 @@ class FcmSender
                     'priority' => 'HIGH',
                     'notification' => [
                         'channel_id'                => 'economiccard_default',
-                        'icon'                      => 'ic_stat_economiccard',
                         'color'                     => '#51036D',
                         'sound'                     => 'default',
                         'default_vibrate_timings'   => true,
