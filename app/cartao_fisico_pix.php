@@ -42,7 +42,7 @@ function notificar_admin_pedido_cartao($conn, $uid) {
                 $msg = "Novo pedido de cartão físico (taxa paga)!\n"
                     . "Cliente: $nomeUsuario\n"
                     . "E-mail: $emailUsuario\n"
-                    . "Confira no painel admin em Pedidos / Cartão.";
+                    . "Confira no painel administrativo.";
                 enviar_whatsapp_evolution($wpp['url_base'], $wpp['instancia'], $wpp['api_key'], $numero, $msg);
             }
         }
@@ -53,7 +53,7 @@ function notificar_admin_pedido_cartao($conn, $uid) {
         require_once __DIR__ . '/email_sender.php';
         $corpo = templateShell('<p>Um novo pedido de <strong>cartão físico</strong> foi registrado após a confirmação do pagamento da taxa de R$ ' . number_format(PEDIDO_CARTAO_TAXA, 2, ',', '.') . '.</p>' .
             '<p><b>Cliente:</b> ' . htmlspecialchars($nomeUsuario) . '<br><b>E-mail:</b> ' . htmlspecialchars($emailUsuario) . '</p>' .
-            '<p>Consulte o painel administrativo no menu <b>Pedidos / Cartão</b>.</p>');
+            '<p>Consulte o painel administrativo.</p>');
         enviar_email_smtp($atend['email'], 'Novo pedido de cartão físico', $corpo);
     }
 }

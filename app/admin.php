@@ -82,7 +82,6 @@ if ($busca !== '') {
 $total = $usuarios->num_rows;
 $statsAtivos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE cartao_ativo = 1")->fetch_assoc()['total'];
 $statsInativos = (int)$conn->query("SELECT COUNT(*) AS total FROM usuarios WHERE cartao_ativo = 0")->fetch_assoc()['total'];
-$statsPedidos = (int)$conn->query("SELECT COUNT(*) AS total FROM pedidos_cartao")->fetch_assoc()['total'];
 
 // Resumo do plano por usuário (contrato, mensalidades, ativação/validade).
 $resumosPlanos = [];
@@ -219,11 +218,6 @@ function fmt_cpf_br($cpf) {
 <p class="text-xs font-bold uppercase text-gray-500 mb-1">Cartões Inativos</p>
 <p class="text-3xl font-extrabold text-gray-600"><?php echo $statsInativos; ?></p>
 <p class="text-xs text-gray-500 mt-1"><?php echo $total > 0 ? round($statsInativos / $total * 100) : 0; ?>% do total de cadastros</p>
-</div>
-<div class="bg-[#51036d]/5 border border-[#51036d]/20 rounded-xl p-5">
-<p class="text-xs font-bold uppercase text-[#51036d] mb-1">Pedidos/Cartões</p>
-<p class="text-3xl font-extrabold text-[#51036d]"><?php echo $statsPedidos; ?></p>
-<p class="text-xs text-gray-500 mt-1">Pedidos de cartão físico</p>
 </div>
 <div class="bg-[#51036d]/5 border border-[#51036d]/20 rounded-xl p-5">
 <p class="text-xs font-bold uppercase text-[#51036d] mb-1">Total de cadastros</p>
