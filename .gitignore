@@ -3,3 +3,5 @@
 Thumbs.db
 .DS_Store
 app/logs/
+app/fcm_service_account.json
+app/cache/

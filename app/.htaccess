@@ -18,3 +18,9 @@ RewriteRule ^web/?$ web/login.php [L]
 <FilesMatch "\.log$">
 Require all denied
 </FilesMatch>
+
+# Credencial da conta de serviço do Firebase (push) — nunca acessível pela web.
+# Prefira mantê-la FORA do webroot e apontar FCM_CREDENTIALS_FILE para ela.
+<FilesMatch "^fcm_service_account\.json$">
+Require all denied
+</FilesMatch>

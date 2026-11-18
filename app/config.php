@@ -89,6 +89,44 @@ function site_base() {
     return rtrim($siteBase, '/');
 }
 
+// Token CSRF da sessão, usado pelas chamadas AJAX feitas dentro do app
+// (ex.: registro do token de push). As telas expõem o valor numa <meta>.
+function csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_valido($token) {
+    return is_string($token) && $token !== '' && !empty($_SESSION['csrf_token'])
+        && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// Normaliza o link de destino de uma notificação push. Aceita apenas caminho
+// interno do sistema (/dashboard.php) ou URL absoluta do próprio site — evita
+// que o painel dispare o usuário para um domínio externo.
+function push_link_seguro($link) {
+    $link = trim((string)$link);
+    if ($link === '') return '';
+    if (preg_match('#^https?://#i', $link)) {
+        $host = strtolower((string)parse_url($link, PHP_URL_HOST));
+        $permitidos = ['economiccard.com.br', 'www.economiccard.com.br'];
+        $atual = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        if ($atual !== '') $permitidos[] = $atual;
+        return in_array($host, $permitidos, true) ? $link : '';
+    }
+    // Caminho interno: precisa começar com "/", não pode ser "//host" nem
+    // conter "\" (navegadores normalizam "/\" para "//", o que viraria um link
+    // externo) ou caracteres de controle/espaço.
+    if ($link[0] === '/' && !preg_match('#^//#', $link)
+        && strpos($link, '\\') === false
+        && !preg_match('/[\x00-\x20\x7F]/', $link)) {
+        return $link;
+    }
+    return '';
+}
+
 // Cloudflare Turnstile (proteção das páginas de login) — helpers centralizados em turnstile.php
 require_once __DIR__ . '/turnstile.php';
 
@@ -127,6 +165,47 @@ $conn->query("CREATE TABLE IF NOT EXISTS dependentes (
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_usuario (usuario_id),
     CONSTRAINT fk_dependentes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// ====== NOTIFICAÇÕES PUSH (FIREBASE CLOUD MESSAGING) ======
+// dispositivos_push: um registro por token FCM (UNIQUE). O token é único do
+// aparelho, então trocar de usuário no mesmo celular apenas reatribui a linha
+// (upsert) — nunca cria duplicata. Tokens inválidos são desativados (ativo = 0)
+// e reativados automaticamente se o Firebase voltar a aceitá-los.
+// push_envios: histórico dos disparos do painel, com contadores e detalhes.
+$conn->query("CREATE TABLE IF NOT EXISTS dispositivos_push (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL DEFAULT NULL,
+    dependente_id INT NULL DEFAULT NULL,
+    token VARCHAR(255) NOT NULL,
+    device_id VARCHAR(120) NOT NULL DEFAULT '',
+    plataforma VARCHAR(20) NOT NULL DEFAULT 'android',
+    app_version VARCHAR(30) NOT NULL DEFAULT '',
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    ultimo_erro VARCHAR(255) NOT NULL DEFAULT '',
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_token (token),
+    KEY idx_usuario (usuario_id),
+    KEY idx_device (device_id),
+    KEY idx_ativo (ativo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS push_envios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem_id INT NULL DEFAULT NULL,
+    titulo VARCHAR(255) NOT NULL DEFAULT '',
+    corpo TEXT NULL,
+    link VARCHAR(500) NOT NULL DEFAULT '',
+    destino VARCHAR(20) NOT NULL DEFAULT 'todos',
+    usuario_id INT NULL DEFAULT NULL,
+    total_tokens INT NOT NULL DEFAULT 0,
+    enviados INT NOT NULL DEFAULT 0,
+    falhas INT NOT NULL DEFAULT 0,
+    removidos INT NOT NULL DEFAULT 0,
+    detalhe TEXT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_criado (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 // ====== REMUNERAÇÃO DE AFILIADOS: VALOR FIXO POR MENSALIDADE PAGA ======
