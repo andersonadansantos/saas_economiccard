@@ -20,8 +20,35 @@ $logoApp = $pers['logo_app'] ?? '';
 
 $bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
-$msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
-$msg->bind_param('is', $uid, $u['criado_em']);
+@$conn->query("CREATE TABLE IF NOT EXISTS mensagens_ocultas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    ocultado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_msg_user (mensagem_id, usuario_id),
+    KEY idx_usuario (usuario_id),
+    KEY idx_mensagem (mensagem_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'ocultar_mensagem') {
+    $mid = (int)($_POST['mensagem_id'] ?? 0);
+    if ($mid > 0) {
+        $ins = $conn->prepare("INSERT IGNORE INTO mensagens_ocultas (mensagem_id, usuario_id) VALUES (?, ?)");
+        if ($ins) {
+            $ins->bind_param('ii', $mid, $uid);
+            $ins->execute();
+            $ins->close();
+        }
+    }
+    header('Location: usuario.php');
+    exit;
+}
+
+$msg = $conn->prepare("SELECT m.* FROM mensagens m
+    LEFT JOIN mensagens_ocultas mo ON mo.mensagem_id = m.id AND mo.usuario_id = ?
+    WHERE mo.id IS NULL AND (m.usuario_id = ? OR (m.usuario_id IS NULL AND m.criado_em >= ?))
+    ORDER BY m.criado_em DESC LIMIT 20");
+$msg->bind_param('iis', $uid, $uid, $u['criado_em']);
 $msg->execute();
 $mensagens = $msg->get_result();
 $naoLidas = 0;
@@ -311,16 +338,26 @@ track.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.chang
 <p class="px-6 py-8 text-sm text-gray-500 text-center">Nenhuma mensagem no momento.</p>
 <?php endif; ?>
 <?php while ($m = $mensagens->fetch_assoc()): ?>
-<button type="button" class="w-full text-left px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition flex items-start gap-4" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
-<div class="w-9 h-9 rounded-full bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-[18px]">notifications</span>
+<div class="w-full px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition flex items-start gap-4">
+  <button type="button" class="flex-1 min-w-0 text-left flex items-start gap-4" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
+    <div class="w-9 h-9 rounded-full bg-[#51036d]/10 text-[#51036d] flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-[18px]">notifications</span>
+    </div>
+    <div class="min-w-0">
+      <p class="font-bold text-gray-900 text-sm"><?php echo htmlspecialchars($m['titulo']); ?></p>
+      <p class="text-sm text-gray-500 truncate"><?php echo htmlspecialchars($m['mensagem']); ?></p>
+      <p class="text-[11px] text-gray-400 mt-0.5"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
+    </div>
+  </button>
+  <form method="POST" action="usuario.php" class="shrink-0" onsubmit="return confirm('Excluir esta mensagem?');">
+    <input type="hidden" name="acao" value="ocultar_mensagem">
+    <input type="hidden" name="mensagem_id" value="<?php echo (int)$m['id']; ?>">
+    <?php if (function_exists('csrf_token')): ?><input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>"><?php endif; ?>
+    <button type="submit" class="w-9 h-9 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center" title="Excluir" onclick="event.stopPropagation();">
+      <span class="material-symbols-outlined text-[20px]">delete</span>
+    </button>
+  </form>
 </div>
-<div class="min-w-0">
-<p class="font-bold text-gray-900 text-sm"><?php echo htmlspecialchars($m['titulo']); ?></p>
-<p class="text-sm text-gray-500 truncate"><?php echo htmlspecialchars($m['mensagem']); ?></p>
-<p class="text-[11px] text-gray-400 mt-0.5"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
-</div>
-</button>
 <?php endwhile; ?>
 </div>
 

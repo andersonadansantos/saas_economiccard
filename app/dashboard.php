@@ -35,8 +35,35 @@ if ($u['cartao_ativo'] && !empty($u['cartao_validade'])) {
 
 $bannersTopo = $conn->query("SELECT * FROM banners_topo WHERE ativo = 1 ORDER BY ordem ASC, id DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
-$msg = $conn->prepare("SELECT * FROM mensagens WHERE (usuario_id = ? OR (usuario_id IS NULL AND criado_em >= ?)) ORDER BY criado_em DESC LIMIT 20");
-$msg->bind_param('is', $uid, $u['criado_em']);
+@$conn->query("CREATE TABLE IF NOT EXISTS mensagens_ocultas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    ocultado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_msg_user (mensagem_id, usuario_id),
+    KEY idx_usuario (usuario_id),
+    KEY idx_mensagem (mensagem_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'ocultar_mensagem') {
+    $mid = (int)($_POST['mensagem_id'] ?? 0);
+    if ($mid > 0) {
+        $ins = $conn->prepare("INSERT IGNORE INTO mensagens_ocultas (mensagem_id, usuario_id) VALUES (?, ?)");
+        if ($ins) {
+            $ins->bind_param('ii', $mid, $uid);
+            $ins->execute();
+            $ins->close();
+        }
+    }
+    header('Location: dashboard.php');
+    exit;
+}
+
+$msg = $conn->prepare("SELECT m.* FROM mensagens m
+    LEFT JOIN mensagens_ocultas mo ON mo.mensagem_id = m.id AND mo.usuario_id = ?
+    WHERE mo.id IS NULL AND (m.usuario_id = ? OR (m.usuario_id IS NULL AND m.criado_em >= ?))
+    ORDER BY m.criado_em DESC LIMIT 20");
+$msg->bind_param('iis', $uid, $uid, $u['criado_em']);
 $msg->execute();
 $mensagens = $msg->get_result();
 $naoLidas = 0;
@@ -330,11 +357,21 @@ foreach ($idsBroadcast as $mid) {
 </div>
 <?php endif; ?>
 <?php while ($m = $mensagens->fetch_assoc()): ?>
-<button type="button" class="w-full text-left px-4 py-3 border-b border-outline-variant/15 hover:bg-surface-container-high/40 transition-colors" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
-<p class="text-[13px] font-bold text-on-surface leading-snug"><?php echo htmlspecialchars($m['titulo']); ?></p>
-<p class="text-[12px] text-on-surface-variant truncate mt-0.5"><?php echo htmlspecialchars($m['mensagem']); ?></p>
-<p class="text-[10px] text-outline mt-1"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
-</button>
+<div class="w-full px-4 py-3 border-b border-outline-variant/15 hover:bg-surface-container-high/40 transition-colors flex items-start gap-2">
+  <button type="button" class="flex-1 min-w-0 text-left" onclick="abrirMensagem('<?php echo addslashes(htmlspecialchars($m['titulo'])); ?>', '<?php echo addslashes(htmlspecialchars($m['mensagem'])); ?>', '<?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?>')">
+    <p class="text-[13px] font-bold text-on-surface leading-snug"><?php echo htmlspecialchars($m['titulo']); ?></p>
+    <p class="text-[12px] text-on-surface-variant truncate mt-0.5"><?php echo htmlspecialchars($m['mensagem']); ?></p>
+    <p class="text-[10px] text-outline mt-1"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></p>
+  </button>
+  <form method="POST" action="dashboard.php" class="shrink-0" onsubmit="return confirm('Excluir esta mensagem?');">
+    <input type="hidden" name="acao" value="ocultar_mensagem">
+    <input type="hidden" name="mensagem_id" value="<?php echo (int)$m['id']; ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>">
+    <button type="submit" class="w-8 h-8 rounded-lg text-outline hover:text-error hover:bg-error/10 flex items-center justify-center" title="Excluir" onclick="event.stopPropagation();">
+      <span class="material-symbols-outlined text-[18px]">delete</span>
+    </button>
+  </form>
+</div>
 <?php endwhile; ?>
 </div>
 </div>

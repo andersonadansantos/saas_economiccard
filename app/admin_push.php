@@ -227,24 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar_
         }
 
         if ($erro === '') {
-            // Mensagem interna (sino) para todos/individual quando não é teste
+            // Push do módulo: apenas notificação no dispositivo (não cria mensagem no "sino"/inbox do app).
             $mensagemId = null;
-            if (!$modoTeste) {
-                if ($alvoTipo === 'todos') {
-                    $stmt = $conn->prepare("INSERT INTO mensagens (usuario_id, titulo, mensagem) VALUES (NULL, ?, ?)");
-                    $stmt->bind_param('ss', $titulo, $corpo);
-                    $stmt->execute();
-                    $mensagemId = (int)$conn->insert_id;
-                    $stmt->close();
-                } elseif ($alvoTipo === 'usuario') {
-                    $uidM = (int)$alvoValor;
-                    $stmt = $conn->prepare("INSERT INTO mensagens (usuario_id, titulo, mensagem) VALUES (?, ?, ?)");
-                    $stmt->bind_param('iss', $uidM, $titulo, $corpo);
-                    $stmt->execute();
-                    $mensagemId = (int)$conn->insert_id;
-                    $stmt->close();
-                }
-            }
 
             $segmentoLabel = $alvoTipo === 'grupo' ? $alvoValor : ($alvoTipo === 'segmento' ? ('plano:' . $alvoValor) : $alvoTipo);
             $sqlIns = "INSERT INTO push_envios (mensagem_id, titulo, corpo, link, imagem, segmento, alvo_tipo, alvo_valor, agendado_para, status_envio, tipo_envio, track_key, destino, usuario_id, total_tokens, enviados, falhas, removidos, detalhe, criado_em)

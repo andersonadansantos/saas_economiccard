@@ -299,6 +299,26 @@ foreach ($pushEnvAdd as $col => $sql) {
     }
 }
 
+// Mensagens in-app: controle de leitura (broadcast) e ocultação por usuário.
+$conn->query("CREATE TABLE IF NOT EXISTS mensagens_lidas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    lido_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_msg_user (mensagem_id, usuario_id),
+    KEY idx_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS mensagens_ocultas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensagem_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    ocultado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_msg_user (mensagem_id, usuario_id),
+    KEY idx_usuario (usuario_id),
+    KEY idx_mensagem (mensagem_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 $conn->query("CREATE TABLE IF NOT EXISTS push_aberturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     envio_id INT NOT NULL,

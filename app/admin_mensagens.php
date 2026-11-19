@@ -13,6 +13,21 @@ $pushResumo = '';
 $fcm = new FcmSender();
 $fcmOk = $fcm->configurado();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'excluir_mensagem') {
+    $mid = (int)($_POST['mensagem_id'] ?? 0);
+    if ($mid > 0) {
+        @$conn->query("DELETE FROM mensagens_lidas WHERE mensagem_id = $mid");
+        @$conn->query("DELETE FROM mensagens_ocultas WHERE mensagem_id = $mid");
+        $stmt = $conn->prepare("DELETE FROM mensagens WHERE id = ?");
+        if ($stmt) {
+            $stmt->bind_param('i', $mid);
+            $stmt->execute();
+            $stmt->close();
+            $sucesso = 'Mensagem excluída com sucesso.';
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar') {
     $destino    = trim($_POST['destino'] ?? 'todos');
     $titulo     = trim($_POST['titulo'] ?? '');
@@ -244,11 +259,12 @@ $enviosPush = $conn->query("SELECT * FROM push_envios ORDER BY id DESC LIMIT 15"
 <th class="px-4 py-3">Título</th>
 <th class="px-4 py-3">Mensagem</th>
 <th class="px-4 py-3">Enviada em</th>
+<th class="px-4 py-3">Ações</th>
 </tr>
 </thead>
 <tbody>
 <?php if ($mensagens->num_rows === 0): ?>
-<tr><td colspan="5" class="px-4 py-10 text-center text-gray-500">Nenhuma mensagem enviada.</td></tr>
+<tr><td colspan="6" class="px-4 py-10 text-center text-gray-500">Nenhuma mensagem enviada.</td></tr>
 <?php endif; ?>
 <?php while ($m = $mensagens->fetch_assoc()): ?>
 <tr class="border-t border-gray-100 hover:bg-gray-50">
@@ -257,6 +273,15 @@ $enviosPush = $conn->query("SELECT * FROM push_envios ORDER BY id DESC LIMIT 15"
 <td class="px-4 py-3"><?php echo htmlspecialchars($m['titulo']); ?></td>
 <td class="px-4 py-3 text-gray-600"><?php echo htmlspecialchars(mb_strimwidth($m['mensagem'], 0, 60, '...')); ?></td>
 <td class="px-4 py-3 text-gray-500"><?php echo date('d/m/Y H:i', strtotime($m['criado_em'])); ?></td>
+<td class="px-4 py-3">
+  <form method="POST" action="admin_mensagens.php" onsubmit="return confirm('Excluir esta mensagem enviada?');" class="inline">
+    <input type="hidden" name="acao" value="excluir_mensagem">
+    <input type="hidden" name="mensagem_id" value="<?php echo (int)$m['id']; ?>">
+    <button type="submit" class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-600 hover:bg-red-50 transition" title="Excluir">
+      <span class="material-symbols-outlined text-[20px]">delete</span>
+    </button>
+  </form>
+</td>
 </tr>
 <?php endwhile; ?>
 </tbody>
