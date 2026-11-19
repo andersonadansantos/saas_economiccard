@@ -91,6 +91,8 @@ if (!function_exists('fmtWhats')) {
 }
 ?>
 <!DOCTYPE html><html class="light" lang="pt-BR"><head>
+<meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>"/>
+<script src="push_client.js?v=<?php echo (int)@filemtime(__DIR__ . '/push_client.js'); ?>"></script>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
 <title>Economic Card - Dependentes</title>

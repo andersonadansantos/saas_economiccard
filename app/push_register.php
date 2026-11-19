@@ -8,7 +8,7 @@
  * único por aparelho — ao trocar de usuário no mesmo celular a linha é
  * reatribuída (upsert).
  *
- * Requisitos: HTTPS, sessão válida, CSRF, JSON, prepared statements.
+ * Requisitos: HTTPS (produção), CSRF, JSON, prepared statements.
  */
 require_once __DIR__ . '/config.php';
 
@@ -22,7 +22,14 @@ function push_resposta($dados, $status = 200) {
     exit;
 }
 
+function push_token_masc($token) {
+    $token = (string)$token;
+    if (strlen($token) <= 12) return $token;
+    return substr($token, 0, 6) . '...' . substr($token, -4);
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    app_log('push', 'push_register método inválido: ' . ($_SERVER['REQUEST_METHOD'] ?? '-'));
     push_resposta(['ok' => false, 'erro' => 'Método não permitido.'], 405);
 }
 
@@ -31,11 +38,13 @@ $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
 $hostSemPorta = preg_replace('/:\d+$/', '', $host);
 $local = in_array($hostSemPorta, ['localhost', '127.0.0.1', '::1'], true);
 if (!request_is_https() && !$local) {
+    app_log('push', 'push_register bloqueado sem HTTPS host=' . $host);
     push_resposta(['ok' => false, 'erro' => 'Conexão segura (HTTPS) obrigatória.'], 403);
 }
 
-$csrf = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf'] ?? ''));
+$csrf = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf'] ?? ($_GET['csrf'] ?? '')));
 if (!csrf_valido($csrf)) {
+    app_log('push', 'push_register CSRF inválido host=' . $host . ' ua=' . substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 120));
     push_resposta(['ok' => false, 'erro' => 'Sessão expirada. Abra o app novamente.'], 403);
 }
 
@@ -49,6 +58,7 @@ $token = trim((string)($corpo['token'] ?? ''));
 
 if ($token === '' || strlen($token) < 20 || strlen($token) > 4096
     || !preg_match('/^[A-Za-z0-9_\-:.]+$/', $token)) {
+    app_log('push', 'push_register token inválido acao=' . $acao . ' len=' . strlen($token));
     push_resposta(['ok' => false, 'erro' => 'Token FCM inválido.'], 422);
 }
 
@@ -59,7 +69,9 @@ if ($acao === 'remover') {
     $stmt = $conn->prepare("UPDATE push_devices SET status = 0 WHERE token = ?");
     $stmt->bind_param('s', $token);
     $stmt->execute();
+    $af = $stmt ? $stmt->affected_rows : 0;
     $stmt->close();
+    app_log('push', 'push_register remover token=' . push_token_masc($token) . ' afetados=' . $af);
     push_resposta(['ok' => true, 'removido' => true]);
 }
 
@@ -77,11 +89,13 @@ $stmt = $conn->prepare("INSERT INTO push_devices
 $stmt->bind_param('iss', $usuarioId, $token, $plataforma);
 
 if (!$stmt->execute()) {
-    app_log('push', 'Falha ao registrar token: ' . $stmt->error);
+    app_log('push', 'Falha ao registrar token: ' . $stmt->error . ' token=' . push_token_masc($token));
     $stmt->close();
     push_resposta(['ok' => false, 'erro' => 'Não foi possível registrar o dispositivo.'], 500);
 }
 $stmt->close();
+
+app_log('push', 'push_register ok usuario=' . ($usuarioId !== null ? $usuarioId : 'null') . ' token=' . push_token_masc($token) . ' plataforma=' . $plataforma);
 
 push_resposta([
     'ok'      => true,

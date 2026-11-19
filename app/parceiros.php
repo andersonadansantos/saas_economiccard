@@ -48,6 +48,8 @@ $categorias = $conn->query("SELECT DISTINCT categoria FROM parceiros WHERE categ
 <!DOCTYPE html><html class="light" lang="pt-BR"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>"/>
+<script src="push_client.js?v=<?php echo (int)@filemtime(__DIR__ . '/push_client.js'); ?>"></script>
 <title>Economic Card - Parceiros</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">

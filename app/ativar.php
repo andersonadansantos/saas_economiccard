@@ -115,6 +115,8 @@ $statusAtualVisual = ($cobrancaAtual ? ($cobrancaAtual['status_visual'] ?? plano
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <meta name="theme-color" content="#51036d">
+<meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>"/>
+<script src="push_client.js?v=<?php echo (int)@filemtime(__DIR__ . '/push_client.js'); ?>"></script>
 <title><?php echo $cartaoValido ? 'Meu Plano' : 'Ativação e Pagamento'; ?> - Economic Card</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">

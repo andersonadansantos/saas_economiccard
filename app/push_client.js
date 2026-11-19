@@ -77,6 +77,30 @@
         });
     }
 
+    function registrarComRetentativa(token, deviceId, appVersion, tentativas) {
+        tentativas = typeof tentativas === 'number' ? tentativas : 3;
+        return enviar({
+            acao: 'registrar',
+            token: String(token),
+            device_id: deviceId ? String(deviceId) : '',
+            app_version: appVersion ? String(appVersion) : '',
+            plataforma: 'android'
+        }).then(function (res) {
+            if (res && res.ok) return res;
+            if (tentativas > 1) {
+                return new Promise(function (resolve) { setTimeout(resolve, 1500); })
+                    .then(function () { return registrarComRetentativa(token, deviceId, appVersion, tentativas - 1); });
+            }
+            return res;
+        }).catch(function (err) {
+            if (tentativas > 1) {
+                return new Promise(function (resolve) { setTimeout(resolve, 1500); })
+                    .then(function () { return registrarComRetentativa(token, deviceId, appVersion, tentativas - 1); });
+            }
+            throw err;
+        });
+    }
+
     window.EconomicCardPush = {
         pronto: true,
 
@@ -84,13 +108,8 @@
             if (!token) {
                 return Promise.reject(new Error('Token FCM vazio.'));
             }
-            return enviar({
-                acao: 'registrar',
-                token: String(token),
-                device_id: deviceId ? String(deviceId) : '',
-                app_version: appVersion ? String(appVersion) : '',
-                plataforma: 'android'
-            });
+            try { window.__ecLastFcmToken = String(token); } catch (e) {}
+            return registrarComRetentativa(token, deviceId, appVersion, 3);
         },
 
         unregister: function (token) {
@@ -120,4 +139,15 @@
             return false;
         }
     };
+
+    // Se o app nativo injetou o token antes do carregamento do script,
+    // tenta registrar automaticamente.
+    try {
+        var pendente = window.__ecPendingFcmToken || window.EC_FCM_TOKEN || window.fcmToken;
+        if (pendente) {
+            setTimeout(function () {
+                try { window.EconomicCardPush.register(pendente); } catch (e) {}
+            }, 300);
+        }
+    } catch (e) {}
 })();
