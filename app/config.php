@@ -276,6 +276,45 @@ $conn->query("CREATE TABLE IF NOT EXISTS push_envios (
     KEY idx_criado (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Módulo PUSH (admin): imagem, segmentação, agendamento, rastreio e relatórios.
+$pushEnvCols = [];
+if ($rPushCols = @$conn->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'push_envios'")) {
+    while ($c = $rPushCols->fetch_assoc()) { $pushEnvCols[$c['COLUMN_NAME']] = true; }
+}
+$pushEnvAdd = [
+    'imagem'        => "ALTER TABLE push_envios ADD COLUMN imagem VARCHAR(500) NOT NULL DEFAULT '' AFTER link",
+    'segmento'      => "ALTER TABLE push_envios ADD COLUMN segmento VARCHAR(100) NOT NULL DEFAULT '' AFTER imagem",
+    'alvo_tipo'     => "ALTER TABLE push_envios ADD COLUMN alvo_tipo VARCHAR(30) NOT NULL DEFAULT '' AFTER segmento",
+    'alvo_valor'    => "ALTER TABLE push_envios ADD COLUMN alvo_valor VARCHAR(255) NOT NULL DEFAULT '' AFTER alvo_tipo",
+    'agendado_para' => "ALTER TABLE push_envios ADD COLUMN agendado_para DATETIME NULL DEFAULT NULL AFTER alvo_valor",
+    'disparo_em'    => "ALTER TABLE push_envios ADD COLUMN disparo_em DATETIME NULL DEFAULT NULL AFTER agendado_para",
+    'status_envio'  => "ALTER TABLE push_envios ADD COLUMN status_envio VARCHAR(20) NOT NULL DEFAULT 'enviado' AFTER disparo_em",
+    'tipo_envio'    => "ALTER TABLE push_envios ADD COLUMN tipo_envio VARCHAR(20) NOT NULL DEFAULT 'imediato' AFTER status_envio",
+    'track_key'     => "ALTER TABLE push_envios ADD COLUMN track_key VARCHAR(64) NOT NULL DEFAULT '' AFTER tipo_envio",
+    'aberturas'     => "ALTER TABLE push_envios ADD COLUMN aberturas INT NOT NULL DEFAULT 0 AFTER track_key",
+];
+foreach ($pushEnvAdd as $col => $sql) {
+    if (!isset($pushEnvCols[$col])) { @$conn->query($sql); }
+}
+
+$conn->query("CREATE TABLE IF NOT EXISTS push_aberturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    envio_id INT NOT NULL,
+    user_id INT NULL DEFAULT NULL,
+    token_hash CHAR(64) NOT NULL DEFAULT '',
+    origem VARCHAR(20) NOT NULL DEFAULT 'link',
+    aberto_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_envio_hash (envio_id, token_hash),
+    KEY idx_envio (envio_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS push_config (
+    id INT PRIMARY KEY,
+    cron_token VARCHAR(64) NOT NULL DEFAULT '',
+    atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+@$conn->query("INSERT IGNORE INTO push_config (id, cron_token) VALUES (1, '')");
+
 // ====== REMUNERAÇÃO DE AFILIADOS: VALOR FIXO POR MENSALIDADE PAGA ======
 // Auto-migração idempotente (mesmo estilo das tabelas acima), sem perda de
 // dados — as colunas antigas (afiliados.comissao, api_pagamento.split_afiliado_*)

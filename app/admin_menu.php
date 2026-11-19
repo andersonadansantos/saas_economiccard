@@ -25,6 +25,9 @@ $abaAtual = basename($_SERVER['PHP_SELF']);
 <a href="admin_banners.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_banners.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">campaign</span> Banners Anúncios
 </a>
+<a href="admin_push.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_push.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
+<span class="material-symbols-outlined">notifications_active</span> Push
+</a>
 <a href="admin_mensagens.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition <?php echo $abaAtual === 'admin_mensagens.php' ? 'bg-white/15' : 'hover:bg-white/10'; ?>">
 <span class="material-symbols-outlined">mail</span> Mensagens
 </a>

@@ -244,8 +244,15 @@ class FcmSender
         $token = trim((string)$token);
         if ($token === '') return '';
 
+        $imagem = '';
+        if (isset($dados['imagem'])) {
+            $imagem = trim((string)$dados['imagem']);
+            unset($dados['imagem']);
+        }
+
         $data = ['tipo' => 'mensagem'];
         if ($link !== '') $data['link'] = (string)$link;
+        if ($imagem !== '') $data['imagem'] = $imagem;
         foreach ($dados as $k => $v) {
             if (is_scalar($v)) $data[(string)$k] = (string)$v;
         }
@@ -256,21 +263,31 @@ class FcmSender
         // Sem "channel_id": o componente FCM do app cria/gerencia o canal padrão.
         // Informar um canal inexistente faria o Android cair no canal de fallback
         // do SDK (ou descartar a notificação, dependendo da versão).
+        $notif = [
+            'title' => (string)$titulo,
+            'body'  => (string)$corpo,
+        ];
+        if ($imagem !== '') {
+            $notif['image'] = $imagem;
+        }
+
+        $androidNotif = [
+            'color'                   => '#51036D',
+            'sound'                   => 'default',
+            'default_vibrate_timings' => true,
+        ];
+        if ($imagem !== '') {
+            $androidNotif['image'] = $imagem;
+        }
+
         $mensagem = [
             'message' => [
-                'token' => $token,
-                'notification' => [
-                    'title' => (string)$titulo,
-                    'body'  => (string)$corpo,
-                ],
-                'data' => $data,
-                'android' => [
-                    'priority' => 'HIGH',
-                    'notification' => [
-                        'color'                     => '#51036D',
-                        'sound'                     => 'default',
-                        'default_vibrate_timings'   => true,
-                    ],
+                'token'        => $token,
+                'notification' => $notif,
+                'data'         => $data,
+                'android'      => [
+                    'priority'     => 'HIGH',
+                    'notification' => $androidNotif,
                 ],
             ],
         ];
