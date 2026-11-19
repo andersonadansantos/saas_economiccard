@@ -48,10 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar'
             $uidDestino = $destino === 'todos' ? null : (int)$destino;
 
             if ($uidDestino !== null) {
-                $stmt = $conn->prepare("SELECT token FROM dispositivos_push WHERE ativo = 1 AND usuario_id = ?");
+                $stmt = $conn->prepare("SELECT token FROM push_devices WHERE status = 1 AND user_id = ?");
                 $stmt->bind_param('i', $uidDestino);
             } else {
-                $stmt = $conn->prepare("SELECT token FROM dispositivos_push WHERE ativo = 1");
+                $stmt = $conn->prepare("SELECT token FROM push_devices WHERE status = 1");
             }
             $stmt->execute();
             $res = $stmt->get_result();
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar'
             // etc.) são desativados — nunca apagados, para manter o histórico.
             $removidos = 0;
             if (!empty($resultado['invalidos'])) {
-                $up = $conn->prepare("UPDATE dispositivos_push SET ativo = 0, ultimo_erro = 'Token inválido (FCM)' WHERE token = ?");
+                $up = $conn->prepare("UPDATE push_devices SET status = 0 WHERE token = ?");
                 foreach ($resultado['invalidos'] as $tokenInvalido) {
                     $up->bind_param('s', $tokenInvalido);
                     if ($up->execute()) $removidos++;
@@ -123,7 +123,7 @@ $usuarios = $conn->query("SELECT id, nome FROM usuarios ORDER BY nome");
 $mensagens = $conn->query("SELECT m.*, u.nome AS usuario_nome FROM mensagens m LEFT JOIN usuarios u ON u.id = m.usuario_id ORDER BY m.id DESC");
 
 $totalDispositivos = 0;
-if ($rDisp = $conn->query("SELECT COUNT(*) AS n FROM dispositivos_push WHERE ativo = 1")) {
+if ($rDisp = $conn->query("SELECT COUNT(*) AS n FROM push_devices WHERE status = 1")) {
     $totalDispositivos = (int)$rDisp->fetch_assoc()['n'];
 }
 $enviosPush = $conn->query("SELECT * FROM push_envios ORDER BY id DESC LIMIT 15");

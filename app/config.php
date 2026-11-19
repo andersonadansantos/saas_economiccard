@@ -207,10 +207,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS dependentes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 // ====== NOTIFICAÇÕES PUSH (FIREBASE CLOUD MESSAGING) ======
-// dispositivos_push: um registro por token FCM (UNIQUE). O token é único do
-// aparelho, então trocar de usuário no mesmo celular apenas reatribui a linha
-// (upsert) — nunca cria duplicata. Tokens inválidos são desativados (ativo = 0)
-// e reativados automaticamente se o Firebase voltar a aceitá-los.
+// dispositivos_push: tabela legada, mantida apenas para rollback/histórico.
+// O código atual usa push_devices (abaixo), que é criada e migrada
+// automaticamente a partir desta.
 // push_envios: histórico dos disparos do painel, com contadores e detalhes.
 $conn->query("CREATE TABLE IF NOT EXISTS dispositivos_push (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -229,6 +228,36 @@ $conn->query("CREATE TABLE IF NOT EXISTS dispositivos_push (
     KEY idx_device (device_id),
     KEY idx_ativo (ativo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// push_devices: contrato atual do registro de aparelhos. Um usuário pode ter
+// vários dispositivos; o token é UNIQUE para nunca duplicar o mesmo aparelho
+// (ao trocar de usuário no celular, a linha é reatribuída no upsert).
+// status: 1 = ativo, 0 = inativo (token expirado ou app desinstalado).
+$conn->query("CREATE TABLE IF NOT EXISTS push_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL DEFAULT NULL,
+    token VARCHAR(255) NOT NULL,
+    plataforma VARCHAR(20) NOT NULL DEFAULT 'android',
+    status TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_token (token),
+    KEY idx_user (user_id),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// Migração da tabela antiga (dispositivos_push), se existir e tiver registros.
+if ($rOld = $conn->query("SHOW TABLES LIKE 'dispositivos_push'")) {
+    if ($rOld->num_rows > 0) {
+        $nOld = (int)$conn->query("SELECT COUNT(*) AS n FROM dispositivos_push")->fetch_assoc()['n'];
+        if ($nOld > 0) {
+            $conn->query("INSERT IGNORE INTO push_devices
+                (user_id, token, plataforma, status, created_at, updated_at)
+                SELECT usuario_id, token, plataforma, ativo, criado_em, atualizado_em
+                FROM dispositivos_push");
+        }
+    }
+}
 
 $conn->query("CREATE TABLE IF NOT EXISTS push_envios (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -4,8 +4,9 @@
  *
  * Chamado de dentro da WebView pelo bridge app/push_client.js
  * (window.EconomicCardPush.register(token)) com a sessão do usuário e o token
- * CSRF da página. O token FCM é único: o mesmo aparelho nunca gera duplicata —
- * ao trocar de usuário a linha é reatribuída (upsert).
+ * CSRF da página. Um usuário pode registrar vários dispositivos; o token FCM é
+ * único por aparelho — ao trocar de usuário no mesmo celular a linha é
+ * reatribuída (upsert).
  *
  * Requisitos: HTTPS, sessão válida, CSRF, JSON, prepared statements.
  */
@@ -54,38 +55,26 @@ if ($token === '' || strlen($token) < 20 || strlen($token) > 4096
 $usuarioId = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : null;
 if ($usuarioId !== null && $usuarioId <= 0) $usuarioId = null;
 
-$dependenteId = null;
-if (ehDependente()) {
-    $dependenteId = (int)($_SESSION['dependente_id'] ?? 0);
-    if ($dependenteId <= 0) $dependenteId = null;
-}
-
 if ($acao === 'remover') {
-    $stmt = $conn->prepare("UPDATE dispositivos_push SET ativo = 0 WHERE token = ?");
+    $stmt = $conn->prepare("UPDATE push_devices SET status = 0 WHERE token = ?");
     $stmt->bind_param('s', $token);
     $stmt->execute();
     $stmt->close();
     push_resposta(['ok' => true, 'removido' => true]);
 }
 
-$deviceId   = substr(preg_replace('/[^A-Za-z0-9._:-]/', '', (string)($corpo['device_id'] ?? '')), 0, 120);
 $plataforma = strtolower(trim((string)($corpo['plataforma'] ?? 'android')));
 if (!in_array($plataforma, ['android', 'ios'], true)) $plataforma = 'android';
-$appVersion = substr(preg_replace('/[^0-9A-Za-z._-]/', '', (string)($corpo['app_version'] ?? '')), 0, 30);
 
-$stmt = $conn->prepare("INSERT INTO dispositivos_push
-        (usuario_id, dependente_id, token, device_id, plataforma, app_version, ativo, ultimo_erro)
-    VALUES (?, ?, ?, ?, ?, ?, 1, '')
+$stmt = $conn->prepare("INSERT INTO push_devices
+        (user_id, token, plataforma, status)
+    VALUES (?, ?, ?, 1)
     ON DUPLICATE KEY UPDATE
-        usuario_id = VALUES(usuario_id),
-        dependente_id = VALUES(dependente_id),
-        device_id = VALUES(device_id),
+        user_id = VALUES(user_id),
         plataforma = VALUES(plataforma),
-        app_version = VALUES(app_version),
-        ativo = 1,
-        ultimo_erro = '',
-        atualizado_em = NOW()");
-$stmt->bind_param('iissss', $usuarioId, $dependenteId, $token, $deviceId, $plataforma, $appVersion);
+        status = 1,
+        updated_at = NOW()");
+$stmt->bind_param('iss', $usuarioId, $token, $plataforma);
 
 if (!$stmt->execute()) {
     app_log('push', 'Falha ao registrar token: ' . $stmt->error);
@@ -95,7 +84,6 @@ if (!$stmt->execute()) {
 $stmt->close();
 
 push_resposta([
-    'ok'         => true,
-    'usuario'    => $usuarioId !== null,
-    'dependente' => $dependenteId !== null,
+    'ok'      => true,
+    'usuario' => $usuarioId !== null,
 ]);
