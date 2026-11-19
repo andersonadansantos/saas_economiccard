@@ -83,8 +83,22 @@ function push_cron_disparar(mysqli $conn, array $envio): array {
         $linkFinal = (string)($envio['link'] ?? '');
         $trackKey = (string)($envio['track_key'] ?? '');
         if ($trackKey !== '') {
-            $base = (request_is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-            $linkFinal = $base . '/push_open.php?t=' . rawurlencode($trackKey);
+            $appUrl = rtrim((string)(getenv('APP_URL') ?: getenv('SITE_URL') ?: ''), '/');
+            if ($appUrl !== '') {
+                $base = $appUrl;
+            } else {
+                $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+                $hostOnly = preg_replace('/:\d+$/', '', $host);
+                if ($host !== '' && !in_array($hostOnly, ['localhost', '127.0.0.1', '::1'], true)) {
+                    $scheme = request_is_https() ? 'https' : 'http';
+                    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+                    if ($dir === '' || $dir === '.') $dir = '/app';
+                    $base = $scheme . '://' . $host . $dir;
+                } else {
+                    $base = 'https://economiccard.com.br/app';
+                }
+            }
+            $linkFinal = rtrim($base, '/') . '/push_open.php?t=' . rawurlencode($trackKey);
         }
         $imagem = (string)($envio['imagem'] ?? '');
         $dados = ['mensagem_id' => (string)($envio['mensagem_id'] ?? '')];
