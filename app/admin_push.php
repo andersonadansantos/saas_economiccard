@@ -27,7 +27,11 @@ $peAdd = [
     'track_key' => "ALTER TABLE push_envios ADD COLUMN track_key VARCHAR(64) NOT NULL DEFAULT '' AFTER tipo_envio",
     'aberturas' => "ALTER TABLE push_envios ADD COLUMN aberturas INT NOT NULL DEFAULT 0 AFTER track_key",
 ];
-foreach ($peAdd as $col => $sql) { if (!isset($peCols[$col])) { @$conn->query($sql); } }
+foreach ($peAdd as $col => $sql) {
+    if (!isset($peCols[$col])) {
+        try { @$conn->query($sql); } catch (Throwable $e) { /* ignora: coluna pode já existir */ }
+    }
+}
 
 function push_abs_url($path) {
     if ($path === '') return '';

@@ -294,7 +294,9 @@ $pushEnvAdd = [
     'aberturas'     => "ALTER TABLE push_envios ADD COLUMN aberturas INT NOT NULL DEFAULT 0 AFTER track_key",
 ];
 foreach ($pushEnvAdd as $col => $sql) {
-    if (!isset($pushEnvCols[$col])) { @$conn->query($sql); }
+    if (!isset($pushEnvCols[$col])) {
+        try { @$conn->query($sql); } catch (Throwable $e) { /* ignora: coluna pode já existir */ }
+    }
 }
 
 $conn->query("CREATE TABLE IF NOT EXISTS push_aberturas (
