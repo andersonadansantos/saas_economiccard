@@ -252,12 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'enviar_
             $stmt = $conn->prepare($sqlIns);
             $usuarioDbBind = $usuarioDb === null ? 0 : (int)$usuarioDb;
             // usuario_id: 0 representa envio sem usuário específico (NULL lógico); manter compatível com bind integer
-            $stmt->bind_param('isssssssssssi', $mensagemId, $titulo, $corpo, $link, $imagem, $segmentoLabel, $alvoTipo, $alvoValor, $agendadoPara, $statusEnvio, $tipoEnvio, $trackKey, $destinoDb, $usuarioDbBind);
+            $stmt->bind_param('issssssssssssi', $mensagemId, $titulo, $corpo, $link, $imagem, $segmentoLabel, $alvoTipo, $alvoValor, $agendadoPara, $statusEnvio, $tipoEnvio, $trackKey, $destinoDb, $usuarioDbBind);
             $stmt->execute();
-            if ($usuarioDb === null) {
-                @$conn->query("UPDATE push_envios SET usuario_id = NULL WHERE id = " . (int)$envioId . " AND usuario_id = 0");
-            }
             $envioId = (int)$conn->insert_id;
+            if ($usuarioDb === null) {
+                @$conn->query("UPDATE push_envios SET usuario_id = NULL WHERE id = " . $envioId . " AND usuario_id = 0");
+            }
             $stmt->close();
 
             $envio = [
